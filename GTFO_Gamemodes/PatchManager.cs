@@ -1,0 +1,129 @@
+﻿using HarmonyLib;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+
+namespace Gamemodes
+{
+    public class PatchManager
+    {
+        public static class PatchGroups
+        {
+            public const string NO_SLEEPING_ENEMIES = "NoSleepingEnemies";
+            public const string NO_RESPAWN = "NoRespawn";
+            public const string NO_FAIL = "NoFail";
+            public const string REQUIRED = "Required";
+            public const string DEBUG = "Debug";
+        }
+
+        private class PatchGroup
+        {
+            internal readonly string Name;
+            internal readonly HashSet<Type> Types = new();
+            internal readonly Harmony HarmonyInstance;
+            internal bool IsPatched = false;
+
+            public PatchGroup(string group)
+            {
+                Name = group;
+                HarmonyInstance = new Harmony($"{Plugin.GUID}.{group}");
+            }
+
+            public bool Patch(bool patch)
+            {
+                if (IsPatched == patch)
+                    return false;
+
+                if (patch)
+                {
+                    Plugin.L.LogDebug($"Patching {nameof(PatchGroup)} \"{Name}\" ({Types.Count} Types) ...");
+                    foreach (var type in Types)
+                    {
+                        HarmonyInstance.PatchAll(type);
+                    }
+                }
+                else
+                {
+                    if (Name == PatchGroups.REQUIRED)
+                        return false;
+
+                    if (Name == DEFAULT_PATCHGROUP && DefaultLock)
+                        return false;
+
+                    Plugin.L.LogDebug($"Unpatching {nameof(PatchGroup)} \"{Name}\" ...");
+                    HarmonyInstance.UnpatchSelf();
+                }
+                
+                IsPatched = patch;
+
+                return true;
+            }
+        }
+
+        public const string DEFAULT_PATCHGROUP = "Default";
+        public const string PATCHGROUP_FIELDNAME = "PatchGroup";
+
+        internal static bool DefaultLock = true;
+
+        private static readonly Dictionary<string, PatchGroup> _patchGroups = new();
+
+        internal static void Init()
+        {
+            IterateTypes();
+
+            ApplyPatchGroup(PatchGroups.REQUIRED, true);
+            ApplyPatchGroup(DEFAULT_PATCHGROUP, true);
+#if DEBUG
+            ApplyPatchGroup(PatchGroups.DEBUG, true);
+#endif
+        }
+
+        private static void IterateTypes()
+        {
+            foreach(var type in AccessTools.GetTypesFromAssembly(Assembly.GetExecutingAssembly()))
+            {
+                if (!type.Namespace.StartsWith($"{nameof(Gamemodes)}.{nameof(Patches)}") || type.GetCustomAttribute<HarmonyPatch>() == null)
+                    continue;
+
+                var FI_patchGroup = type.GetField(PATCHGROUP_FIELDNAME, AccessTools.all);
+
+                string group = null;
+
+                if (FI_patchGroup != null)
+                {
+                    group = (string) FI_patchGroup.GetValue(null);
+                }
+
+                if (string.IsNullOrWhiteSpace(group))
+                {
+                    group = DEFAULT_PATCHGROUP;
+                }
+
+                AddToGroup(group, type);
+            }
+        }
+
+        private static void AddToGroup(string group, Type type)
+        {
+            if (!_patchGroups.TryGetValue(group, out var patchGroup))
+            {
+                patchGroup = new(group);
+                _patchGroups.Add(group, patchGroup);
+            }
+
+            Plugin.L.LogDebug($"[{nameof(PatchManager)}] {group}: + {type.Name}");
+
+            patchGroup.Types.Add(type);
+        }
+
+        public static bool ApplyPatchGroup(string group, bool patch)
+        {
+            if (!_patchGroups.TryGetValue(group, out var patchGroup))
+            {
+                return false;
+            }
+
+            return patchGroup.Patch(patch);
+        }
+    }
+}

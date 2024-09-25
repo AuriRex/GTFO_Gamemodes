@@ -20,15 +20,32 @@ namespace Gamemodes.Net
 			RegisterEvent<pSwitchMode>(OnModeSwitchReceived);
 			RegisterEvent<pForcedTeleport>(OnForcedTeleportReceived);
 			RegisterEvent<pSpectatorSwitch>(OnSpectatorPacketReceived);
-		}
+			RegisterEvent<pSetTeam>(OnSetTeamReceived);
+        }
+
+		public static void AssignTeam(SNet_Player target, int teamId)
+		{
+            var data = new pSetTeam
+            {
+                PlayerID = target.Lookup,
+				Team = teamId,
+            };
+
+            SendEvent(data, invokeLocal: true);
+        }
+
+        private static void OnSetTeamReceived(ulong senderId, pSetTeam data)
+        {
+            GetPlayerInfo(data.PlayerID, out var target);
+
+            target.Team = data.Team;
+        }
 
         private static void OnSpectatorPacketReceived(ulong senderId, pSpectatorSwitch data)
         {
 			GetPlayerInfo(senderId, out var sender);
 
 			sender.IsSpectator = data.WantsToSpectate;
-
-
 		}
 
         public static bool SendForceTeleport(SNet_Player target, Vector3 targetPos, Vector3 targetLookDir, eDimensionIndex dimension, WarpOptions options)

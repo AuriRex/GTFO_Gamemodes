@@ -1,5 +1,6 @@
 ﻿using Gamemodes.Net;
 using HarmonyLib;
+using SNetwork;
 
 namespace Gamemodes.Patches.Default
 {
@@ -9,6 +10,11 @@ namespace Gamemodes.Patches.Default
         public static bool Prefix(ref bool __result)
         {
             __result = false;
+
+            foreach (var player in SNet.LobbyPlayers)
+            {
+                NetworkingManager.GetPlayerInfo(player.Lookup, out _);
+            }
 
             if (!NetworkingManager.AllPlayersVersionMatches)
             {

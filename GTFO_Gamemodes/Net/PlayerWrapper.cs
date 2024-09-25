@@ -37,6 +37,8 @@ namespace Gamemodes.Net
 
         public HashSet<string> ReportedInstalledGamemodes { get; init; } = new();
 
+        public int Team { get; internal set; }
+
         public bool HasModeInstalled(string modeId)
         {
             return ReportedInstalledGamemodes.Contains(modeId);
@@ -45,6 +47,11 @@ namespace Gamemodes.Net
         public bool WarpTo(Vector3 pos, Vector3 lookDir, eDimensionIndex dimension, WarpOptions options)
         {
             return NetworkingManager.SendForceTeleport(NetPlayer, pos, lookDir, dimension, options);
+        }
+
+        public bool IsOnSameTeamAs(PlayerWrapper other)
+        {
+            return Team == other.Team;
         }
     }
 }

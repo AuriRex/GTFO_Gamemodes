@@ -1,4 +1,5 @@
-﻿using Gamemodes.Mode.Tests;
+﻿using BepInEx.Unity.IL2CPP.Utils.Collections;
+using Gamemodes.Mode.Tests;
 using Gamemodes.Net;
 using System;
 using System.Collections.Generic;
@@ -17,18 +18,22 @@ namespace Gamemodes.Mode
 
         public static bool AllowDropWithVanillaPlayers => _currentMode?.GetType() == typeof(ModeGTFO);
 
-        public static bool CurrentAllowsForcedTP => _currentMode?.Settings?.RequiresForcedTeleportation ?? false;
+        public static bool CurrentAllowsForcedTP => _currentMode?.Settings?.AllowForcedTeleportation ?? false;
 
         internal static GamemodeBase CurrentMode => _currentMode;
+        internal static ModeSettings CurrentSettings => _currentMode?.Settings;
 
         private static GamemodeBase _currentMode;
 
         private static ModeInfo _modeGTFO;
 
+        private static bool _isGamedataReady = false;
+
         internal static void Init()
         {
             NetworkingManager.DoSwitchModeReceived += OnSwitchModeReceived;
             GameEvents.OnGameDataInit += OnGameDataInit;
+            GameEvents.OnGameStateChanged += OnGameStateChanged;
 
             _modeGTFO = RegisterMode<ModeGTFO>();
 #if DEBUG
@@ -37,8 +42,32 @@ namespace Gamemodes.Mode
 #endif
         }
 
+        private static void OnGameStateChanged(eGameStateName state)
+        {
+            if (state == eGameStateName.InLevel)
+            {
+                HandleSpecialRequirementsOnInLevel();
+            }
+        }
+
         private static void OnGameDataInit()
         {
+            foreach(var mode in _gamemodes)
+            {
+                try
+                {
+                    mode.Implementation.Init();
+                }
+                catch(Exception ex)
+                {
+                    Plugin.L.LogError($"Mode (ID:{mode.ID}) \"{mode.DisplayName}\" threw an Exception during {nameof(GamemodeBase.Init)}!");
+                    Plugin.L.LogError($"{ex.GetType().FullName}: {ex.Message}");
+                    Plugin.L.LogWarning($"StackTrace:\n{ex.StackTrace}");
+                }
+            }
+
+            _isGamedataReady = true;
+
             TrySwitchMode(_modeGTFO);
         }
 
@@ -101,6 +130,42 @@ namespace Gamemodes.Mode
             ApplyPatchGroup(PatchGroups.NO_FAIL, settings.PreventDefaultFailState);
             ApplyPatchGroup(PatchGroups.NO_RESPAWN, settings.PreventRespawnRoomsRespawning);
             ApplyPatchGroup(PatchGroups.NO_SLEEPING_ENEMIES, settings.PreventExpeditionEnemiesSpawning);
+            ApplyPatchGroup(PatchGroups.NO_CHECKPOINTS, settings.OpenAllSecurityDoors || settings.RemoveCheckpoints);
+            ApplyPatchGroup(PatchGroups.NO_WORLDEVENTS, settings.BlockWorldEvents);
+        }
+
+        private static void HandleSpecialRequirementsOnInLevel()
+        {
+            if (CurrentSettings.BlockWorldEvents)
+            {
+                Utils.DisableAllWorldEventTriggers();
+                Utils.StopWardenObjectiveManager();
+            }
+
+            if (CurrentSettings.RevealEntireMap)
+            {
+                Utils.RevealMap();
+
+                if (CurrentSettings.MapIconsToReveal != Utils.MapIconTypes.None)
+                {
+                    Utils.RevealMapIcons(CurrentSettings.MapIconsToReveal);
+                }
+            }
+
+            if (!SNetwork.SNet.IsMaster)
+                return;
+
+            // Master is in control of doors
+
+            if (CurrentSettings.OpenAllSecurityDoors)
+            {
+                CoroutineManager.StartCoroutine(Utils.OpenSecurityDoorRoutine().WrapToIl2Cpp());
+            }
+
+            if (CurrentSettings.OpenAllWeakDoors)
+            {
+                CoroutineManager.StartCoroutine(Utils.OpenWeakDoorRoutine().WrapToIl2Cpp());
+            }
         }
 
         public static ModeInfo RegisterMode<T>() where T : GamemodeBase
@@ -115,7 +180,8 @@ namespace Gamemodes.Mode
 
             var info = new ModeInfo(id, displayName, impl);
 
-            impl.Init();
+            if (_isGamedataReady)
+                impl.Init();
 
             _gamemodeIds.Add(id);
             _gamemodes.Add(info);

@@ -11,7 +11,7 @@
             PreventDefaultFailState = true,
             PreventExpeditionEnemiesSpawning = true,
             PreventRespawnRoomsRespawning = true,
-            RequiresForcedTeleportation = true
+            AllowForcedTeleportation = true
         };
     }
 }

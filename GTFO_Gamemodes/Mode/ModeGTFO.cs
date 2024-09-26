@@ -9,7 +9,7 @@
         public override ModeSettings Settings => new()
         {
             PreventDefaultFailState = false,
-            RequiresForcedTeleportation = false,
+            AllowForcedTeleportation = false,
         };
 
         

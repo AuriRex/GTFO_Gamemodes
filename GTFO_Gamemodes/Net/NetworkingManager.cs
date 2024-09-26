@@ -33,6 +33,7 @@ namespace Gamemodes.Net
         {
             GameEvents.OnGameDataInit += OnGameDataInit;
             GameEvents.OnFoundMaster += OnFoundMaster;
+            GameEvents.OnJoinedLobby += (_) => SendJoinInfo();
         }
 
         private static void OnFoundMaster()

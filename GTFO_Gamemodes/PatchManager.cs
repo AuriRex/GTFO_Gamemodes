@@ -14,6 +14,8 @@ namespace Gamemodes
             public const string NO_FAIL = "NoFail";
             public const string REQUIRED = "Required";
             public const string DEBUG = "Debug";
+            public const string NO_CHECKPOINTS = "NoCheckpoints";
+            public const string NO_WORLDEVENTS = "NoWorldEvents";
         }
 
         private class PatchGroup
@@ -60,7 +62,7 @@ namespace Gamemodes
             }
         }
 
-        public const string DEFAULT_PATCHGROUP = "Default";
+        internal const string DEFAULT_PATCHGROUP = "Default";
         public const string PATCHGROUP_FIELDNAME = "PatchGroup";
 
         internal static bool DefaultLock = true;
@@ -69,7 +71,7 @@ namespace Gamemodes
 
         internal static void Init()
         {
-            IterateTypes();
+            IterateTypes($"{nameof(Gamemodes)}.{nameof(Patches)}", Assembly.GetExecutingAssembly());
 
             ApplyPatchGroup(PatchGroups.REQUIRED, true);
             ApplyPatchGroup(DEFAULT_PATCHGROUP, true);
@@ -78,11 +80,14 @@ namespace Gamemodes
 #endif
         }
 
-        private static void IterateTypes()
+        public static void IterateTypes(string nameSpacePrefix, Assembly asm)
         {
-            foreach(var type in AccessTools.GetTypesFromAssembly(Assembly.GetExecutingAssembly()))
+            if (string.IsNullOrWhiteSpace(nameSpacePrefix))
+                throw new ArgumentException("Invalid parameter.", nameof(nameSpacePrefix));
+
+            foreach(var type in AccessTools.GetTypesFromAssembly(asm))
             {
-                if (!type.Namespace.StartsWith($"{nameof(Gamemodes)}.{nameof(Patches)}") || type.GetCustomAttribute<HarmonyPatch>() == null)
+                if (!type.Namespace.StartsWith(nameSpacePrefix) || type.GetCustomAttribute<HarmonyPatch>() == null)
                     continue;
 
                 var FI_patchGroup = type.GetField(PATCHGROUP_FIELDNAME, AccessTools.all);

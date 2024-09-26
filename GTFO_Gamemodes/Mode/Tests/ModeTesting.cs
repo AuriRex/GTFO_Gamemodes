@@ -10,7 +10,7 @@
         {
             AllowMidGameModeSwitch = true,
             PreventDefaultFailState = true,
-            RequiresForcedTeleportation = true,
+            AllowForcedTeleportation = true,
         };
     }
 }

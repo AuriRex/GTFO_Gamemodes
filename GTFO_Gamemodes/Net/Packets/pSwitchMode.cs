@@ -1,12 +1,11 @@
 ﻿using Gamemodes.Mode;
 using System.Runtime.InteropServices;
 
-namespace Gamemodes.Net.Packets
+namespace Gamemodes.Net.Packets;
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct pSwitchMode
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct pSwitchMode
-    {
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = ModeInfo.ID_MAX_LENGTH)]
-        public string GamemodeID;
-    }
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = ModeInfo.ID_MAX_LENGTH)]
+    public string GamemodeID;
 }

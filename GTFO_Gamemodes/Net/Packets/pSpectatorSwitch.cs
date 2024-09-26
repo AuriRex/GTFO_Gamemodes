@@ -1,11 +1,10 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Gamemodes.Net.Packets
+namespace Gamemodes.Net.Packets;
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct pSpectatorSwitch
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct pSpectatorSwitch
-    {
-        [MarshalAs(UnmanagedType.Bool)]
-        public bool WantsToSpectate;
-    }
+    [MarshalAs(UnmanagedType.Bool)]
+    public bool WantsToSpectate;
 }

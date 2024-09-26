@@ -1,16 +1,15 @@
-﻿namespace Gamemodes.Mode.Tests
+﻿namespace Gamemodes.Mode.Tests;
+
+internal class ModeTesting : GamemodeBase
 {
-    internal class ModeTesting : GamemodeBase
+    public override string ID => "GMTesting";
+
+    public override string DisplayName => "Test Mode";
+
+    public override ModeSettings Settings => new ModeSettings
     {
-        public override string ID => "GMTesting";
-
-        public override string DisplayName => "Test Mode";
-
-        public override ModeSettings Settings => new ModeSettings
-        {
-            AllowMidGameModeSwitch = true,
-            PreventDefaultFailState = true,
-            AllowForcedTeleportation = true,
-        };
-    }
+        AllowMidGameModeSwitch = true,
+        PreventDefaultFailState = true,
+        AllowForcedTeleportation = true,
+    };
 }

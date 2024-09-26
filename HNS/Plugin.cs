@@ -3,7 +3,6 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HNS.Core;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 [assembly: AssemblyVersion(HNS.Plugin.VERSION)]
 [assembly: AssemblyFileVersion(HNS.Plugin.VERSION)]

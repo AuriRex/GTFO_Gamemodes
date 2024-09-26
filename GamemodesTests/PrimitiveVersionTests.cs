@@ -1,91 +1,90 @@
 using Gamemodes;
 using System;
 
-namespace GamemodesTests
+namespace GamemodesTests;
+
+public class PrimitiveVersionTests
 {
-    public class PrimitiveVersionTests
+    public const string VERSION_ONE = "1.0.0";
+    public const string VERSION_ONE_PATCH = "1.0.1";
+    public const string VERSION_ONE_MINOR = "1.1.0";
+    public const string VERSION_ONE_MAJOR = "2.0.0";
+
+    private PrimitiveVersion baseVersion;
+    private PrimitiveVersion biggerPatch;
+    private PrimitiveVersion biggerMinor;
+    private PrimitiveVersion biggerMajor;
+
+    [SetUp]
+    public void Setup()
     {
-        public const string VERSION_ONE = "1.0.0";
-        public const string VERSION_ONE_PATCH = "1.0.1";
-        public const string VERSION_ONE_MINOR = "1.1.0";
-        public const string VERSION_ONE_MAJOR = "2.0.0";
+        baseVersion = new PrimitiveVersion(VERSION_ONE);
+        biggerPatch = new PrimitiveVersion(VERSION_ONE_PATCH);
+        biggerMinor = new PrimitiveVersion(VERSION_ONE_MINOR);
+        biggerMajor = new PrimitiveVersion(VERSION_ONE_MAJOR);
+    }
 
-        private PrimitiveVersion baseVersion;
-        private PrimitiveVersion biggerPatch;
-        private PrimitiveVersion biggerMinor;
-        private PrimitiveVersion biggerMajor;
+    [Test]
+    public void Equals()
+    {
+        Assert.That(new PrimitiveVersion(VERSION_ONE), Is.EqualTo(baseVersion));
+        Assert.That(baseVersion.ToString(), Is.EqualTo(VERSION_ONE));
+    }
 
-        [SetUp]
-        public void Setup()
+    [Test]
+    public void Greater()
+    {
+        Assert.Multiple(() =>
         {
-            baseVersion = new PrimitiveVersion(VERSION_ONE);
-            biggerPatch = new PrimitiveVersion(VERSION_ONE_PATCH);
-            biggerMinor = new PrimitiveVersion(VERSION_ONE_MINOR);
-            biggerMajor = new PrimitiveVersion(VERSION_ONE_MAJOR);
-        }
+            Assert.That(biggerPatch > baseVersion);
+            Assert.That(biggerMinor > baseVersion);
+            Assert.That(biggerMajor > baseVersion);
 
-        [Test]
-        public void Equals()
+            Assert.That(biggerMinor > biggerPatch);
+            Assert.That(biggerMajor > biggerPatch);
+
+            Assert.That(biggerMajor > biggerMinor);
+        });
+    }
+
+    [Test]
+    public void Smaller()
+    {
+
+        Assert.Multiple(() =>
         {
-            Assert.That(new PrimitiveVersion(VERSION_ONE), Is.EqualTo(baseVersion));
-            Assert.That(baseVersion.ToString(), Is.EqualTo(VERSION_ONE));
-        }
+            Assert.That(!(biggerPatch < baseVersion));
+            Assert.That(!(biggerMinor < baseVersion));
+            Assert.That(!(biggerMajor < baseVersion));
 
-        [Test]
-        public void Greater()
-        {
-            Assert.Multiple(() =>
-            {
-                Assert.That(biggerPatch > baseVersion);
-                Assert.That(biggerMinor > baseVersion);
-                Assert.That(biggerMajor > baseVersion);
+            Assert.That(!(biggerMinor < biggerPatch));
+            Assert.That(!(biggerMajor < biggerPatch));
 
-                Assert.That(biggerMinor > biggerPatch);
-                Assert.That(biggerMajor > biggerPatch);
+            Assert.That(!(biggerMajor < biggerMinor));
+        });
+    }
 
-                Assert.That(biggerMajor > biggerMinor);
-            });
-        }
+    [Test]
+    public void SingleDigit()
+    {
+        Assert.That(new PrimitiveVersion($"1").ToString(), Is.EqualTo(VERSION_ONE));
+    }
 
-        [Test]
-        public void Smaller()
-        {
-            
-            Assert.Multiple(() =>
-            {
-                Assert.That(!(biggerPatch < baseVersion));
-                Assert.That(!(biggerMinor < baseVersion));
-                Assert.That(!(biggerMajor < baseVersion));
+    [Test]
+    public void TwoDigits()
+    {
+        Assert.That(new PrimitiveVersion($"1.0").ToString(), Is.EqualTo(VERSION_ONE));
+    }
 
-                Assert.That(!(biggerMinor < biggerPatch));
-                Assert.That(!(biggerMajor < biggerPatch));
+    [Test]
+    public void FourDigits()
+    {
+        Assert.That(new PrimitiveVersion($"{VERSION_ONE}.0").ToString(), Is.EqualTo(VERSION_ONE));
+    }
 
-                Assert.That(!(biggerMajor < biggerMinor));
-            });
-        }
-
-        [Test]
-        public void SingleDigit()
-        {
-            Assert.That(new PrimitiveVersion($"1").ToString(), Is.EqualTo(VERSION_ONE));
-        }
-
-        [Test]
-        public void TwoDigits()
-        {
-            Assert.That(new PrimitiveVersion($"1.0").ToString(), Is.EqualTo(VERSION_ONE));
-        }
-
-        [Test]
-        public void FourDigits()
-        {
-            Assert.That(new PrimitiveVersion($"{VERSION_ONE}.0").ToString(), Is.EqualTo(VERSION_ONE));
-        }
-
-        [Test]
-        public void Throws()
-        {
-            Assert.Throws<ArgumentException>(() => new PrimitiveVersion("garbage.data"));
-        }
+    [Test]
+    public void Throws()
+    {
+        Assert.Throws<ArgumentException>(() => new PrimitiveVersion("garbage.data"));
     }
 }

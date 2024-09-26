@@ -2,10 +2,7 @@
 using HNS.Net.Packets;
 using SNetwork;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HNS.Net;
 
@@ -26,7 +23,7 @@ internal static class NetSessionManager
 
         var data = new pHNSGameStart
         {
-            SeekerCount = (byte) seekers.Length,
+            SeekerCount = (byte)seekers.Length,
             Seekers = seekers,
             SetupTimeSeconds = 60,
         };

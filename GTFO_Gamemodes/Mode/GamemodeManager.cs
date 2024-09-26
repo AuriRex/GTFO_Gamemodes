@@ -6,198 +6,197 @@ using System.Collections.Generic;
 using System.Linq;
 using static Gamemodes.PatchManager;
 
-namespace Gamemodes.Mode
+namespace Gamemodes.Mode;
+
+public class GamemodeManager
 {
-    public class GamemodeManager
+    private static readonly HashSet<ModeInfo> _gamemodes = new();
+    private static readonly HashSet<string> _gamemodeIds = new();
+
+    public static IEnumerable<ModeInfo> LoadedModes => _gamemodes;
+    public static IEnumerable<string> LoadedModeIds => _gamemodeIds;
+
+    public static bool AllowDropWithVanillaPlayers => _currentMode?.GetType() == typeof(ModeGTFO);
+
+    public static bool CurrentAllowsForcedTP => _currentMode?.Settings?.AllowForcedTeleportation ?? false;
+
+    internal static GamemodeBase CurrentMode => _currentMode;
+    internal static ModeSettings CurrentSettings => _currentMode?.Settings;
+
+    private static GamemodeBase _currentMode;
+
+    private static ModeInfo _modeGTFO;
+
+    private static bool _isGamedataReady = false;
+
+    internal static void Init()
     {
-        private static readonly HashSet<ModeInfo> _gamemodes = new();
-        private static readonly HashSet<string> _gamemodeIds = new();
+        NetworkingManager.DoSwitchModeReceived += OnSwitchModeReceived;
+        GameEvents.OnGameDataInit += OnGameDataInit;
+        GameEvents.OnGameStateChanged += OnGameStateChanged;
 
-        public static IEnumerable<ModeInfo> LoadedModes => _gamemodes;
-        public static IEnumerable<string> LoadedModeIds => _gamemodeIds;
-
-        public static bool AllowDropWithVanillaPlayers => _currentMode?.GetType() == typeof(ModeGTFO);
-
-        public static bool CurrentAllowsForcedTP => _currentMode?.Settings?.AllowForcedTeleportation ?? false;
-
-        internal static GamemodeBase CurrentMode => _currentMode;
-        internal static ModeSettings CurrentSettings => _currentMode?.Settings;
-
-        private static GamemodeBase _currentMode;
-
-        private static ModeInfo _modeGTFO;
-
-        private static bool _isGamedataReady = false;
-
-        internal static void Init()
-        {
-            NetworkingManager.DoSwitchModeReceived += OnSwitchModeReceived;
-            GameEvents.OnGameDataInit += OnGameDataInit;
-            GameEvents.OnGameStateChanged += OnGameStateChanged;
-
-            _modeGTFO = RegisterMode<ModeGTFO>();
+        _modeGTFO = RegisterMode<ModeGTFO>();
 #if DEBUG
-            RegisterMode<ModeTesting>();
-            RegisterMode<ModeNoSleepers>();
+        RegisterMode<ModeTesting>();
+        RegisterMode<ModeNoSleepers>();
 #endif
-        }
+    }
 
-        private static void OnGameStateChanged(eGameStateName state)
+    private static void OnGameStateChanged(eGameStateName state)
+    {
+        if (state == eGameStateName.InLevel)
         {
-            if (state == eGameStateName.InLevel)
+            HandleSpecialRequirementsOnInLevel();
+        }
+    }
+
+    private static void OnGameDataInit()
+    {
+        foreach (var mode in _gamemodes)
+        {
+            try
             {
-                HandleSpecialRequirementsOnInLevel();
+                mode.Implementation.Init();
+            }
+            catch (Exception ex)
+            {
+                Plugin.L.LogError($"Mode (ID:{mode.ID}) \"{mode.DisplayName}\" threw an Exception during {nameof(GamemodeBase.Init)}!");
+                Plugin.L.LogError($"{ex.GetType().FullName}: {ex.Message}");
+                Plugin.L.LogWarning($"StackTrace:\n{ex.StackTrace}");
             }
         }
 
-        private static void OnGameDataInit()
+        _isGamedataReady = true;
+
+        TrySwitchMode(_modeGTFO);
+    }
+
+    private static void OnSwitchModeReceived(string gamemodeId)
+    {
+        TrySwitchMode(gamemodeId);
+    }
+
+    private static bool TrySwitchMode(ModeInfo mode)
+    {
+        if (mode?.ID == CurrentMode?.ID)
         {
-            foreach(var mode in _gamemodes)
-            {
-                try
-                {
-                    mode.Implementation.Init();
-                }
-                catch(Exception ex)
-                {
-                    Plugin.L.LogError($"Mode (ID:{mode.ID}) \"{mode.DisplayName}\" threw an Exception during {nameof(GamemodeBase.Init)}!");
-                    Plugin.L.LogError($"{ex.GetType().FullName}: {ex.Message}");
-                    Plugin.L.LogWarning($"StackTrace:\n{ex.StackTrace}");
-                }
-            }
-
-            _isGamedataReady = true;
-
-            TrySwitchMode(_modeGTFO);
+            Plugin.L.LogDebug("Trying to switch to already loaded mode, ignoring.");
+            return false;
         }
 
-        private static void OnSwitchModeReceived(string gamemodeId)
+        if (NetworkingManager.InLevel)
         {
-            TrySwitchMode(gamemodeId);
-        }
-
-        private static bool TrySwitchMode(ModeInfo mode)
-        {
-            if (mode?.ID == CurrentMode?.ID)
+            if (!_currentMode.Settings.AllowMidGameModeSwitch)
             {
-                Plugin.L.LogDebug("Trying to switch to already loaded mode, ignoring.");
+                Plugin.L.LogWarning($"Tried to switch from mode \"{_currentMode.ID}\" during gameplay, not allowed!");
                 return false;
             }
 
-            if (NetworkingManager.InLevel)
+            if (!mode.Implementation.Settings.AllowMidGameModeSwitch)
             {
-                if(!_currentMode.Settings.AllowMidGameModeSwitch)
-                {
-                    Plugin.L.LogWarning($"Tried to switch from mode \"{_currentMode.ID}\" during gameplay, not allowed!");
-                    return false;
-                }
-
-                if (!mode.Implementation.Settings.AllowMidGameModeSwitch)
-                {
-                    Plugin.L.LogWarning($"Tried to switch to mode \"{mode.ID}\" during gameplay, not allowed!");
-                    return false;
-                }
-            }
-
-            var msg = $"Switching mode [{_currentMode?.ID ?? "None"}] => [{mode.ID}]";
-            Plugin.L.LogDebug(msg);
-            Plugin.PostLocalMessage(msg);
-
-            _currentMode?.Disable();
-
-            _currentMode = mode.Implementation;
-
-            HandleSpecialRequirements(_currentMode.Settings);
-
-            _currentMode.Enable();
-
-            return true;
-        }
-
-        private static bool TrySwitchMode(string gamemodeID)
-        {
-            if (!TryGetMode(gamemodeID, out var mode))
-            {
-                Plugin.L.LogWarning($"Tried to switch to mode \"{gamemodeID}\" that is not installed!");
+                Plugin.L.LogWarning($"Tried to switch to mode \"{mode.ID}\" during gameplay, not allowed!");
                 return false;
             }
-
-            return TrySwitchMode(mode);
         }
 
-        private static void HandleSpecialRequirements(ModeSettings settings)
+        var msg = $"Switching mode [{_currentMode?.ID ?? "None"}] => [{mode.ID}]";
+        Plugin.L.LogDebug(msg);
+        Plugin.PostLocalMessage(msg);
+
+        _currentMode?.Disable();
+
+        _currentMode = mode.Implementation;
+
+        HandleSpecialRequirements(_currentMode.Settings);
+
+        _currentMode.Enable();
+
+        return true;
+    }
+
+    private static bool TrySwitchMode(string gamemodeID)
+    {
+        if (!TryGetMode(gamemodeID, out var mode))
         {
-            ApplyPatchGroup(PatchGroups.NO_FAIL, settings.PreventDefaultFailState);
-            ApplyPatchGroup(PatchGroups.NO_RESPAWN, settings.PreventRespawnRoomsRespawning);
-            ApplyPatchGroup(PatchGroups.NO_SLEEPING_ENEMIES, settings.PreventExpeditionEnemiesSpawning);
-            ApplyPatchGroup(PatchGroups.NO_CHECKPOINTS, settings.OpenAllSecurityDoors || settings.RemoveCheckpoints);
-            ApplyPatchGroup(PatchGroups.NO_WORLDEVENTS, settings.BlockWorldEvents);
+            Plugin.L.LogWarning($"Tried to switch to mode \"{gamemodeID}\" that is not installed!");
+            return false;
         }
 
-        private static void HandleSpecialRequirementsOnInLevel()
+        return TrySwitchMode(mode);
+    }
+
+    private static void HandleSpecialRequirements(ModeSettings settings)
+    {
+        ApplyPatchGroup(PatchGroups.NO_FAIL, settings.PreventDefaultFailState);
+        ApplyPatchGroup(PatchGroups.NO_RESPAWN, settings.PreventRespawnRoomsRespawning);
+        ApplyPatchGroup(PatchGroups.NO_SLEEPING_ENEMIES, settings.PreventExpeditionEnemiesSpawning);
+        ApplyPatchGroup(PatchGroups.NO_CHECKPOINTS, settings.OpenAllSecurityDoors || settings.RemoveCheckpoints);
+        ApplyPatchGroup(PatchGroups.NO_WORLDEVENTS, settings.BlockWorldEvents);
+    }
+
+    private static void HandleSpecialRequirementsOnInLevel()
+    {
+        if (CurrentSettings.BlockWorldEvents)
         {
-            if (CurrentSettings.BlockWorldEvents)
+            Utils.DisableAllWorldEventTriggers();
+            Utils.StopWardenObjectiveManager();
+        }
+
+        if (CurrentSettings.RevealEntireMap)
+        {
+            Utils.RevealMap();
+
+            if (CurrentSettings.MapIconsToReveal != Utils.MapIconTypes.None)
             {
-                Utils.DisableAllWorldEventTriggers();
-                Utils.StopWardenObjectiveManager();
-            }
-
-            if (CurrentSettings.RevealEntireMap)
-            {
-                Utils.RevealMap();
-
-                if (CurrentSettings.MapIconsToReveal != Utils.MapIconTypes.None)
-                {
-                    Utils.RevealMapIcons(CurrentSettings.MapIconsToReveal);
-                }
-            }
-
-            if (!SNetwork.SNet.IsMaster)
-                return;
-
-            // Master is in control of doors
-
-            if (CurrentSettings.OpenAllSecurityDoors)
-            {
-                CoroutineManager.StartCoroutine(Utils.OpenSecurityDoorRoutine().WrapToIl2Cpp());
-            }
-
-            if (CurrentSettings.OpenAllWeakDoors)
-            {
-                CoroutineManager.StartCoroutine(Utils.OpenWeakDoorRoutine().WrapToIl2Cpp());
+                Utils.RevealMapIcons(CurrentSettings.MapIconsToReveal);
             }
         }
 
-        public static ModeInfo RegisterMode<T>() where T : GamemodeBase
+        if (!SNetwork.SNet.IsMaster)
+            return;
+
+        // Master is in control of doors
+
+        if (CurrentSettings.OpenAllSecurityDoors)
         {
-            var impl = Activator.CreateInstance<T>();
-
-            var id = impl.ID;
-            var displayName = impl.DisplayName;
-
-            if (_gamemodeIds.Contains(id))
-                throw new ArgumentException($"Gamemode \"{id}\" can't be registered twice!", nameof(id));
-
-            var info = new ModeInfo(id, displayName, impl);
-
-            if (_isGamedataReady)
-                impl.Init();
-
-            _gamemodeIds.Add(id);
-            _gamemodes.Add(info);
-
-            return info;
+            CoroutineManager.StartCoroutine(Utils.OpenSecurityDoorRoutine().WrapToIl2Cpp());
         }
 
-        public static bool HasModeInstalled(string gamemodeID)
+        if (CurrentSettings.OpenAllWeakDoors)
         {
-            return _gamemodeIds.Contains(gamemodeID);
+            CoroutineManager.StartCoroutine(Utils.OpenWeakDoorRoutine().WrapToIl2Cpp());
         }
+    }
 
-        public static bool TryGetMode(string gamemodeID, out ModeInfo mode)
-        {
-            mode = _gamemodes.FirstOrDefault(gm => gm.ID == gamemodeID);
-            return mode != null;
-        }
+    public static ModeInfo RegisterMode<T>() where T : GamemodeBase
+    {
+        var impl = Activator.CreateInstance<T>();
+
+        var id = impl.ID;
+        var displayName = impl.DisplayName;
+
+        if (_gamemodeIds.Contains(id))
+            throw new ArgumentException($"Gamemode \"{id}\" can't be registered twice!", nameof(id));
+
+        var info = new ModeInfo(id, displayName, impl);
+
+        if (_isGamedataReady)
+            impl.Init();
+
+        _gamemodeIds.Add(id);
+        _gamemodes.Add(info);
+
+        return info;
+    }
+
+    public static bool HasModeInstalled(string gamemodeID)
+    {
+        return _gamemodeIds.Contains(gamemodeID);
+    }
+
+    public static bool TryGetMode(string gamemodeID, out ModeInfo mode)
+    {
+        mode = _gamemodes.FirstOrDefault(gm => gm.ID == gamemodeID);
+        return mode != null;
     }
 }

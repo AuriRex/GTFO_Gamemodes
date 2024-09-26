@@ -2,23 +2,22 @@
 using HarmonyLib;
 using static Gamemodes.PatchManager;
 
-namespace Gamemodes.Patches.Required
+namespace Gamemodes.Patches.Required;
+
+[HarmonyWrapSafe]
+[HarmonyPatch(typeof(GameDataInit), nameof(GameDataInit.Initialize))]
+internal class GameDataInit_Initialize_Patch
 {
-    [HarmonyWrapSafe]
-    [HarmonyPatch(typeof(GameDataInit), nameof(GameDataInit.Initialize))]
-    internal class GameDataInit_Initialize_Patch
+    public static readonly string PatchGroup = PatchGroups.REQUIRED;
+
+    private static bool _hasInited = false;
+    public static void Postfix()
     {
-        public static readonly string PatchGroup = PatchGroups.REQUIRED;
+        if (_hasInited)
+            return;
 
-        private static bool _hasInited = false;
-        public static void Postfix()
-        {
-            if (_hasInited)
-                return;
+        _hasInited = true;
 
-            _hasInited = true;
-
-            GameEvents.InvokeOnGameDataInit();
-        }
+        GameEvents.InvokeOnGameDataInit();
     }
 }

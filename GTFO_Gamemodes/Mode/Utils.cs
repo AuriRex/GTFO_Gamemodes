@@ -140,7 +140,7 @@ public static class Utils
         if ((thingsToReveal & MapIconTypes.WeakDoors) != 0)
         {
             var ladders = UnityEngine.Object.FindObjectsOfType<LG_Ladder>().Where(ladder => ladder.m_enemyClimbingOnly == false);
-            
+
             foreach (var ladder in ladders)
             {
                 ladder.GetComponent<LG_LadderMapLookatRevealer>()?.OnCamHoverEnter(null);

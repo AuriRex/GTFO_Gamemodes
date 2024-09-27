@@ -14,4 +14,6 @@ public class ModeSettings
     public bool BlockWorldEvents;
     public bool RevealEntireMap;
     public Utils.MapIconTypes MapIconsToReveal = Utils.MapIconTypes.None;
+    public bool ForceAddArenaDimension;
+    public bool DisableVoiceLines; // TODO
 }

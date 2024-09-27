@@ -16,6 +16,7 @@ public class PatchManager
         public const string DEBUG = "Debug";
         public const string NO_CHECKPOINTS = "NoCheckpoints";
         public const string NO_WORLDEVENTS = "NoWorldEvents";
+        public const string FORCE_ARENA_DIM = "ForceArenaDimension";
     }
 
     private class PatchGroup

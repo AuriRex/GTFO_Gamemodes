@@ -74,6 +74,7 @@ public class HideAndSeekGameManager : MonoBehaviour
     private void UpdateTimer()
     {
         CStyle style = CStyle.Default;
+        bool doBlink = false;
         bool showCountdownTimer = _countdown > 0;
         if (showCountdownTimer)
         {
@@ -89,7 +90,8 @@ public class HideAndSeekGameManager : MonoBehaviour
 
             if (_countdown <= 10 && _countdown > 0)
             {
-                style = CStyle.RedBlink;
+                style = CStyle.Red;
+                doBlink = true;
             }
             else if (_countdown <= 20 && _countdown > 0)
             {
@@ -103,7 +105,8 @@ public class HideAndSeekGameManager : MonoBehaviour
             if (_gameTimer <= 10)
             {
                 _timerText = $"Seekers have been released!";
-                style = CStyle.GreenBlink;
+                style = CStyle.Green;
+                doBlink = true;
             }
             else
             {
@@ -112,7 +115,14 @@ public class HideAndSeekGameManager : MonoBehaviour
                 if (rounded != _gameTimerInt)
                 {
                     _gameTimerInt = rounded;
+
                     _timerText = $"Hiding for: {TimeSpan.FromSeconds(_gameTimerInt).ToString(@"mm\:ss")}";
+
+                    if (_gameTimerInt % 300 <= 5)
+                    {
+                        style = CStyle.Warning;
+                        doBlink = true;
+                    }
                 }
             }
         }
@@ -127,26 +137,26 @@ public class HideAndSeekGameManager : MonoBehaviour
         {
             default:
             case CStyle.Default:
-                SetStyle("CCC", Color.gray);
+                SetStyle("CCC", Color.gray, blinking: doBlink);
+                break;
+            case CStyle.Green:
+                SetStyle("0C0", Color.green, blinking: doBlink);
                 break;
             case CStyle.Warning:
-                SetStyle("FC0", Color.yellow);
+                SetStyle("FC0", Color.yellow, blinking: doBlink);
                 break;
-            case CStyle.GreenBlink:
-                SetStyle("0C0", Color.green, blinking: true);
-                break;
-            case CStyle.RedBlink:
-                SetStyle("F00", Color.red, blinking: true);
+            case CStyle.Red:
+                SetStyle("F00", Color.red, blinking: doBlink);
                 break;
         }
     }
 
     private enum CStyle
     {
-        RedBlink,
-        GreenBlink,
+        Default,
+        Green,
         Warning,
-        Default
+        Red,
     }
 
     private static void SetStyle(string textHex, Color color, bool blinking = false)

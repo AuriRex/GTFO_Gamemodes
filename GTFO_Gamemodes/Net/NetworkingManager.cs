@@ -28,16 +28,14 @@ public partial class NetworkingManager
 
     public static bool InLevel => GameStateManager.CurrentStateName == eGameStateName.InLevel;
 
+    /// <summary>
+    /// PlayerWrapper => Master
+    /// </summary>
+    public static event Action<PlayerWrapper> OnJoinedLobbySyncEvent;
+
     internal static void Init()
     {
         GameEvents.OnGameDataInit += OnGameDataInit;
-        GameEvents.OnFoundMaster += OnFoundMaster;
-        GameEvents.OnJoinedLobby += (_) => SendJoinInfo();
-    }
-
-    private static void OnFoundMaster()
-    {
-        SendJoinInfo();
     }
 
     private static void OnGameDataInit()
@@ -67,6 +65,7 @@ public partial class NetworkingManager
         {
             GetPlayerInfo(newPlayer.Lookup, out var info);
             Plugin.L.LogDebug($"{newPlayer.NickName} has joined!");
+            SendWelcome(newPlayer);
             SendSwitchModeTo(GamemodeManager.CurrentMode.ID, newPlayer);
         }
 

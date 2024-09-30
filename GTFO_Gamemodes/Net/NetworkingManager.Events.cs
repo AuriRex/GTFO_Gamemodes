@@ -21,6 +21,7 @@ public partial class NetworkingManager
         RegisterEvent<pForcedTeleport>(OnForcedTeleportReceived);
         RegisterEvent<pSpectatorSwitch>(OnSpectatorPacketReceived);
         RegisterEvent<pSetTeam>(OnSetTeamReceived);
+        RegisterEvent<pWelcome>(OnWelcomeReceived);
     }
 
     public static void AssignTeam(SNet_Player target, int teamId)
@@ -103,6 +104,23 @@ public partial class NetworkingManager
         PlayerManager.GetLocalPlayerAgent()?.TryWarpTo(dim, pos, lookDir, options);
     }
 
+    internal static void SendWelcome(SNet_Player target)
+    {
+        SendEvent(new pWelcome(), target);
+    }
+
+    private static void OnWelcomeReceived(ulong senderId, pWelcome _)
+    {
+        GetPlayerInfo(senderId, out var info);
+
+        if (!info.IsMaster)
+            return;
+
+        SendJoinInfo();
+
+        OnJoinedLobbySyncEvent?.Invoke(info);
+    }
+
     internal static void SendJoinInfo()
     {
         SendEventAndInvokeLocally(new pJoinInfo
@@ -126,8 +144,6 @@ public partial class NetworkingManager
         GetPlayerInfo(senderId, out var info);
 
         info.LoadedVersion = new PrimitiveVersion(data.Major, data.Minor, data.Patch);
-
-        info.VersionMatches = info.LoadedVersion == Plugin.Version;
 
         if (!info.VersionMatches)
         {

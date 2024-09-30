@@ -108,11 +108,19 @@ public static class Utils
         }
         uiMaterial.SetVector("_Settings", vector);
 
-        GameObject go = CM_PageMap.Current.m_mapMover.transform.GetChild(1)?.gameObject;
-
-        if (go.name.Contains("MapDetailsUI"))
+        var mainMap = CM_PageMap.Current.m_mapDetails.m_UIObject;
+        var trans = CM_PageMap.Current.m_mapMover.transform;
+        for (int i = 0; i < trans.childCount; i++)
         {
-            go.SetActive(false);
+            var child = trans.GetChild(i);
+
+            if (child.name != "MapDetailsUI(Clone)")
+                continue;
+
+            if (child.gameObject == mainMap)
+                continue;
+
+            child.gameObject.SetActive(false);
         }
     }
 

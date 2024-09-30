@@ -1,4 +1,5 @@
-﻿using Player;
+﻿using Il2CppSystem.Reflection;
+using Player;
 using SNetwork;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,6 +14,7 @@ public record class PlayerWrapper
         ID = playerId;
         NetworkingManager.TryGetSender(playerId, out var player);
         NetPlayer = player;
+        IsBot = player?.IsBot ?? false;
     }
 
     public bool ValidPlayer => HasAgent && !IsSpectator;
@@ -33,11 +35,12 @@ public record class PlayerWrapper
 
     public PrimitiveVersion LoadedVersion { get; internal set; } = PrimitiveVersion.None;
 
-    public bool VersionMatches { get; internal set; }
+    public bool VersionMatches => LoadedVersion == Plugin.Version || IsBot;
 
     public HashSet<string> ReportedInstalledGamemodes { get; init; } = new();
 
     public int Team { get; internal set; }
+    public bool IsBot { get; internal set; } = false;
 
     public bool HasModeInstalled(string modeId)
     {

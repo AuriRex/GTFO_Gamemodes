@@ -14,6 +14,7 @@ internal class NoVoiceLines
 {
     public static readonly string PatchGroup = PatchGroups.NO_VOICE;
 
+    // TODO: Run for fall damage etc later once LobbyExpander properly works with player voices >= 4
     public static bool Prefix()
     {
         return false;

@@ -6,7 +6,9 @@ using HarmonyLib;
 using HNS.Components;
 using HNS.Net;
 using Il2CppInterop.Runtime.Injection;
+using System;
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -35,6 +37,8 @@ internal class HideAndSeekMode : GamemodeBase
         RevealEntireMap = true,
         MapIconsToReveal = Utils.EVERYTHING_EXCEPT_LOCKERS,
         ForceAddArenaDimension = true,
+        DisableVoiceLines = true,
+        UseTeamVisibility = true,
     };
 
     private Harmony _harmonyInstance;
@@ -45,6 +49,11 @@ internal class HideAndSeekMode : GamemodeBase
     {
         _harmonyInstance = new Harmony(Plugin.GUID);
         NetSessionManager.Init();
+
+        Gamemodes.Patches.PlayerChatManager_PostMessage_Patch.AddCommand("hnsstart", ((Func<string[], string>)StartHNS).Method);
+        Gamemodes.Patches.PlayerChatManager_PostMessage_Patch.AddCommand("hnsstop", ((Func<string[], string>)StopHNS).Method);
+
+        TeamVisibility.Team((int)GMTeam.Seekers).CanSeeSelf();
 
         _gameManagerGO = new GameObject("HideAndSeek_Manager");
 
@@ -57,6 +66,21 @@ internal class HideAndSeekMode : GamemodeBase
             ClassInjector.RegisterTypeInIl2Cpp<HideAndSeekGameManager>();
 
         GameManager = _gameManagerGO.AddComponent<HideAndSeekGameManager>();
+    }
+
+    public static string StartHNS(string[] args)
+    {
+        var seekers = NetworkingManager.AllValidPlayers.Where(pw => pw.Team == (int)GMTeam.Seekers).Select(pw => pw.ID).ToArray();
+
+        NetSessionManager.SendStartGamePacket(seekers);
+
+        return $"Start Game Packet sent! -> {seekers.Length} Seekers";
+    }
+
+    public static string StopHNS(string[] args)
+    {
+        NetSessionManager.SendStopGamePacket();
+        return "";
     }
 
     public override void Enable()
@@ -79,11 +103,11 @@ internal class HideAndSeekMode : GamemodeBase
 
     private void GameEvents_OnGameStateChanged(eGameStateName state)
     {
-        if (state == eGameStateName.InLevel)
+        /*if (state == eGameStateName.InLevel)
         {
             // TODO: Remove later
             CoroutineManager.StartCoroutine(DoThing().WrapToIl2Cpp());
-        }
+        }*/
     }
 
     private static IEnumerator DoThing()

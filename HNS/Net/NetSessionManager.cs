@@ -16,11 +16,15 @@ internal static class NetSessionManager
     internal static void Init()
     {
         NetworkingManager.RegisterEvent<pHNSGameStart>(OnGameStartReceived);
+        NetworkingManager.RegisterEvent<pHNSGameStop>(OnGameStopReceived);
     }
 
     public static void SendStartGamePacket(params ulong[] seekers)
     {
         if (!SNet.IsMaster)
+            return;
+
+        if (!NetworkingManager.InLevel)
             return;
 
         var seekersA = new ulong[16];
@@ -62,5 +66,33 @@ internal static class NetSessionManager
         // Start local countdown timer
         // blind seekers for timer duration
         // switch timer to countup after setup
+    }
+
+    internal static void SendStopGamePacket()
+    {
+        if (!HasSession)
+            return;
+
+        if (!SNet.IsMaster)
+            return;
+
+        CurrentSession.EndSession();
+
+        var data = new pHNSGameStop
+        {
+            Time = CurrentSession.EndTime.ToUnixTimeSeconds()
+        };
+
+        NetworkingManager.SendEvent(data, invokeLocal: true);
+    }
+
+
+    private static void OnGameStopReceived(ulong sender, pHNSGameStop data)
+    {
+        CurrentSession.EndSession(DateTimeOffset.FromUnixTimeSeconds(data.Time));
+
+        HideAndSeekMode.GameManager.StopGame(CurrentSession);
+
+        Plugin.L.LogDebug($"Session has ended. {CurrentSession.FinalTime}");
     }
 }

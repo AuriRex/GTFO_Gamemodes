@@ -11,6 +11,7 @@ internal class Blinds : IDisposable
     private readonly Vector3 _pos;
     private readonly Vector3 _rot;
     private readonly eDimensionIndex _dim;
+    private bool _isDisposed;
 
     public Blinds(LocalPlayerAgent localPlayer, uint dimensionDataId = 14)
     {
@@ -29,6 +30,9 @@ internal class Blinds : IDisposable
 
     public void Dispose()
     {
+        if (_isDisposed)
+            return;
+
         if (!NetworkingManager.InLevel)
             return;
 
@@ -36,5 +40,6 @@ internal class Blinds : IDisposable
             return;
 
         _localPlayer.TryWarpTo(_dim, _pos, _rot, false);
+        _isDisposed = true;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using BepInEx.Unity.IL2CPP.Utils.Collections;
 using HNS.Core;
 using HNS.Net;
+using Il2CppInterop.Runtime.Attributes;
 using Player;
 using System;
 using System.Collections;
@@ -21,34 +22,66 @@ public class HideAndSeekGameManager : MonoBehaviour
 
     private Blinds _blinds;
 
+    private bool _showFinalTime = false;
+    private string _finalTime = "??:??";
+
     public void StartGame(bool localPlayerIsSeeker, byte blindDuration)
     {
         SetCountdownDuration(blindDuration);
         _gameTimer = 0;
         _gameTimerInt = -1;
+        _showFinalTime = false;
 
         if (localPlayerIsSeeker)
         {
-            BlindPlayer();
-            CoroutineManager.StartCoroutine(UnblindPlayer(blindDuration).WrapToIl2Cpp());
+            var blinds = BlindPlayer();
+            CoroutineManager.StartCoroutine(UnblindPlayer(blindDuration, blinds).WrapToIl2Cpp());
         }
     }
 
-    private void BlindPlayer()
+    [HideFromIl2Cpp]
+    internal void StopGame(Session session)
     {
-        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
-            return;
+        _finalTime = session.FinalTime.ToString(@"mm\:ss");
 
-        _blinds = new(localPlayer.TryCast<LocalPlayerAgent>());
+        CoroutineManager.StartCoroutine(DisplayFinalTime().WrapToIl2Cpp());
+
+        _blinds?.Dispose();
+        _blinds = null;
     }
 
-    private IEnumerator UnblindPlayer(byte blindDuration)
+    [HideFromIl2Cpp]
+    private IEnumerator DisplayFinalTime()
+    {
+        _showFinalTime = true;
+
+        var yielder = new WaitForSeconds(10);
+        yield return yielder;
+
+        _showFinalTime = false;
+        GuiManager.InteractionLayer.MessageVisible = false;
+    }
+
+    [HideFromIl2Cpp]
+    private Blinds BlindPlayer()
+    {
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return null;
+
+        _blinds?.Dispose();
+        _blinds = new(localPlayer.TryCast<LocalPlayerAgent>());
+        return _blinds;
+    }
+
+    [HideFromIl2Cpp]
+    private IEnumerator UnblindPlayer(byte blindDuration, Blinds blinds)
     {
         var yielder = new WaitForSeconds(blindDuration);
         yield return yielder;
 
-        _blinds?.Dispose();
-        _blinds = null;
+        blinds?.Dispose();
+        if (_blinds == blinds)
+            _blinds = null;
     }
 
     public void SetCountdownDuration(byte duration)
@@ -65,6 +98,16 @@ public class HideAndSeekGameManager : MonoBehaviour
 
     public void Update()
     {
+        if (_showFinalTime)
+        {
+            GuiManager.InteractionLayer.SetMessage(_finalTime, ePUIMessageStyle.Message, priority: 10);
+            GuiManager.InteractionLayer.SetTimerAlphaMul(0f);
+            GuiManager.InteractionLayer.MessageTimerVisible = false;
+            GuiManager.InteractionLayer.MessageVisible = true;
+            SetStyle("0C0", Color.green, blinking: true);
+            return;
+        }
+
         if (!NetSessionManager.HasSession)
             return;
 

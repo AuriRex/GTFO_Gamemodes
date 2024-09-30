@@ -1,7 +1,7 @@
 ﻿namespace HNS.Core;
 
-public enum GMTeam
+public enum GMTeam : int
 {
+    Hiders,
     Seekers,
-    Hiders
 }

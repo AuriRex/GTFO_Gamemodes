@@ -129,6 +129,13 @@ public partial class NetworkingManager
         return true;
     }
 
+    internal static PlayerWrapper GetLocalPlayerInfo()
+    {
+        _syncedPlayers.TryGetValue(LocalPlayerId, out var playerInfo);
+
+        return playerInfo;
+    }
+
     public static bool TryGetSender(ulong senderId, out SNet_Player sender)
     {
         return SNet.TryGetPlayer(senderId, out sender);
@@ -205,4 +212,6 @@ public partial class NetworkingManager
 
         return name;
     }
+
+    
 }

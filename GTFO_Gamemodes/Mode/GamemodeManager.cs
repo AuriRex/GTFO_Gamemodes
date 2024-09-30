@@ -133,6 +133,8 @@ public class GamemodeManager
         ApplyPatchGroup(PatchGroups.NO_CHECKPOINTS, settings.OpenAllSecurityDoors || settings.RemoveCheckpoints);
         ApplyPatchGroup(PatchGroups.NO_WORLDEVENTS, settings.BlockWorldEvents);
         ApplyPatchGroup(PatchGroups.FORCE_ARENA_DIM, settings.ForceAddArenaDimension);
+        ApplyPatchGroup(PatchGroups.NO_VOICE, settings.DisableVoiceLines);
+        ApplyPatchGroup(PatchGroups.USE_TEAM_VISIBILITY, settings.UseTeamVisibility);
     }
 
     private static void HandleSpecialRequirementsOnInLevel()

@@ -2,8 +2,11 @@
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using CellMenu;
+using Gamemodes.Components;
 using Gamemodes.Mode;
 using Gamemodes.Net;
+using Gamemodes.Patches;
+using Il2CppInterop.Runtime.Injection;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -31,6 +34,8 @@ public class Plugin : BasePlugin
         L = Log;
 
         Version = new PrimitiveVersion(VERSION);
+
+        ClassInjector.RegisterTypeInIl2Cpp<PlayerToken>();
 
         PatchManager.Init();
         NetworkingManager.Init();

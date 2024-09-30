@@ -16,16 +16,21 @@ public static class PlayerChatManager_PostMessage_Patch
 {
     public static readonly string PatchGroup = PatchGroups.DEBUG;
 
-    private static Dictionary<string, MethodInfo> _commands = null;
+    private static Dictionary<string, MethodInfo> _commands = new();
+
+    public static void AddCommand(string command, MethodInfo methodInfo)
+    {
+        if (_commands.ContainsKey(command))
+        {
+            throw new ArgumentException($"Command \"{command}\" already registered!", nameof(command));
+        }
+
+        _commands.Add(command, methodInfo);
+    }
 
     private static void SetupCommands()
     {
-        if (_commands != null)
-            return;
-
-        _commands = new();
-
-        var methods = typeof(PlayerChatManager_PostMessage_Patch).GetMethods().Where(mi => mi.Name != nameof(Prefix));
+        var methods = typeof(PlayerChatManager_PostMessage_Patch).GetMethods().Where(mi => mi.Name != nameof(Prefix) && mi.Name != nameof(AddCommand));
 
         foreach (var mi in methods)
         {
@@ -46,13 +51,19 @@ public static class PlayerChatManager_PostMessage_Patch
         return false;
     }
 
+    private static bool _once = true;
+
     public static bool Prefix(PlayerChatManager __instance)
     {
         var message = __instance.m_currentValue;
 
         if (message.Length > 2 && message.StartsWith("/"))
         {
-            SetupCommands();
+            if(_once)
+            {
+                SetupCommands();
+                _once = false;
+            }
 
             message = message.Substring(1);
 
@@ -139,6 +150,20 @@ public static class PlayerChatManager_PostMessage_Patch
         NetworkingManager.SendSwitchModeAll(mode);
 
         return $"Trying to switch mode from [{previousMode}] to [{mode}].";
+    }
+
+    public static string SetTeam(string[] args)
+    {
+        var team = args[0];
+
+        if (int.TryParse(team, out var teamInt))
+        {
+            NetworkingManager.AssignTeam(SNetwork.SNet.LocalPlayer, teamInt);
+
+            return $"Assigned to team {teamInt}";
+        }
+
+        return "Oh no, it borky (couldn't parse int) :c";
     }
 
     public static string TP(string[] args)

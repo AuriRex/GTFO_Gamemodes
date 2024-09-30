@@ -11,6 +11,8 @@ public abstract class GamemodeBase
 
     public abstract ModeSettings Settings { get; }
 
+    public TeamVisibility TeamVisibility { get; protected set; } = new();
+
     public IEnumerable<PlayerWrapper> ValidPlayers => NetworkingManager.AllValidPlayers;
     public IEnumerable<PlayerWrapper> Spectators => NetworkingManager.Spectators;
 

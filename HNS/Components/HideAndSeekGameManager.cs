@@ -22,15 +22,18 @@ public class HideAndSeekGameManager : MonoBehaviour
 
     private Blinds _blinds;
 
-    private bool _showFinalTime = false;
-    private string _finalTime = "??:??";
+    public TimeSpan TimeSpentHiding;
+
+    private bool _hasImportantMessage = false;
+    private string _importantMessage = "??:??";
+    private Coroutine _importantMessageDisplayCoroutine;
 
     public void StartGame(bool localPlayerIsSeeker, byte blindDuration)
     {
         SetCountdownDuration(blindDuration);
         _gameTimer = 0;
         _gameTimerInt = -1;
-        _showFinalTime = false;
+        _hasImportantMessage = false;
 
         if (localPlayerIsSeeker)
         {
@@ -39,26 +42,50 @@ public class HideAndSeekGameManager : MonoBehaviour
         }
     }
 
+    public void OnLocalPlayerCaught()
+    {
+        // TODO
+    }
+
     [HideFromIl2Cpp]
     internal void StopGame(Session session)
     {
-        _finalTime = session.FinalTime.ToString(@"mm\:ss");
+        _importantMessage = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
 
-        CoroutineManager.StartCoroutine(DisplayFinalTime().WrapToIl2Cpp());
+        StartNewImportantMessageCoroutine();
 
         _blinds?.Dispose();
         _blinds = null;
     }
 
     [HideFromIl2Cpp]
-    private IEnumerator DisplayFinalTime()
+    internal void SetFinalTimeAsHider(TimeSpan time)
     {
-        _showFinalTime = true;
+        TimeSpentHiding = time;
+        _importantMessage = $"Time spent hiding: {time.ToString(@"mm\:ss")}";
 
-        var yielder = new WaitForSeconds(10);
+        StartNewImportantMessageCoroutine();
+    }
+
+    private void StartNewImportantMessageCoroutine()
+    {
+        if (_importantMessageDisplayCoroutine != null)
+        {
+            CoroutineManager.StopCoroutine(_importantMessageDisplayCoroutine);
+        }
+
+        _importantMessageDisplayCoroutine = CoroutineManager.StartCoroutine(ImportantMessageCoroutine().WrapToIl2Cpp());
+    }
+
+    [HideFromIl2Cpp]
+    private IEnumerator ImportantMessageCoroutine(int displayTime = 10)
+    {
+        _hasImportantMessage = true;
+
+        var yielder = new WaitForSeconds(displayTime);
         yield return yielder;
 
-        _showFinalTime = false;
+        _hasImportantMessage = false;
         GuiManager.InteractionLayer.MessageVisible = false;
     }
 
@@ -98,9 +125,9 @@ public class HideAndSeekGameManager : MonoBehaviour
 
     public void Update()
     {
-        if (_showFinalTime)
+        if (_hasImportantMessage)
         {
-            GuiManager.InteractionLayer.SetMessage(_finalTime, ePUIMessageStyle.Message, priority: 10);
+            GuiManager.InteractionLayer.SetMessage(_importantMessage, ePUIMessageStyle.Message, priority: 10);
             GuiManager.InteractionLayer.SetTimerAlphaMul(0f);
             GuiManager.InteractionLayer.MessageTimerVisible = false;
             GuiManager.InteractionLayer.MessageVisible = true;

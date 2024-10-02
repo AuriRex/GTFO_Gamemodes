@@ -5,6 +5,7 @@ using Player;
 using SNetwork;
 using System;
 using System.Linq;
+using UnityEngine;
 
 namespace HNS.Net;
 
@@ -61,6 +62,19 @@ internal static class NetSessionManager
         var isLocalPlayerSeeker = data.Seekers.Contains(NetworkingManager.LocalPlayerId);
 
         HideAndSeekMode.GameManager.StartGame(isLocalPlayerSeeker, data.SetupTimeSeconds);
+
+        Gamemodes.Plugin.PostLocalMessage("<#0C0>Hide and Seek round has started!");
+        Gamemodes.Plugin.PostLocalMessage($"<#CCC>{data.SeekerCount} Seekers:");
+
+        foreach(var id in data.Seekers)
+        {
+            if (id == 0)
+                continue;
+
+            NetworkingManager.GetPlayerInfo(id, out var info);
+
+            Gamemodes.Plugin.PostLocalMessage($" - <#{ColorUtility.ToHtmlStringRGB(info.NetPlayer.PlayerColor)}>{info.NickName}");
+        }
 
         //PlayerManager.GetLocalPlayerAgent()
         // Start local countdown timer

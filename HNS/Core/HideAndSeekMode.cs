@@ -1,13 +1,12 @@
-﻿using BepInEx.Unity.IL2CPP.Utils.Collections;
-using Gamemodes;
+﻿using Gamemodes;
+using Gamemodes.Extensions;
 using Gamemodes.Mode;
 using Gamemodes.Net;
+using Gamemodes.Patches.Required;
 using HarmonyLib;
 using HNS.Components;
 using HNS.Net;
 using Il2CppInterop.Runtime.Injection;
-using System;
-using System.Collections;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -39,6 +38,8 @@ internal class HideAndSeekMode : GamemodeBase
         ForceAddArenaDimension = true,
         DisableVoiceLines = true,
         UseTeamVisibility = true,
+        RemoveBloodDoors = true,
+        RemoveTerminalCommands = true,
     };
 
     private Harmony _harmonyInstance;
@@ -50,10 +51,17 @@ internal class HideAndSeekMode : GamemodeBase
         _harmonyInstance = new Harmony(Plugin.GUID);
         NetSessionManager.Init();
 
-        Gamemodes.Patches.PlayerChatManager_PostMessage_Patch.AddCommand("hnsstart", ((Func<string[], string>)StartHNS).Method);
-        Gamemodes.Patches.PlayerChatManager_PostMessage_Patch.AddCommand("hnsstop", ((Func<string[], string>)StopHNS).Method);
+        ChatCommandsHandler.AddCommand("hnsstart", StartHNS);
+        ChatCommandsHandler.AddCommand("hnsstop", StopHNS);
+        /*        ChatCommandsHandler.AddCommand("hnsstart", ((Func<string[], string>)StartHNS).Method);
+                ChatCommandsHandler.AddCommand("hnsstop", ((Func<string[], string>)StopHNS).Method);*/
+
+        CreateSeekerPalette();
 
         TeamVisibility.Team((int)GMTeam.Seekers).CanSeeSelf();
+
+#warning TODO: Remove this here later!
+        TeamVisibility.Team((int)GMTeam.Hiders).CanSeeSelf();
 
         _gameManagerGO = new GameObject("HideAndSeek_Manager");
 
@@ -63,9 +71,38 @@ internal class HideAndSeekMode : GamemodeBase
         _gameManagerGO.SetActive(false);
 
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<HideAndSeekGameManager>())
+        {
             ClassInjector.RegisterTypeInIl2Cpp<HideAndSeekGameManager>();
+            ClassInjector.RegisterTypeInIl2Cpp<PaletteStorage>();
+        }
 
         GameManager = _gameManagerGO.AddComponent<HideAndSeekGameManager>();
+    }
+
+    private static ClothesPalette seekerPalette;
+
+    private void CreateSeekerPalette()
+    {
+        var go = new GameObject("SeekerPalette");
+
+        go.hideFlags = HideFlags.HideAndDontSave | HideFlags.DontUnloadUnusedAsset;
+        GameObject.DontDestroyOnLoad(go);
+
+        seekerPalette = go.AddComponent<ClothesPalette>();
+
+        var tone = new ClothesPalette.Tone()
+        {
+            m_color = Color.red,
+            m_materialOverride = 6,
+            m_texture = Texture2D.whiteTexture,
+        };
+
+        seekerPalette.m_textureTiling = 1;
+        seekerPalette.m_primaryTone = tone;
+        seekerPalette.m_secondaryTone = tone;
+        seekerPalette.m_tertiaryTone = tone;
+        seekerPalette.m_quaternaryTone = tone;
+        seekerPalette.m_quinaryTone = tone;
     }
 
     public static string StartHNS(string[] args)
@@ -83,6 +120,9 @@ internal class HideAndSeekMode : GamemodeBase
         return "";
     }
 
+    private static int PREV_MASK_MELEE_ATTACK_TARGETS;
+    private static int PREV_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
     public override void Enable()
     {
         _harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
@@ -90,7 +130,30 @@ internal class HideAndSeekMode : GamemodeBase
 
         GameEvents.OnGameSessionStart += GameEvents_OnGameSessionStart;
         GameEvents.OnGameStateChanged += GameEvents_OnGameStateChanged;
+        NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
+
+        PREV_MASK_MELEE_ATTACK_TARGETS = LayerManager.MASK_MELEE_ATTACK_TARGETS;
+        LayerManager.MASK_MELEE_ATTACK_TARGETS = LayerManager.Current.GetMask(new string[]
+        {
+            "EnemyDamagable",
+            "Dynamic",
+            "PlayerSynced" // <-- Added
+        });
+
+        PREV_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+        LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = LayerManager.Current.GetMask(new string[]
+        {
+            "EnemyDamagable",
+            "Dynamic",
+            "Default",
+            "Default_NoGraph",
+            "Default_BlockGraph",
+            "EnemyDead",
+            "PlayerSynced" // <-- Added
+        });
     }
+
+    
 
     public override void Disable()
     {
@@ -99,23 +162,60 @@ internal class HideAndSeekMode : GamemodeBase
 
         GameEvents.OnGameSessionStart -= GameEvents_OnGameSessionStart;
         GameEvents.OnGameStateChanged -= GameEvents_OnGameStateChanged;
+        NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
+
+        LayerManager.MASK_MELEE_ATTACK_TARGETS = PREV_MASK_MELEE_ATTACK_TARGETS;
+        LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = PREV_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
     }
 
     private void GameEvents_OnGameStateChanged(eGameStateName state)
     {
-        /*if (state == eGameStateName.InLevel)
+        if (state == eGameStateName.InLevel)
         {
-            // TODO: Remove later
-            CoroutineManager.StartCoroutine(DoThing().WrapToIl2Cpp());
-        }*/
+            
+        }
     }
 
-    private static IEnumerator DoThing()
+    private void OnPlayerChangedTeams(PlayerWrapper info, int teamInt)
     {
-        Plugin.L.LogWarning($"Starting game test thingie in 5 seconds!");
-        yield return new WaitForSeconds(5);
-        Plugin.L.LogWarning($"Starting game test thingie :3c");
-        NetSessionManager.SendStartGamePacket(NetworkingManager.LocalPlayerId);
+        GMTeam team = (GMTeam)teamInt;
+
+        if (!NetworkingManager.InLevel)
+            return;
+
+        if (!info.HasAgent)
+            return;
+
+        var storage = info.PlayerAgent.gameObject.GetOrAddComponent<PaletteStorage>();
+
+        switch (team)
+        {
+            case GMTeam.Seekers:
+                if (storage.hiderPalette == null)
+                {
+                    storage.hiderPalette = info.PlayerAgent.RigSwitch.m_currentPalette;
+                }
+
+                info.PlayerAgent.RigSwitch.ApplyPalette(seekerPalette);
+                break;
+            case GMTeam.Hiders:
+                if (storage.hiderPalette != null)
+                {
+                    info.PlayerAgent.RigSwitch.ApplyPalette(storage.hiderPalette);
+                    storage.hiderPalette = null;
+                }
+                break;
+        }
+
+        if (info.IsLocal)
+        {
+
+        }
+
+        // Set Seekers Palette / Helmet light lol
+        // Range: 0.2
+        // Intensity: 5
+        // Red flashlight in third person? hmmm
     }
 
     private void GameEvents_OnGameSessionStart()

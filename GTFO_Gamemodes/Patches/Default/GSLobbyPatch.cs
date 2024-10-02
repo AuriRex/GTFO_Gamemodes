@@ -13,7 +13,7 @@ internal class GSLobbyPatch
 
         foreach (var player in SNet.LobbyPlayers)
         {
-            NetworkingManager.GetPlayerInfo(player.Lookup, out _);
+            NetworkingManager.GetPlayerInfo(player, out _);
         }
 
         if (!NetworkingManager.AllPlayersVersionMatches)

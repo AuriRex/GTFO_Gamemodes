@@ -1,6 +1,7 @@
 ﻿using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Mode.Tests;
 using Gamemodes.Net;
+using Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,12 +35,18 @@ public class GamemodeManager
         NetworkingManager.DoSwitchModeReceived += OnSwitchModeReceived;
         GameEvents.OnGameDataInit += OnGameDataInit;
         GameEvents.OnGameStateChanged += OnGameStateChanged;
+        NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
 
         _modeGTFO = RegisterMode<ModeGTFO>();
 #if DEBUG
         RegisterMode<ModeTesting>();
         RegisterMode<ModeNoSleepers>();
 #endif
+    }
+
+    private static void OnPlayerChangedTeams(PlayerWrapper info, int team)
+    {
+        PlayerManager.GetLocalPlayerAgent()?.TryCast<LocalPlayerAgent>()?.SetTeammateInfoVisible(true);
     }
 
     private static void OnGameStateChanged(eGameStateName state)
@@ -135,6 +142,8 @@ public class GamemodeManager
         ApplyPatchGroup(PatchGroups.FORCE_ARENA_DIM, settings.ForceAddArenaDimension);
         ApplyPatchGroup(PatchGroups.NO_VOICE, settings.DisableVoiceLines);
         ApplyPatchGroup(PatchGroups.USE_TEAM_VISIBILITY, settings.UseTeamVisibility);
+        ApplyPatchGroup(PatchGroups.NO_TERMINAL_COMMANDS, settings.RemoveTerminalCommands);
+        ApplyPatchGroup(PatchGroups.NO_BLOOD_DOORS, settings.RemoveBloodDoors);
     }
 
     private static void HandleSpecialRequirementsOnInLevel()

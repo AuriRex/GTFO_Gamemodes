@@ -19,6 +19,8 @@ public class PatchManager
         public const string FORCE_ARENA_DIM = "ForceArenaDimension";
         public const string NO_VOICE = "NoVoice";
         public const string USE_TEAM_VISIBILITY = "UseTeamVis";
+        public const string NO_TERMINAL_COMMANDS = "NoTerminalCommands";
+        public const string NO_BLOOD_DOORS = "NoBloodDoors";
     }
 
     private class PatchGroup

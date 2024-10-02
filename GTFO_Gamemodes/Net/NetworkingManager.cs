@@ -128,6 +128,11 @@ public partial class NetworkingManager
         return true;
     }
 
+    public static bool GetPlayerInfo(SNet_Player player, out PlayerWrapper playerInfo, bool forceReset = false)
+    {
+        return GetPlayerInfo(player.Lookup, out playerInfo, forceReset);
+    }
+
     internal static PlayerWrapper GetLocalPlayerInfo()
     {
         _syncedPlayers.TryGetValue(LocalPlayerId, out var playerInfo);

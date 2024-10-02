@@ -17,4 +17,11 @@ public class ModeSettings
     public bool ForceAddArenaDimension;
     public bool DisableVoiceLines;
     public bool UseTeamVisibility;
+    public bool RemoveTerminalCommands;
+    public bool RemoveBloodDoors;
+
+    /*
+        Events on drop in
+        wardenmessage on drop 
+     */
 }

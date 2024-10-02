@@ -10,6 +10,7 @@ namespace Gamemodes.Net;
 
 public partial class NetworkingManager
 {
+    public static event Action<PlayerWrapper, int> OnPlayerChangedTeams;
     public static event Action<string> DoSwitchModeReceived;
     public static event Action<string> OnRemoteModeInstalledReported;
 
@@ -22,6 +23,28 @@ public partial class NetworkingManager
         RegisterEvent<pSpectatorSwitch>(OnSpectatorPacketReceived);
         RegisterEvent<pSetTeam>(OnSetTeamReceived);
         RegisterEvent<pWelcome>(OnWelcomeReceived);
+        RegisterEvent<pChatLogMessage>(OnChatLogReceived);
+    }
+
+    public static void PostChatLog(string message)
+    {
+        if (message.Length > pChatLogMessage.MAX_LENGTH)
+        {
+            message = message.Substring(0, pChatLogMessage.MAX_LENGTH);
+            Plugin.L.LogDebug($"{nameof(PostChatLog)} message longer than {pChatLogMessage.MAX_LENGTH} characters, truncating!");
+        }
+
+        var data = new pChatLogMessage()
+        {
+            Content = message,
+        };
+
+        SendEvent(data, invokeLocal: true);
+    }
+
+    private static void OnChatLogReceived(ulong senderId, pChatLogMessage data)
+    {
+        Plugin.PostLocalMessage(data.Content);
     }
 
     public static void AssignTeam(SNet_Player target, int teamId)
@@ -40,6 +63,10 @@ public partial class NetworkingManager
         GetPlayerInfo(data.PlayerID, out var target);
 
         target.Team = data.Team;
+
+        Plugin.L.LogDebug($"Player {target.NickName} ({target.ID}) switched teams to {data.Team}.");
+
+        OnPlayerChangedTeams?.Invoke(target, data.Team);
     }
 
     private static void OnSpectatorPacketReceived(ulong senderId, pSpectatorSwitch data)

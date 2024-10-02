@@ -41,6 +41,7 @@ public record class PlayerWrapper
 
     public int Team { get; internal set; }
     public bool IsBot { get; internal set; } = false;
+    public bool IsLocal => NetPlayer.IsLocal;
 
     public bool HasModeInstalled(string modeId)
     {

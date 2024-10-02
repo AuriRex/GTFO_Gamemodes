@@ -1,10 +1,36 @@
 ﻿using Gamemodes.Net;
+using SNetwork;
 using System.Collections.Generic;
 
 namespace Gamemodes.Mode;
 
 public class TeamVisibility
 {
+    public static bool LocalPlayerCanSee(SNet_Player player)
+    {
+        NetworkingManager.GetPlayerInfo(player, out var other);
+
+        return LocalPlayerCanSeeTeam(other.Team);
+    }
+
+    public static bool LocalPlayerCanSeeTeam(int team)
+    {
+        return GamemodeManager.CurrentMode.TeamVisibility.LocalPlayerCanSee(team);
+    }
+
+    public static bool PlayerCanSee(SNet_Player player, SNet_Player other)
+    {
+        NetworkingManager.GetPlayerInfo(player, out var playerInfo);
+        NetworkingManager.GetPlayerInfo(other, out var otherInfo);
+
+        return PlayerCanSee(playerInfo.Team, otherInfo.Team);
+    }
+
+    public static bool PlayerCanSee(int team, int teamOther)
+    {
+        return GamemodeManager.CurrentMode.TeamVisibility.CanSee(team, teamOther);
+    }
+
     public Dictionary<int, HashSet<int>> _visibility = new();
 
     internal void Reset()

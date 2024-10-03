@@ -57,7 +57,7 @@ internal static class NetSessionManager
             CurrentSession.EndSession();
         }
 
-        CurrentSession = new();
+        CurrentSession = new(data.SetupTimeSeconds);
 
         var isLocalPlayerSeeker = data.Seekers.Contains(NetworkingManager.LocalPlayerId);
 
@@ -73,7 +73,7 @@ internal static class NetSessionManager
 
             NetworkingManager.GetPlayerInfo(id, out var info);
 
-            Gamemodes.Plugin.PostLocalMessage($" - <#{ColorUtility.ToHtmlStringRGB(info.NetPlayer.PlayerColor)}>{info.NickName}");
+            Gamemodes.Plugin.PostLocalMessage($" - {info.PlayerColorTag}{info.NickName}");
         }
 
         //PlayerManager.GetLocalPlayerAgent()

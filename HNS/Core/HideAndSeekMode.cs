@@ -7,6 +7,7 @@ using HarmonyLib;
 using HNS.Components;
 using HNS.Net;
 using Il2CppInterop.Runtime.Injection;
+using SNetwork;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -53,8 +54,6 @@ internal class HideAndSeekMode : GamemodeBase
 
         ChatCommandsHandler.AddCommand("hnsstart", StartHNS);
         ChatCommandsHandler.AddCommand("hnsstop", StopHNS);
-        /*        ChatCommandsHandler.AddCommand("hnsstart", ((Func<string[], string>)StartHNS).Method);
-                ChatCommandsHandler.AddCommand("hnsstop", ((Func<string[], string>)StopHNS).Method);*/
 
         CreateSeekerPalette();
 
@@ -74,14 +73,35 @@ internal class HideAndSeekMode : GamemodeBase
         {
             ClassInjector.RegisterTypeInIl2Cpp<HideAndSeekGameManager>();
             ClassInjector.RegisterTypeInIl2Cpp<PaletteStorage>();
+            ClassInjector.RegisterTypeInIl2Cpp<PUI_TeamDisplay>();
         }
+
+        DEFAULT_MASK_MELEE_ATTACK_TARGETS = LayerManager.MASK_MELEE_ATTACK_TARGETS;
+        MODIFIED_MASK_MELEE_ATTACK_TARGETS = LayerManager.Current.GetMask(new string[]
+        {
+            "EnemyDamagable",
+            "Dynamic",
+            "PlayerSynced" // <-- Added
+        });
+
+        DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+        MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = LayerManager.Current.GetMask(new string[]
+        {
+            "EnemyDamagable",
+            "Dynamic",
+            "Default",
+            "Default_NoGraph",
+            "Default_BlockGraph",
+            "EnemyDead",
+            "PlayerSynced" // <-- Added
+        });
 
         GameManager = _gameManagerGO.AddComponent<HideAndSeekGameManager>();
     }
 
     private static ClothesPalette seekerPalette;
 
-    private void CreateSeekerPalette()
+    private static void CreateSeekerPalette()
     {
         var go = new GameObject("SeekerPalette");
 
@@ -120,8 +140,11 @@ internal class HideAndSeekMode : GamemodeBase
         return "";
     }
 
-    private static int PREV_MASK_MELEE_ATTACK_TARGETS;
-    private static int PREV_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+    private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS;
+    private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+    private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS;
+    private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
 
     public override void Enable()
     {
@@ -131,26 +154,6 @@ internal class HideAndSeekMode : GamemodeBase
         GameEvents.OnGameSessionStart += GameEvents_OnGameSessionStart;
         GameEvents.OnGameStateChanged += GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
-
-        PREV_MASK_MELEE_ATTACK_TARGETS = LayerManager.MASK_MELEE_ATTACK_TARGETS;
-        LayerManager.MASK_MELEE_ATTACK_TARGETS = LayerManager.Current.GetMask(new string[]
-        {
-            "EnemyDamagable",
-            "Dynamic",
-            "PlayerSynced" // <-- Added
-        });
-
-        PREV_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
-        LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = LayerManager.Current.GetMask(new string[]
-        {
-            "EnemyDamagable",
-            "Dynamic",
-            "Default",
-            "Default_NoGraph",
-            "Default_BlockGraph",
-            "EnemyDead",
-            "PlayerSynced" // <-- Added
-        });
     }
 
     
@@ -164,8 +167,8 @@ internal class HideAndSeekMode : GamemodeBase
         GameEvents.OnGameStateChanged -= GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
 
-        LayerManager.MASK_MELEE_ATTACK_TARGETS = PREV_MASK_MELEE_ATTACK_TARGETS;
-        LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = PREV_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+        LayerManager.MASK_MELEE_ATTACK_TARGETS = DEFAULT_MASK_MELEE_ATTACK_TARGETS;
+        LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
     }
 
     private void GameEvents_OnGameStateChanged(eGameStateName state)
@@ -197,6 +200,20 @@ internal class HideAndSeekMode : GamemodeBase
                 }
 
                 info.PlayerAgent.RigSwitch.ApplyPalette(seekerPalette);
+
+                if (info.IsLocal)
+                {
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS = MODIFIED_MASK_MELEE_ATTACK_TARGETS;
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+                    GameManager.OnLocalPlayerCaught();
+                }
+
+                if (SNet.IsMaster && NetSessionManager.HasSession && NetSessionManager.CurrentSession.SetupTimeFinished)
+                {
+                    NetworkingManager.PostChatLog($"{info.PlayerColorTag}{info.NickName} <#F00>has been caught!</color>");
+                }
+
                 break;
             case GMTeam.Hiders:
                 if (storage.hiderPalette != null)
@@ -204,18 +221,35 @@ internal class HideAndSeekMode : GamemodeBase
                     info.PlayerAgent.RigSwitch.ApplyPalette(storage.hiderPalette);
                     storage.hiderPalette = null;
                 }
+
+                if (info.IsLocal)
+                {
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS = DEFAULT_MASK_MELEE_ATTACK_TARGETS;
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+                }
                 break;
         }
 
-        if (info.IsLocal)
-        {
-
-        }
+        EndGameCheck();
 
         // Set Seekers Palette / Helmet light lol
         // Range: 0.2
         // Intensity: 5
         // Red flashlight in third person? hmmm
+    }
+
+    private void EndGameCheck()
+    {
+        if (!SNet.IsMaster)
+            return;
+
+        if (!NetSessionManager.HasSession)
+            return;
+
+        if (!NetworkingManager.AllValidPlayers.All(pl => pl.Team == (int)GMTeam.Seekers))
+            return;
+
+        NetSessionManager.SendStopGamePacket();
     }
 
     private void GameEvents_OnGameSessionStart()

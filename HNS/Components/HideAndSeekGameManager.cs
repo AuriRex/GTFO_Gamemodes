@@ -1,10 +1,13 @@
 ﻿using BepInEx.Unity.IL2CPP.Utils.Collections;
+using Gamemodes.Net;
 using HNS.Core;
 using HNS.Net;
 using Il2CppInterop.Runtime.Attributes;
 using Player;
+using SNetwork;
 using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 
 namespace HNS.Components;
@@ -28,12 +31,17 @@ public class HideAndSeekGameManager : MonoBehaviour
     private string _importantMessage = "??:??";
     private Coroutine _importantMessageDisplayCoroutine;
 
+    private bool _localPlayerIsSeeker;
+    private bool _startedAsSeeker;
+
     public void StartGame(bool localPlayerIsSeeker, byte blindDuration)
     {
         SetCountdownDuration(blindDuration);
         _gameTimer = 0;
         _gameTimerInt = -1;
         _hasImportantMessage = false;
+        _localPlayerIsSeeker = localPlayerIsSeeker;
+        _startedAsSeeker = localPlayerIsSeeker;
 
         if (localPlayerIsSeeker)
         {
@@ -44,13 +52,26 @@ public class HideAndSeekGameManager : MonoBehaviour
 
     public void OnLocalPlayerCaught()
     {
-        // TODO
+        if (!NetSessionManager.HasSession)
+            return;
+
+        if (_localPlayerIsSeeker)
+            return;
+
+        _localPlayerIsSeeker = true;
+        NetSessionManager.CurrentSession.LocalPlayerCaught();
+        SetFinalTimeAsHider(NetSessionManager.CurrentSession.HidingTime);
     }
 
     [HideFromIl2Cpp]
     internal void StopGame(Session session)
     {
         _importantMessage = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
+
+        if (!_startedAsSeeker)
+        {
+            _importantMessage = $"{_importantMessage}\n<color=orange>You hid for: {session.HidingTime.ToString(@"mm\:ss")}</color>";
+        }
 
         StartNewImportantMessageCoroutine();
 
@@ -186,7 +207,14 @@ public class HideAndSeekGameManager : MonoBehaviour
                 {
                     _gameTimerInt = rounded;
 
-                    _timerText = $"Hiding for: {TimeSpan.FromSeconds(_gameTimerInt).ToString(@"mm\:ss")}";
+                    _timerText = "Hiding for: ";
+
+                    if (_localPlayerIsSeeker)
+                    {
+                        _timerText = "Seeking for: ";
+                    }
+
+                    _timerText = $"{_timerText}{TimeSpan.FromSeconds(_gameTimerInt).ToString(@"mm\:ss")}";
 
                     if (_gameTimerInt % 300 <= 5)
                     {

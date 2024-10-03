@@ -42,6 +42,7 @@ public record class PlayerWrapper
     public int Team { get; internal set; }
     public bool IsBot { get; internal set; } = false;
     public bool IsLocal => NetPlayer.IsLocal;
+    public string PlayerColorTag => $"<#{ColorUtility.ToHtmlStringRGB(NetPlayer.PlayerColor)}>";
 
     public bool HasModeInstalled(string modeId)
     {

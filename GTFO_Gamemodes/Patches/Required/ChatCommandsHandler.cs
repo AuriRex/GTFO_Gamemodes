@@ -2,6 +2,7 @@
 using Gamemodes.Net;
 using HarmonyLib;
 using Player;
+using SNetwork;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -172,9 +173,16 @@ public static class ChatCommandsHandler
 
         if (int.TryParse(team, out var teamInt))
         {
-            NetworkingManager.AssignTeam(SNetwork.SNet.LocalPlayer, teamInt);
+            SNet_Player player = SNet.LocalPlayer;
 
-            return $"Assigned to team {teamInt}";
+            if (args.Length > 1 && int.TryParse(args[1], out var playerIndex) && PlayerManager.TryGetPlayerAgent(ref playerIndex, out var playerAgent))
+            {
+                player = playerAgent.Owner;
+            }
+
+            NetworkingManager.AssignTeam(player, teamInt);
+
+            return $"Assigned \"{player.NickName}\" to team {teamInt}";
         }
 
         return "Oh no, it borky (couldn't parse int) :c";

@@ -1,8 +1,11 @@
-﻿using Gamemodes.Mode;
+﻿using BepInEx.Unity.IL2CPP.Utils;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
+using Gamemodes.Mode;
 using Gamemodes.Net.Packets;
 using Player;
 using SNetwork;
 using System;
+using System.Collections;
 using UnityEngine;
 using static Player.PlayerAgent;
 
@@ -66,7 +69,32 @@ public partial class NetworkingManager
 
         Plugin.L.LogDebug($"Player {target.NickName} ({target.ID}) switched teams to {data.Team}.");
 
+        if (InLevel && GamemodeManager.CurrentSettings.UseTeamVisibility)
+        {
+            RefreshPlayerGhostsAndMarkers();
+        }
+
         OnPlayerChangedTeams?.Invoke(target, data.Team);
+    }
+
+    private static void RefreshPlayerGhostsAndMarkers()
+    {
+        foreach(var playerInfo in AllValidPlayers)
+        {
+            SetPlayerGhostAndMarker(playerInfo);
+        }
+    }
+
+    private static void SetPlayerGhostAndMarker(PlayerWrapper target)
+    {
+        if (!target.HasAgent || target.IsLocal)
+            return;
+
+        // Refreshes ghost team visibility
+        target.PlayerAgent.PlayerSyncModel.GhostEnabled = true;
+
+        if (target.PlayerAgent.NavMarker != null)
+            target.PlayerAgent.NavMarker.SetMarkerVisible(TeamVisibility.LocalPlayerCanSeeTeam(target.Team));
     }
 
     private static void OnSpectatorPacketReceived(ulong senderId, pSpectatorSwitch data)

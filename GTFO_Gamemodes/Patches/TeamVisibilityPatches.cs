@@ -9,14 +9,19 @@ using static Gamemodes.PatchManager;
 
 namespace Gamemodes.Patches;
 
-// teaminfo marker:
-// LocalPlayerAgent
-// private void SetTeammateInfoVisible(bool value)
+[HarmonyPatch(typeof(PlayerSyncModelData), nameof(PlayerSyncModelData.RefreshGhostRenderersVisibility))]
+internal static class PlayerSyncModelData_RefreshGhostRenderersVisibility_Patch
+{
+    public static readonly string PatchGroup = PatchGroups.USE_TEAM_VISIBILITY;
 
-// PlayerAgent
-// public virtual void Setup(int characterID)
+    public static void Prefix(PlayerSyncModelData __instance)
+    {
+        var visible = TeamVisibility.LocalPlayerCanSee(__instance.Owner.Owner);
 
-//AfterCameraUpdate()
+        __instance.m_ghostEnabled = visible && __instance.m_ghostEnabled;
+    }
+}
+
 [HarmonyPatch(typeof(PUI_Compass), nameof(PUI_Compass.AfterCameraUpdate))]
 internal static class PUI_Compass_AfterCameraUpdate_Patch
 {
@@ -53,23 +58,17 @@ internal static class LocalPlayerAgent_SetTeammateInfoVisible_Patch
 
     public static bool Prefix(LocalPlayerAgent __instance, bool value)
     {
-        foreach(var player in SNet.Slots.SlottedPlayers)
+        foreach(var playerAgent in PlayerManager.PlayerAgentsInLevel)
         {
-            if (player == null || !player.HasPlayerAgent || player.IsLocal)
-            {
-                continue;
-            }
-
-            PlayerAgent playerAgent = player.PlayerAgent.Cast<PlayerAgent>();
-            
             if (playerAgent == null)
-            {
                 continue;
-            }
 
-            var visible = TeamVisibility.LocalPlayerCanSee(player);
+            if (playerAgent.IsLocallyOwned)
+                continue;
 
-            playerAgent.NavMarker.SetMarkerVisible(value && visible);
+            value = value && TeamVisibility.LocalPlayerCanSee(playerAgent.Owner);
+
+            playerAgent.NavMarker.SetMarkerVisible(value);
         }
 
         __instance.m_teammatesVisible = value;

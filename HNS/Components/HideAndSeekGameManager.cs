@@ -1,9 +1,11 @@
 ﻿using Agents;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
+using Gamemodes.Net;
 using HNS.Core;
 using HNS.Net;
 using Il2CppInterop.Runtime.Attributes;
 using Player;
+using SNetwork;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -70,26 +72,25 @@ public class HideAndSeekGameManager : MonoBehaviour
         var ploc = localPlayer.Locomotion;
 
         if (ploc.m_currentStateEnum != PlayerLocomotion.PLOC_State.Downed)
-            return;
+        {
+            ploc.ChangeState(PlayerLocomotion.PLOC_State.Stand, wasWarpedIntoState: false);
+        }
 
-        ploc.ChangeState(PlayerLocomotion.PLOC_State.Stand, wasWarpedIntoState: false);
         localPlayer.Damage.AddHealth(localPlayer.Damage.HealthMax, localPlayer);
     }
 
     [HideFromIl2Cpp]
     public void OnLocalPlayerCaught()
     {
-        if (!NetSessionManager.HasSession)
+        if (!_session.IsActive)
             return;
 
-        if (_localPlayerIsSeeker)
-            return;
-
-        _localPlayerIsSeeker = true;
-        _session.LocalPlayerCaught();
-        //SetFinalTimeAsHider(NetSessionManager.CurrentSession.HidingTime);
-
-        StartCountdown(10, null, $"Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}");
+        if (!_localPlayerIsSeeker)
+        {
+            _localPlayerIsSeeker = true;
+            _session.LocalPlayerCaught();
+            StartCountdown(10, StyleRed, $"You've been caught!\n<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>");
+        }
 
         CoroutineManager.StartCoroutine(ReviveSeekerRoutine().WrapToIl2Cpp());
     }
@@ -100,12 +101,10 @@ public class HideAndSeekGameManager : MonoBehaviour
         var yielder = new WaitForSeconds(5);
         yield return yielder;
 
-        if (!_session.IsActive)
+        if (!NetworkingManager.InLevel)
             yield break;
 
-        var localPlayer = PlayerManager.GetLocalPlayerAgent();
-
-        AgentReplicatedActions.PlayerReviveAction(localPlayer, localPlayer, localPlayer.Position);
+        InstantReviveLocalPlayer();
     }
 
     [HideFromIl2Cpp]
@@ -128,6 +127,25 @@ public class HideAndSeekGameManager : MonoBehaviour
 
         _blinds?.Dispose();
         _blinds = null;
+
+        if (SNet.IsMaster)
+        {
+            CoroutineManager.StartCoroutine(SwitchToHiderRoutine().WrapToIl2Cpp());
+        }
+    }
+
+    private IEnumerator SwitchToHiderRoutine()
+    {
+        if (!SNet.IsMaster)
+            yield break;
+
+        var yielder = new WaitForSeconds(5);
+        yield return yielder;
+
+        foreach(var player in SNet.LobbyPlayers)
+        {
+            NetworkingManager.AssignTeam(player, (int)GMTeam.Hiders);
+        }
     }
 
     [HideFromIl2Cpp]
@@ -140,6 +158,12 @@ public class HideAndSeekGameManager : MonoBehaviour
     private StyleOverride StyleImportant()
     {
         return new StyleOverride(true, CStyle.Green, true);
+    }
+
+    [HideFromIl2Cpp]
+    private StyleOverride StyleRed()
+    {
+        return new StyleOverride(false, CStyle.Red, true);
     }
 
     [HideFromIl2Cpp]

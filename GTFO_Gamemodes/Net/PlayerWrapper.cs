@@ -46,6 +46,9 @@ public record class PlayerWrapper
 
     public bool HasModeInstalled(string modeId)
     {
+        if (IsBot)
+            return true;
+        
         return ReportedInstalledGamemodes.Contains(modeId);
     }
 

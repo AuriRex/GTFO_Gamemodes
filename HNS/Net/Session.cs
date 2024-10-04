@@ -2,7 +2,7 @@
 
 namespace HNS.Net;
 
-internal class Session
+public class Session
 {
     public DateTimeOffset StartTime { get; private set; }
     public int SetupDuration { get; private set; } = 60;
@@ -23,7 +23,12 @@ internal class Session
 
     internal void LocalPlayerCaught()
     {
-        HidingTime = DateTimeOffset.UtcNow - StartTime;
+        HidingTime = DateTimeOffset.UtcNow - SetupTime;
+
+        if (HidingTime.TotalSeconds < 0)
+        {
+            HidingTime = TimeSpan.Zero;
+        }
     }
 
     internal void EndSession(DateTimeOffset? endTime = null)

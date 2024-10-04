@@ -61,7 +61,7 @@ internal static class NetSessionManager
 
         var isLocalPlayerSeeker = data.Seekers.Contains(NetworkingManager.LocalPlayerId);
 
-        HideAndSeekMode.GameManager.StartGame(isLocalPlayerSeeker, data.SetupTimeSeconds);
+        HideAndSeekMode.GameManager.StartGame(isLocalPlayerSeeker, data.SetupTimeSeconds, CurrentSession);
 
         Gamemodes.Plugin.PostLocalMessage("<#0C0>Hide and Seek round has started!");
         Gamemodes.Plugin.PostLocalMessage($"<#CCC>{data.SeekerCount} Seekers:");

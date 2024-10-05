@@ -94,7 +94,7 @@ public partial class NetworkingManager
         target.PlayerAgent.PlayerSyncModel.GhostEnabled = true;
 
         if (target.PlayerAgent.NavMarker != null)
-            target.PlayerAgent.NavMarker.SetMarkerVisible(TeamVisibility.LocalPlayerCanSeeTeam(target.Team));
+            target.PlayerAgent.NavMarker.SetMarkerVisible(target.CanBeSeenByLocalPlayer());
     }
 
     private static void OnSpectatorPacketReceived(ulong senderId, pSpectatorSwitch data)

@@ -6,6 +6,7 @@ using Gamemodes.Patches.Required;
 using HarmonyLib;
 using HNS.Components;
 using HNS.Net;
+using HNS.Patches;
 using Il2CppInterop.Runtime.Injection;
 using Player;
 using SNetwork;
@@ -22,7 +23,7 @@ internal class HideAndSeekMode : GamemodeBase
 
     public override string ID => "hideandseek";
 
-    public override string DisplayName => "Hide 'n' Seek";
+    public override string DisplayName => "Hide and Seek";
 
     public override ModeSettings Settings => new ModeSettings
     {
@@ -58,6 +59,7 @@ internal class HideAndSeekMode : GamemodeBase
         ChatCommandsHandler.AddCommand("hnsstop", StopHNS);
         ChatCommandsHandler.AddCommand("seeker", SwitchToSeeker);
         ChatCommandsHandler.AddCommand("hider", SwitchToHider);
+        ChatCommandsHandler.AddCommand("lobby", SwitchToLobby);
 
         CreateSeekerPalette();
 
@@ -100,6 +102,12 @@ internal class HideAndSeekMode : GamemodeBase
         });
 
         GameManager = _gameManagerGO.AddComponent<HideAndSeekGameManager>();
+    }
+
+    private static string SwitchToLobby(string[] arg)
+    {
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
+        return string.Empty;
     }
 
     private static string SwitchToHider(string[] arg)
@@ -177,8 +185,6 @@ internal class HideAndSeekMode : GamemodeBase
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
     }
 
-    
-
     public override void Disable()
     {
         _gameManagerGO.SetActive(false);
@@ -197,6 +203,7 @@ internal class HideAndSeekMode : GamemodeBase
         {
             NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
             GuiManager.PlayerLayer.WardenObjectives.gameObject.AddComponent<PUI_TeamDisplay>();
+            WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
         }
     }
 

@@ -16,6 +16,7 @@ internal static class PLOC_Downed_Patch
 
         if ((_info.Team == (int)GMTeam.PreGameAndOrSpectator || !NetSessionManager.HasSession) && _info.IsLocal)
         {
+            NetworkingManager.PostChatLog($"{_info.PlayerColorTag}{_info.NickName}</color> <color=orange>got bopped!</color>");
             HideAndSeekMode.GameManager.ReviveLocalPlayer();
             return true;
         }

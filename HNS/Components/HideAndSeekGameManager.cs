@@ -82,7 +82,9 @@ public class HideAndSeekGameManager : MonoBehaviour
         {
             _localPlayerIsSeeker = true;
             _session.LocalPlayerCaught();
-            StartCountdown(5, StyleRed, $"You've been caught!\n<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>\nReviving in {COUNTDOWN_TIMER_MARKER}");
+            var hiddenForMsg = $"<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>";
+            StartCountdown(5, StyleRed, $"You've been caught!\n{hiddenForMsg}\nReviving in {COUNTDOWN_TIMER_MARKER}");
+            Gamemodes.Plugin.PostLocalMessage(hiddenForMsg);
         }
         else
         {
@@ -96,6 +98,12 @@ public class HideAndSeekGameManager : MonoBehaviour
     [HideFromIl2Cpp]
     public void ReviveLocalPlayer(int reviveDelay = 5, bool showSeekerMessage = false)
     {
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return;
+
+        if (localPlayer.Locomotion.m_currentStateEnum != PlayerLocomotion.PLOC_State.Downed)
+            return;
+
         StartCountdown(reviveDelay, StyleDefault, $"Reviving in {COUNTDOWN_TIMER_MARKER}");
 
         CoroutineManager.StartCoroutine(RevivePlayerRoutine(5, showSeekerMessage).WrapToIl2Cpp());

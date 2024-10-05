@@ -32,6 +32,7 @@ public partial class NetworkingManager
     /// PlayerWrapper => Master
     /// </summary>
     public static event Action<PlayerWrapper> OnJoinedLobbySyncEvent;
+    public static event Action OnPlayerCountChanged;
 
     internal static void Init()
     {
@@ -45,7 +46,7 @@ public partial class NetworkingManager
 
         SNet_Events.OnPlayerEvent += (Action<SNet_Player, SNet_PlayerEvent, SNet_PlayerEventReason>)OnPlayerEvent;
         SNet_Events.OnPlayerJoin += (Action)OnPlayerJoined;
-        SNet_Events.OnPlayerLeave += (Action)OnPlayerCountChanged;
+        SNet_Events.OnPlayerLeave += (Action)OnPlayerCountChangedImpl;
     }
 
     private static void OnPlayerJoined()
@@ -69,13 +70,14 @@ public partial class NetworkingManager
             SendSwitchModeTo(GamemodeManager.CurrentMode.ID, newPlayer);
         }
 
-        OnPlayerCountChanged();
+        OnPlayerCountChangedImpl();
     }
 
-    private static void OnPlayerCountChanged()
+    private static void OnPlayerCountChangedImpl()
     {
         Plugin.L.LogDebug($"OnPlayerCountChanged");
         CleanupPlayers();
+        OnPlayerCountChanged?.Invoke();
     }
 
     private static void OnPlayerEvent(SNet_Player player, SNet_PlayerEvent playerEvent, SNet_PlayerEventReason reason)

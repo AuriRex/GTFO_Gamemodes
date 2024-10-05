@@ -1,6 +1,8 @@
-﻿using Il2CppSystem.Reflection;
+﻿using Gamemodes.Mode;
+using Il2CppSystem.Reflection;
 using Player;
 using SNetwork;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using static Player.PlayerAgent;
@@ -60,5 +62,10 @@ public record class PlayerWrapper
     public bool IsOnSameTeamAs(PlayerWrapper other)
     {
         return Team == other.Team;
+    }
+
+    public bool CanBeSeenByLocalPlayer()
+    {
+        return TeamVisibility.LocalPlayerCanSeeTeam(Team);
     }
 }

@@ -45,7 +45,7 @@ public class HideAndSeekGameManager : MonoBehaviour
     [HideFromIl2Cpp]
     public void StartGame(bool localPlayerIsSeeker, byte blindDuration, Session session)
     {
-        if (_session.IsActive)
+        if (_session != null && _session.IsActive)
         {
             _session.EndSession();
             StopGame(_session);

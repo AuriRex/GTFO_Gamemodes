@@ -196,6 +196,7 @@ internal class HideAndSeekMode : GamemodeBase
         if (state == eGameStateName.InLevel)
         {
             NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
+            GuiManager.PlayerLayer.WardenObjectives.gameObject.AddComponent<PUI_TeamDisplay>();
         }
     }
 

@@ -144,10 +144,14 @@ public class HideAndSeekGameManager : MonoBehaviour
         }
 
         var message = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
+        Gamemodes.Plugin.PostLocalMessage("<#0f0>-= Game Over! =-</color>");
+        Gamemodes.Plugin.PostLocalMessage($"<color=white>Total Game Time: {session.FinalTime.ToString(@"mm\:ss")}</color>");
 
         if (!_startedAsSeeker)
         {
-            message = $"{message}\n<color=orange>You hid for: {session.HidingTime.ToString(@"mm\:ss")}</color>";
+            var hid = $"<color=orange>You hid for: {session.HidingTime.ToString(@"mm\:ss")}</color>";
+            message = $"{message}\n{hid}";
+            Gamemodes.Plugin.PostLocalMessage(hid);
         }
 
         StartCountdown(10, StyleImportant, message);

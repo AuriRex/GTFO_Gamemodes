@@ -34,6 +34,8 @@ public class HideAndSeekGameManager : MonoBehaviour
     private string _importantMessage = "??:??";
     private Coroutine _importantMessageDisplayCoroutine;
 
+    private Coroutine _unblindPlayerCoroutine;
+
     private bool _localPlayerIsSeeker;
     private bool _startedAsSeeker;
 
@@ -43,6 +45,12 @@ public class HideAndSeekGameManager : MonoBehaviour
     [HideFromIl2Cpp]
     public void StartGame(bool localPlayerIsSeeker, byte blindDuration, Session session)
     {
+        if (_session.IsActive)
+        {
+            _session.EndSession();
+            StopGame(_session);
+        }
+
         _session = session;
         StartCountdown(blindDuration, GetDefaultGameStartCountdownStyle);
         _gameTimer = 0;
@@ -53,7 +61,7 @@ public class HideAndSeekGameManager : MonoBehaviour
 
         _countdownStyleProvider = GetDefaultGameStartCountdownStyle;
 
-        InstantReviveLocalPlayer();
+        HideAndSeekMode.InstantReviveLocalPlayer();
 
         Blinds blinds = null;
         if (localPlayerIsSeeker)
@@ -61,50 +69,56 @@ public class HideAndSeekGameManager : MonoBehaviour
             blinds = BlindPlayer();
         }
 
-        CoroutineManager.StartCoroutine(UnblindPlayer(blindDuration, blinds).WrapToIl2Cpp());
-    }
-
-    private void InstantReviveLocalPlayer()
-    {
-        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
-            return;
-
-        var ploc = localPlayer.Locomotion;
-
-        if (ploc.m_currentStateEnum != PlayerLocomotion.PLOC_State.Downed)
-        {
-            ploc.ChangeState(PlayerLocomotion.PLOC_State.Stand, wasWarpedIntoState: false);
-        }
-
-        localPlayer.Damage.AddHealth(localPlayer.Damage.HealthMax, localPlayer);
+        _unblindPlayerCoroutine = CoroutineManager.StartCoroutine(GameStartSetupTimeCoroutine(blindDuration, blinds).WrapToIl2Cpp());
     }
 
     [HideFromIl2Cpp]
-    public void OnLocalPlayerCaught()
+    public bool OnLocalPlayerCaught()
     {
-        if (!_session.IsActive)
-            return;
+        if (_session == null || !_session.IsActive)
+            return false;
 
         if (!_localPlayerIsSeeker)
         {
             _localPlayerIsSeeker = true;
             _session.LocalPlayerCaught();
-            StartCountdown(10, StyleRed, $"You've been caught!\n<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>");
+            StartCountdown(5, StyleRed, $"You've been caught!\n<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>\nReviving in {COUNTDOWN_TIMER_MARKER}");
+        }
+        else
+        {
+            StartCountdown(5, StyleRed, $"Reviving in {COUNTDOWN_TIMER_MARKER}");
         }
 
-        CoroutineManager.StartCoroutine(ReviveSeekerRoutine().WrapToIl2Cpp());
+        CoroutineManager.StartCoroutine(RevivePlayerRoutine(5).WrapToIl2Cpp());
+        return true;
     }
 
     [HideFromIl2Cpp]
-    private IEnumerator ReviveSeekerRoutine()
+    public void ReviveLocalPlayer(int reviveDelay = 5, bool showSeekerMessage = false)
     {
-        var yielder = new WaitForSeconds(5);
-        yield return yielder;
+        StartCountdown(reviveDelay, StyleDefault, $"Reviving in {COUNTDOWN_TIMER_MARKER}");
+
+        CoroutineManager.StartCoroutine(RevivePlayerRoutine(5, showSeekerMessage).WrapToIl2Cpp());
+    }
+
+    [HideFromIl2Cpp]
+    private IEnumerator RevivePlayerRoutine(int reviveDelay, bool showSeekerMessage = true)
+    {
+        if (reviveDelay > 0)
+        {
+            var yielder = new WaitForSeconds(reviveDelay);
+            yield return yielder;
+        }
 
         if (!NetworkingManager.InLevel)
             yield break;
 
-        InstantReviveLocalPlayer();
+        HideAndSeekMode.InstantReviveLocalPlayer();
+
+        if (_session != null && _session.IsActive && showSeekerMessage)
+        {
+            StartCountdown(5, StyleRed, $"You've been caught!\nFind the remaining hiders!");
+        }
     }
 
     [HideFromIl2Cpp]
@@ -115,6 +129,12 @@ public class HideAndSeekGameManager : MonoBehaviour
             Plugin.L.LogWarning("Stopped session is not the same as the started one?? This should not happen!");
         }
 
+        if (_unblindPlayerCoroutine != null)
+        {
+            CoroutineManager.StopCoroutine(_unblindPlayerCoroutine);
+            _unblindPlayerCoroutine = null;
+        }
+
         var message = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
 
         if (!_startedAsSeeker)
@@ -122,7 +142,6 @@ public class HideAndSeekGameManager : MonoBehaviour
             message = $"{message}\n<color=orange>You hid for: {session.HidingTime.ToString(@"mm\:ss")}</color>";
         }
 
-        //StartNewImportantMessageCoroutine(message);
         StartCountdown(10, StyleImportant, message);
 
         _blinds?.Dispose();
@@ -130,21 +149,27 @@ public class HideAndSeekGameManager : MonoBehaviour
 
         if (SNet.IsMaster)
         {
-            CoroutineManager.StartCoroutine(SwitchToHiderRoutine().WrapToIl2Cpp());
+            CoroutineManager.StartCoroutine(PostGameTeamSwitchCoroutine().WrapToIl2Cpp());
         }
     }
 
-    private IEnumerator SwitchToHiderRoutine()
+    [HideFromIl2Cpp]
+    private IEnumerator PostGameTeamSwitchCoroutine()
     {
         if (!SNet.IsMaster)
             yield break;
 
+        var session = _session;
+
         var yielder = new WaitForSeconds(5);
         yield return yielder;
 
+        if (session != _session)
+            yield break;
+
         foreach(var player in SNet.LobbyPlayers)
         {
-            NetworkingManager.AssignTeam(player, (int)GMTeam.Hiders);
+            NetworkingManager.AssignTeam(player, (int)GMTeam.PreGameAndOrSpectator);
         }
     }
 
@@ -203,9 +228,9 @@ public class HideAndSeekGameManager : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    private IEnumerator UnblindPlayer(byte blindDuration, Blinds blinds)
+    private IEnumerator GameStartSetupTimeCoroutine(byte setupDuration, Blinds blinds)
     {
-        var yielder = new WaitForSeconds(blindDuration);
+        var yielder = new WaitForSeconds(setupDuration);
         yield return yielder;
 
         blinds?.Dispose();
@@ -330,7 +355,7 @@ public class HideAndSeekGameManager : MonoBehaviour
 
         _messageText = $"{prefix}{TimeSpan.FromSeconds(_gameTimerInt).ToString(@"mm\:ss")}";
 
-        if (_gameTimerInt % 300 <= 5)
+        if (_gameTimerInt % 300 <= 10)
         {
             style = CStyle.Warning;
             doBlink = true;

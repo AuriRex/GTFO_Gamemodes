@@ -7,7 +7,9 @@ using HarmonyLib;
 using HNS.Components;
 using HNS.Net;
 using Il2CppInterop.Runtime.Injection;
+using Player;
 using SNetwork;
+using System;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -54,13 +56,14 @@ internal class HideAndSeekMode : GamemodeBase
 
         ChatCommandsHandler.AddCommand("hnsstart", StartHNS);
         ChatCommandsHandler.AddCommand("hnsstop", StopHNS);
+        ChatCommandsHandler.AddCommand("seeker", SwitchToSeeker);
+        ChatCommandsHandler.AddCommand("hider", SwitchToHider);
 
         CreateSeekerPalette();
 
         TeamVisibility.Team((int)GMTeam.Seekers).CanSeeSelf();
 
-#warning TODO: Remove this here later!
-        TeamVisibility.Team((int)GMTeam.Hiders).CanSeeSelf();
+        TeamVisibility.Team((int)GMTeam.PreGameAndOrSpectator).CanSeeSelf().And((int)GMTeam.Seekers, (int)GMTeam.Hiders);
 
         _gameManagerGO = new GameObject("HideAndSeek_Manager");
 
@@ -99,30 +102,49 @@ internal class HideAndSeekMode : GamemodeBase
         GameManager = _gameManagerGO.AddComponent<HideAndSeekGameManager>();
     }
 
+    private static string SwitchToHider(string[] arg)
+    {
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Hiders);
+        return string.Empty;
+    }
+
+    private static string SwitchToSeeker(string[] arg)
+    {
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Seekers);
+        return string.Empty;
+    }
+
     private static ClothesPalette seekerPalette;
+    private static ClothesPalette spectatorPalette;
 
     private static void CreateSeekerPalette()
     {
-        var go = new GameObject("SeekerPalette");
+        CreatePalette("SeekerPalette", Color.red, 6, out seekerPalette);
+        CreatePalette("SpectatorPalette", Color.cyan, 9, out spectatorPalette);
+    }
+
+    private static void CreatePalette(string name, Color color, int material, out ClothesPalette palette)
+    {
+        var go = new GameObject(name);
 
         go.hideFlags = HideFlags.HideAndDontSave | HideFlags.DontUnloadUnusedAsset;
         GameObject.DontDestroyOnLoad(go);
 
-        seekerPalette = go.AddComponent<ClothesPalette>();
+        palette = go.AddComponent<ClothesPalette>();
 
         var tone = new ClothesPalette.Tone()
         {
-            m_color = Color.red,
-            m_materialOverride = 6,
+            m_color = color,
+            m_materialOverride = material,
             m_texture = Texture2D.whiteTexture,
         };
 
-        seekerPalette.m_textureTiling = 1;
-        seekerPalette.m_primaryTone = tone;
-        seekerPalette.m_secondaryTone = tone;
-        seekerPalette.m_tertiaryTone = tone;
-        seekerPalette.m_quaternaryTone = tone;
-        seekerPalette.m_quinaryTone = tone;
+        palette.m_textureTiling = 1;
+        palette.m_primaryTone = tone;
+        palette.m_secondaryTone = tone;
+        palette.m_tertiaryTone = tone;
+        palette.m_quaternaryTone = tone;
+        palette.m_quinaryTone = tone;
     }
 
     public static string StartHNS(string[] args)
@@ -151,7 +173,6 @@ internal class HideAndSeekMode : GamemodeBase
         _harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
         _gameManagerGO.SetActive(true);
 
-        GameEvents.OnGameSessionStart += GameEvents_OnGameSessionStart;
         GameEvents.OnGameStateChanged += GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
     }
@@ -163,7 +184,6 @@ internal class HideAndSeekMode : GamemodeBase
         _gameManagerGO.SetActive(false);
         _harmonyInstance.UnpatchSelf();
 
-        GameEvents.OnGameSessionStart -= GameEvents_OnGameSessionStart;
         GameEvents.OnGameStateChanged -= GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
 
@@ -175,57 +195,74 @@ internal class HideAndSeekMode : GamemodeBase
     {
         if (state == eGameStateName.InLevel)
         {
-            
+            NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
         }
     }
 
-    private void OnPlayerChangedTeams(PlayerWrapper info, int teamInt)
+    private static float ORIGINAL_m_nearDeathAudioLimit = -1;
+
+    private void OnPlayerChangedTeams(PlayerWrapper playerInfo, int teamInt)
     {
         GMTeam team = (GMTeam)teamInt;
 
         if (!NetworkingManager.InLevel)
             return;
 
-        if (!info.HasAgent)
+        if (!playerInfo.HasAgent)
             return;
 
-        var storage = info.PlayerAgent.gameObject.GetOrAddComponent<PaletteStorage>();
+        var storage = playerInfo.PlayerAgent.gameObject.GetOrAddComponent<PaletteStorage>();
 
         switch (team)
         {
             case GMTeam.Seekers:
-                if (storage.hiderPalette == null)
-                {
-                    storage.hiderPalette = info.PlayerAgent.RigSwitch.m_currentPalette;
-                }
+                StoreOriginalAndAssignCustomPalette(playerInfo, storage, seekerPalette);
 
-                info.PlayerAgent.RigSwitch.ApplyPalette(seekerPalette);
-
-                if (info.IsLocal)
+                if (playerInfo.IsLocal)
                 {
                     LayerManager.MASK_MELEE_ATTACK_TARGETS = MODIFIED_MASK_MELEE_ATTACK_TARGETS;
                     LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
 
-                    GameManager.OnLocalPlayerCaught();
+                    if (!GameManager.OnLocalPlayerCaught())
+                    {
+                        GameManager.ReviveLocalPlayer();
+                    }
+
+                    SetLocalPlayerStatusUIElementsActive(isSeeker: true);
+                    SetNearDeathAudioLimit(playerInfo.PlayerAgent.Cast<LocalPlayerAgent>(), false);
                 }
 
                 if (SNet.IsMaster && NetSessionManager.HasSession && NetSessionManager.CurrentSession.SetupTimeFinished)
                 {
-                    NetworkingManager.PostChatLog($"{info.PlayerColorTag}{info.NickName} <#F00>has been caught!</color>");
+                    NetworkingManager.PostChatLog($"{playerInfo.PlayerColorTag}{playerInfo.NickName} <#F00>has been caught!</color>");
                 }
 
                 break;
-            case GMTeam.Hiders:
-                if (storage.hiderPalette != null)
-                {
-                    info.PlayerAgent.RigSwitch.ApplyPalette(storage.hiderPalette);
-                    storage.hiderPalette = null;
-                }
+            default:
+            case GMTeam.PreGameAndOrSpectator:
+                StoreOriginalAndAssignCustomPalette(playerInfo, storage, spectatorPalette);
 
-                if (info.IsLocal)
+                if (playerInfo.IsLocal)
+                {
+                    // Idk, it's bonking time xd
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS = MODIFIED_MASK_MELEE_ATTACK_TARGETS;
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+                    InstantReviveLocalPlayer();
+
+                    SetLocalPlayerStatusUIElementsActive(isSeeker: false);
+                    SetNearDeathAudioLimit(playerInfo.PlayerAgent.Cast<LocalPlayerAgent>(), true);
+                }
+                break;
+            case GMTeam.Hiders:
+                RevertToOriginalPalette(playerInfo, storage);
+
+                if (playerInfo.IsLocal)
                 {
                     LayerManager.MASK_MELEE_ATTACK_TARGETS = DEFAULT_MASK_MELEE_ATTACK_TARGETS;
                     LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+                    SetLocalPlayerStatusUIElementsActive(isSeeker: false);
+                    SetNearDeathAudioLimit(playerInfo.PlayerAgent.Cast<LocalPlayerAgent>(), true);
                 }
                 break;
         }
@@ -236,6 +273,30 @@ internal class HideAndSeekMode : GamemodeBase
         // Range: 0.2
         // Intensity: 5
         // Red flashlight in third person? hmmm
+    }
+
+    private static void StoreOriginalAndAssignCustomPalette(PlayerWrapper info, PaletteStorage storage, ClothesPalette paletteToSet)
+    {
+        if (storage.hiderPalette == null)
+        {
+            storage.hiderPalette = info.PlayerAgent.RigSwitch.m_currentPalette;
+        }
+
+        if (paletteToSet == null)
+        {
+            paletteToSet = seekerPalette;
+        }
+
+        info.PlayerAgent.RigSwitch.ApplyPalette(paletteToSet);
+    }
+
+    private static void RevertToOriginalPalette(PlayerWrapper info, PaletteStorage storage)
+    {
+        if (storage.hiderPalette != null)
+        {
+            info.PlayerAgent.RigSwitch.ApplyPalette(storage.hiderPalette);
+            storage.hiderPalette = null;
+        }
     }
 
     private void EndGameCheck()
@@ -252,9 +313,67 @@ internal class HideAndSeekMode : GamemodeBase
         NetSessionManager.SendStopGamePacket();
     }
 
-    private void GameEvents_OnGameSessionStart()
+    public static void SetNearDeathAudioLimit(LocalPlayerAgent player, bool enable)
     {
-        // TODO: Not this xd
-        Plugin.L.LogWarning("Hi o/");
+        // Not even sure if this works lol
+        var localDamage = player.Damage.Cast<Dam_PlayerDamageLocal>();
+
+        player.Breathing.enabled = enable;
+
+        if (enable)
+        {
+            if (ORIGINAL_m_nearDeathAudioLimit != -1)
+            {
+                localDamage.m_nearDeathAudioLimit = ORIGINAL_m_nearDeathAudioLimit;
+            }
+            return;
+        }
+
+        if (ORIGINAL_m_nearDeathAudioLimit == -1)
+        {
+            ORIGINAL_m_nearDeathAudioLimit = localDamage.m_nearDeathAudioLimit;
+        }
+
+        localDamage.m_nearDeathAudioLimit = -1f;
+    }
+
+    public static void SetLocalPlayerStatusUIElementsActive(bool isSeeker)
+    {
+        var status = GuiManager.PlayerLayer.m_playerStatus;
+
+        status.m_warning.gameObject.SetActive(!isSeeker);
+
+        if (isSeeker)
+        {
+            status.UpdateShield(1f);
+            status.m_shieldText.SetText("Seeker");
+        }
+
+        status.m_shieldUIParent.gameObject.SetActive(isSeeker);
+
+        for (int i = 0; i < status.transform.childCount; i++)
+        {
+            var child = status.transform.GetChild(i).gameObject;
+
+            if (child.name != "HealthBar")
+                continue;
+
+            child.SetActive(!isSeeker);
+        }
+    }
+
+    public static void InstantReviveLocalPlayer()
+    {
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return;
+
+        var ploc = localPlayer.Locomotion;
+
+        if (ploc.m_currentStateEnum == PlayerLocomotion.PLOC_State.Downed)
+        {
+            ploc.ChangeState(PlayerLocomotion.PLOC_State.Stand, wasWarpedIntoState: false);
+        }
+
+        localPlayer.Damage.AddHealth(localPlayer.Damage.HealthMax, localPlayer);
     }
 }

@@ -2,6 +2,7 @@
 
 public enum GMTeam : int
 {
+    PreGameAndOrSpectator,
     Hiders,
     Seekers,
 }

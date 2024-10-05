@@ -15,7 +15,7 @@ public class TeamVisibility
 
     public static bool LocalPlayerCanSeeTeam(int team)
     {
-        return GamemodeManager.CurrentMode.TeamVisibility.LocalPlayerCanSee(team);
+        return GamemodeManager.CurrentMode.TeamVisibility.CanLocalPlayerSee(team);
     }
 
     public static bool PlayerCanSee(SNet_Player player, SNet_Player other)
@@ -28,15 +28,10 @@ public class TeamVisibility
 
     public static bool PlayerCanSee(int team, int teamOther)
     {
-        return GamemodeManager.CurrentMode.TeamVisibility.CanSee(team, teamOther);
+        return GamemodeManager.CurrentMode.TeamVisibility.CanTeamSee(team, teamOther);
     }
 
-    public Dictionary<int, HashSet<int>> _visibility = new();
-
-    internal void Reset()
-    {
-        _visibility = new();
-    }
+    private readonly Dictionary<int, HashSet<int>> _visibility = new();
 
     internal void Get(int team, out HashSet<int> set)
     {
@@ -52,14 +47,14 @@ public class TeamVisibility
         return new TeamVisContract(this, team);
     }
 
-    public bool LocalPlayerCanSee(int otherTeam)
+    public bool CanLocalPlayerSee(int otherTeam)
     {
         var localInfo = NetworkingManager.GetLocalPlayerInfo();
 
-        return CanSee(localInfo.Team, otherTeam);
+        return CanTeamSee(localInfo.Team, otherTeam);
     }
 
-    public bool CanSee(int team, int otherTeam)
+    public bool CanTeamSee(int team, int otherTeam)
     {
         if (!_visibility.TryGetValue(team, out var set))
             return false;
@@ -84,12 +79,13 @@ public class TeamVisContract
         return new TeamVisContractExtended(this);
     }
 
-    public TeamVisibility CanSee(int y)
+    public TeamVisContractExtended CanSee(int y)
     {
-        return CanSee(new int[] { y });
+        CanSee(new int[] { y });
+        return new TeamVisContractExtended(this);
     }
 
-    public TeamVisibility CanSee(params int[] y)
+    public TeamVisContractExtended CanSee(params int[] y)
     {
         vis.Get(_team, out var set);
 
@@ -98,7 +94,7 @@ public class TeamVisContract
             set.Add(entry);
         }
 
-        return vis;
+        return new TeamVisContractExtended(this);
     }
 }
 

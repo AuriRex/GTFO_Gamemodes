@@ -12,10 +12,16 @@ internal static class PLOC_Downed_Patch
 
     public static bool Prefix(PLOC_Downed __instance)
     {
+        NetworkingManager.GetPlayerInfo(__instance.m_owner.Owner, out _info);
+
+        if ((_info.Team == (int)GMTeam.PreGameAndOrSpectator || !NetSessionManager.HasSession) && _info.IsLocal)
+        {
+            HideAndSeekMode.GameManager.ReviveLocalPlayer();
+            return true;
+        }
+
         if (!NetSessionManager.HasSession)
             return true;
-
-        NetworkingManager.GetPlayerInfo(__instance.m_owner.Owner, out _info);
 
         if (_info.Team == (int)GMTeam.Seekers)
         {
@@ -31,11 +37,9 @@ internal static class PLOC_Downed_Patch
         if (!NetSessionManager.HasSession)
             return;
 
-        if (_info.Team != (int)GMTeam.Hiders)
+        if (_info.Team == (int)GMTeam.Hiders)
         {
-            return;
+            NetworkingManager.AssignTeam(__instance.m_owner.Owner, (int)GMTeam.Seekers);
         }
-
-        NetworkingManager.AssignTeam(__instance.m_owner.Owner, (int) GMTeam.Seekers);
     }
 }

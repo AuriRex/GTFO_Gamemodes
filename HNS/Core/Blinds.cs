@@ -20,7 +20,7 @@ internal class Blinds : IDisposable
         _rot = _localPlayer.TargetLookDir;
         _dim = _localPlayer.DimensionIndex;
 
-        Builder.CurrentFloor.GetArenaDimension(dimensionDataId, (uint) _localPlayer.PlayerSlotIndex, out var arena);
+        Builder.CurrentFloor.GetArenaDimension(dimensionDataId, (uint) _localPlayer.PlayerSlotIndex % 4, out var arena);
 
         var dim = arena.DimensionIndex;
         var pos = arena.GetStartCourseNode().GetRandomPositionInside();

@@ -21,6 +21,8 @@ internal class PUI_TeamDisplay : MonoBehaviour
     {
         _gameObjectives = GetComponent<PUI_GameObjectives>();
 
+        _gameObjectives.m_bodyInfoHolder.transform.localPosition = new Vector3(-600, -100, 0); // Moves key items etc out to the left of the screen
+
         var prefab = Instantiate(_gameObjectives.m_headerHolder, transform);
 
         prefab.transform.localScale = new Vector3(0.85f, 0.85f, 0.85f);

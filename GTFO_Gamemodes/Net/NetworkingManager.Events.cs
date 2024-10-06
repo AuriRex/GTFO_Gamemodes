@@ -90,6 +90,9 @@ public partial class NetworkingManager
         if (!target.HasAgent || target.IsLocal)
             return;
 
+        if (target.PlayerAgent == null || target.PlayerAgent.PlayerSyncModel == null || target.PlayerAgent.NavMarker == null)
+            return;
+
         // Refreshes ghost team visibility
         target.PlayerAgent.PlayerSyncModel.GhostEnabled = true;
 

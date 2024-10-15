@@ -125,18 +125,27 @@ internal class HideAndSeekMode : GamemodeBase
 
     private static string SwitchToLobby(string[] arg)
     {
+        if (NetSessionManager.HasSession)
+            return "Can't switch teams mid session.";
+
         NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
         return string.Empty;
     }
 
     private static string SwitchToHider(string[] arg)
     {
+        if (NetSessionManager.HasSession)
+            return "Can't switch teams mid session.";
+
         NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Hiders);
         return string.Empty;
     }
 
     private static string SwitchToSeeker(string[] arg)
     {
+        if (NetSessionManager.HasSession)
+            return "Can't switch teams mid session.";
+
         NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Seekers);
         return string.Empty;
     }
@@ -236,7 +245,9 @@ internal class HideAndSeekMode : GamemodeBase
 
             if (go.GetComponent<PUI_TeamDisplay>() == null)
             {
-                go.AddComponent<PUI_TeamDisplay>();
+                var teamDisplay = go.AddComponent<PUI_TeamDisplay>();
+
+                teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
             }
 
             WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
@@ -246,6 +257,7 @@ internal class HideAndSeekMode : GamemodeBase
             if (localPlayer != null && localPlayer.Sound != null)
             {
                 localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
+                localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
             }
         }
 

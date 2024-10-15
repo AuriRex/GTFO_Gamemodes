@@ -55,6 +55,7 @@ internal static class NetSessionManager
         if (HasSession)
         {
             CurrentSession.EndSession();
+            HideAndSeekMode.GameManager.StopGame(CurrentSession, aborted: true);
         }
 
         CurrentSession = new(data.SetupTimeSeconds);

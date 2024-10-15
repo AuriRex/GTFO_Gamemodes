@@ -12,19 +12,31 @@ internal class PUI_TeamDisplay : MonoBehaviour
 {
     private readonly List<PlayerEntry> _entries = new();
 
+    private GameObject _titleGameObject;
+    private TextMeshPro _titleTMP;
+
     private PUI_GameObjectives _gameObjectives;
 
     private const float UPDATE_INTERVAL = 5;
     private float _updateTimer;
 
-    public void Start()
+    private bool _isSetup = false;
+
+    public void Awake()
     {
+        if (_isSetup)
+            return;
+
         _gameObjectives = GetComponent<PUI_GameObjectives>();
 
         _gameObjectives.m_bodyInfoHolder.transform.localPosition = new Vector3(-600, -100, 0); // Moves key items etc out to the left of the screen
 
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
         NetworkingManager.OnPlayerCountChanged += OnPlayerCountChanged;
+
+        UpdateTitle(string.Empty);
+
+        _isSetup = true;
 
         if (PlayerEntry.HasPrefab)
         {
@@ -41,6 +53,26 @@ internal class PUI_TeamDisplay : MonoBehaviour
         PlayerEntry.Prefab = prefab;
     }
 
+    public void UpdateTitle(string title)
+    {
+        if (_titleGameObject == null)
+        {
+            _titleGameObject = Instantiate(_gameObjectives.m_headerHolder, transform);
+
+            _titleTMP = _titleGameObject.GetComponentInChildren<TextMeshPro>();
+
+            var background = _titleGameObject.GetComponentInChildren<SpriteRenderer>();
+
+            background.color = PlayerEntry.COLOR_MISC;
+
+            _titleGameObject.transform.localPosition = new Vector3(1.4f, -50f - PlayerEntry.SPACING * 0.5f, 0);
+            _titleGameObject.transform.localScale = new Vector3(1.25f, 1.25f, 1.25f);
+            _titleGameObject.SetActive(true);
+        }
+
+        _titleTMP.SetText(title);
+    }
+
     public void OnDestroy()
     {
         NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
@@ -50,6 +82,8 @@ internal class PUI_TeamDisplay : MonoBehaviour
         {
             entry.Dispose();
         }
+
+        Destroy(_titleGameObject);
     }
 
     public void Update()
@@ -65,7 +99,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
 
     public void UpdateTeamDisplay()
     {
-        foreach(var player in NetworkingManager.AllValidPlayers.OrderByDescending(w => $"{w.Team}_{w.NickName}"))
+        foreach (var player in NetworkingManager.AllValidPlayers.OrderByDescending(w => $"{w.Team}_{w.NickName}"))
         {
             if (!TryGetPlayerEntry(player, out var entry))
             {
@@ -102,7 +136,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
         if (!player.HasAgent)
             return null;
 
-        var entry = PlayerEntry.Create(player, _entries.Count);
+        var entry = PlayerEntry.Create(player, _entries.Count + 2);
         _entries.Add(entry);
         return entry;
     }
@@ -122,12 +156,12 @@ internal class PUI_TeamDisplay : MonoBehaviour
         private readonly GameObject _gameObject;
         private readonly PlayerWrapper _player;
 
-        private const float SPACING = 32f;
-        private const float OPACITY = 0.125f;
+        public const float SPACING = 32f;
+        public const float OPACITY = 0.125f;
 
-        private static readonly Color _colorRest = new Color(Color.gray.r, Color.gray.g, Color.gray.b, OPACITY);
-        private static readonly Color _colorHider = new Color(Color.cyan.r, Color.cyan.g, Color.cyan.b, OPACITY);
-        private static readonly Color _colorSeeker = new Color(Color.red.r, Color.red.g, Color.red.b, OPACITY);
+        public static readonly Color COLOR_MISC = new Color(Color.gray.r, Color.gray.g, Color.gray.b, OPACITY);
+        public static readonly Color COLOR_HIDER = new Color(Color.cyan.r, Color.cyan.g, Color.cyan.b, OPACITY);
+        public static readonly Color COLOR_SEEKER = new Color(Color.red.r, Color.red.g, Color.red.b, OPACITY);
 
         public TextMeshPro Text { get; init; }
         public TextMeshPro ExtraText { get; init; }
@@ -161,7 +195,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
         public void Update()
         {
             string team = "/";
-            Color col = _colorRest;
+            Color col = COLOR_MISC;
             string extraText = string.Empty;
             switch((GMTeam)_player.Team)
             {
@@ -170,7 +204,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
                     break;
                 case GMTeam.Seekers:
                     team = "S";
-                    col = _colorSeeker;
+                    col = COLOR_SEEKER;
 
                     if (_player.CanBeSeenByLocalPlayer() && _player.HasAgent)
                     {
@@ -185,7 +219,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
                     break;
                 case GMTeam.Hiders:
                     team = "H";
-                    col = _colorHider;
+                    col = COLOR_HIDER;
                     break;
             }
 

@@ -130,7 +130,7 @@ public class HideAndSeekGameManager : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    internal void StopGame(Session session)
+    internal void StopGame(Session session, bool aborted = false)
     {
         if (_session != session)
         {
@@ -143,6 +143,9 @@ public class HideAndSeekGameManager : MonoBehaviour
             _unblindPlayerCoroutine = null;
         }
 
+        _blinds?.Dispose();
+        _blinds = null;
+
         var message = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
         Gamemodes.Plugin.PostLocalMessage("<#0f0>-= Game Over! =-</color>");
         Gamemodes.Plugin.PostLocalMessage($"<color=white>Total Game Time: {session.FinalTime.ToString(@"mm\:ss")}</color>");
@@ -154,10 +157,13 @@ public class HideAndSeekGameManager : MonoBehaviour
             Gamemodes.Plugin.PostLocalMessage(hid);
         }
 
-        StartCountdown(10, StyleImportant, message);
+        if (aborted)
+        {
+            Gamemodes.Plugin.PostLocalMessage("<color=red>Game aborted!</color>");
+            return;
+        }
 
-        _blinds?.Dispose();
-        _blinds = null;
+        StartCountdown(10, StyleImportant, message);
 
         if (SNet.IsMaster)
         {
@@ -353,6 +359,12 @@ public class HideAndSeekGameManager : MonoBehaviour
     {
         var rounded = Mathf.RoundToInt(_gameTimer);
 
+        if (_gameTimerInt % 300 <= 10)
+        {
+            style = CStyle.Warning;
+            doBlink = true;
+        }
+
         if (rounded == _gameTimerInt)
             return;
 
@@ -366,12 +378,6 @@ public class HideAndSeekGameManager : MonoBehaviour
         }
 
         _messageText = $"{prefix}{TimeSpan.FromSeconds(_gameTimerInt).ToString(@"mm\:ss")}";
-
-        if (_gameTimerInt % 300 <= 10)
-        {
-            style = CStyle.Warning;
-            doBlink = true;
-        }
     }
 
     [HideFromIl2Cpp]

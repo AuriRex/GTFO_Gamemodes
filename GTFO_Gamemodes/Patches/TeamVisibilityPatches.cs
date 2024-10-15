@@ -22,6 +22,32 @@ internal static class PlayerSyncModelData_RefreshGhostRenderersVisibility_Patch
     }
 }
 
+//private void UpdateGUIElementsVisibility(eFocusState currentState)
+[HarmonyPatch(typeof(PlayerGuiLayer), nameof(PlayerGuiLayer.UpdateGUIElementsVisibility))]
+internal static class PlayerGuiLayer_UpdateGUIElementsVisibility_Patch
+{
+    public static readonly string PatchGroup = PatchGroups.USE_TEAM_VISIBILITY;
+
+    public static void Postfix(eFocusState currentState)
+    {
+        switch (currentState)
+        {
+            default:
+                break;
+            case eFocusState.FPS:
+            case eFocusState.FPS_TypingInChat:
+            case eFocusState.FPS_CommunicationDialog:
+                var localPlayer = PlayerManager.GetLocalPlayerAgent().TryCast<LocalPlayerAgent>();
+
+                if (localPlayer == null)
+                    break;
+                
+                localPlayer.SetTeammateInfoVisible(true);
+                break;
+        }
+    }
+}
+
 [HarmonyPatch(typeof(PUI_Compass), nameof(PUI_Compass.AfterCameraUpdate))]
 internal static class PUI_Compass_AfterCameraUpdate_Patch
 {
@@ -34,6 +60,9 @@ internal static class PUI_Compass_AfterCameraUpdate_Patch
             if (__instance.m_playerNameMarkersVisible[i] || __instance.m_playerPingMarkersActive[i])
             {
                 PlayerAgent player = PlayerManager.Current.GetPlayerAgentInSlot(i);
+
+                if (player == null || player.Owner == null)
+                    continue;
 
                 var visible = TeamVisibility.LocalPlayerCanSee(player.Owner);
 
@@ -66,12 +95,12 @@ internal static class LocalPlayerAgent_SetTeammateInfoVisible_Patch
             if (playerAgent.IsLocallyOwned)
                 continue;
 
-            value = value && TeamVisibility.LocalPlayerCanSee(playerAgent.Owner);
+            value = TeamVisibility.LocalPlayerCanSee(playerAgent.Owner);
 
             playerAgent.NavMarker.SetMarkerVisible(value);
         }
 
-        __instance.m_teammatesVisible = value;
+        __instance.m_teammatesVisible = true;
         return false;
     }
 }

@@ -16,15 +16,17 @@ public partial class NetworkingManager
 
     private static readonly Dictionary<ulong, PlayerWrapper> _syncedPlayers = new();
 
-    public static IEnumerable<PlayerWrapper> AllValidPlayers => _syncedPlayers.Values.Where(p => p.ValidPlayer);
+    public static IEnumerable<PlayerWrapper> SyncedPlayers => _syncedPlayers.Values;
 
-    public static IEnumerable<PlayerWrapper> Spectators => _syncedPlayers.Values.Where(p => p.IsSpectator);
+    public static IEnumerable<PlayerWrapper> AllValidPlayers => SyncedPlayers.Where(p => p.ValidPlayer);
+
+    public static IEnumerable<PlayerWrapper> Spectators => SyncedPlayers.Where(p => p.IsSpectator);
 
     public static ulong LocalPlayerId => SNet.LocalPlayer?.Lookup ?? 0;
 
-    public static bool AllPlayersVersionMatches => _syncedPlayers.Values.All(pi => pi.VersionMatches);
+    public static bool AllPlayersVersionMatches => SyncedPlayers.All(pi => pi.VersionMatches);
 
-    public static bool AllPlayersHaveModeInstalled => _syncedPlayers.Values.All(pi => pi.HasModeInstalled(GamemodeManager.CurrentMode?.ID));
+    public static bool AllPlayersHaveModeInstalled => SyncedPlayers.All(pi => pi.HasModeInstalled(GamemodeManager.CurrentMode?.ID));
 
     public static bool InLevel => GameStateManager.CurrentStateName == eGameStateName.InLevel;
 
@@ -85,7 +87,7 @@ public partial class NetworkingManager
         Plugin.L.LogDebug($"OnPlayerEvent: {player.NickName}, event: {playerEvent}, reason: {reason}");
     }
 
-    private static void CleanupPlayers()
+    internal static void CleanupPlayers()
     {
         HashSet<ulong> connectedPlayers = new();
         foreach (var player in SNet.LobbyPlayers)

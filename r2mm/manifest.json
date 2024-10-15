@@ -1,0 +1,10 @@
+{
+    "name": "Hide and Seek Playtest",
+    "author": "AuriRex",
+    "version_number": "0.1.0",
+    "website_url": "https://github.com/AuriRex/GTFO_Gamemodes/",
+    "description": "Hide and Seek playtest package.",
+    "dependencies": [
+        "BepInEx-BepInExPack_GTFO-1.5.0"
+    ]
+}

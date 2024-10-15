@@ -163,17 +163,20 @@ internal static class ChatCommandsHandler
     {
         throw new Exception("This is supposed to happen. :)");
     }
+#endif
 
     public static string ManualJoin(string[] args)
     {
-
         NetworkingManager.SendJoinInfo();
 
-        return "";
+        return "Join info sent.";
     }
 
     public static string SetTeam(string[] args)
     {
+        if (!SNet.IsMaster)
+            return "Master only.";
+
         var team = args[0];
 
         if (int.TryParse(team, out var teamInt))
@@ -195,6 +198,9 @@ internal static class ChatCommandsHandler
 
     public static string TP(string[] args)
     {
+        if (!SNet.IsMaster)
+            return "Master only.";
+
         if (args.Length == 0)
             throw new ArgumentException("No player to TP to specified.", nameof(args));
 
@@ -231,6 +237,9 @@ internal static class ChatCommandsHandler
 
     public static string TPAll(string[] args)
     {
+        if (!SNet.IsMaster)
+            return "Master only.";
+
         var lp = PlayerManager.GetLocalPlayerAgent();
 
         if (!NetworkingManager.InLevel || lp == null)
@@ -246,6 +255,5 @@ internal static class ChatCommandsHandler
 
         return "Tried to teleport all players to you.";
     }
-#endif
     #endregion
 }

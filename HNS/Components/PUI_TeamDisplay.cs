@@ -23,6 +23,14 @@ internal class PUI_TeamDisplay : MonoBehaviour
 
         _gameObjectives.m_bodyInfoHolder.transform.localPosition = new Vector3(-600, -100, 0); // Moves key items etc out to the left of the screen
 
+        NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
+        NetworkingManager.OnPlayerCountChanged += OnPlayerCountChanged;
+
+        if (PlayerEntry.HasPrefab)
+        {
+            return;
+        }
+
         var prefab = Instantiate(_gameObjectives.m_headerHolder, transform);
 
         prefab.transform.localScale = new Vector3(0.85f, 0.85f, 0.85f);
@@ -31,15 +39,17 @@ internal class PUI_TeamDisplay : MonoBehaviour
 
         PlayerEntry.Parent = transform;
         PlayerEntry.Prefab = prefab;
-
-        NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
-        NetworkingManager.OnPlayerCountChanged += OnPlayerCountChanged;
     }
 
     public void OnDestroy()
     {
         NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
         NetworkingManager.OnPlayerCountChanged -= OnPlayerCountChanged;
+
+        foreach(var entry in _entries)
+        {
+            entry.Dispose();
+        }
     }
 
     public void Update()
@@ -55,7 +65,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
 
     public void UpdateTeamDisplay()
     {
-        foreach(var player in NetworkingManager.AllValidPlayers.OrderByDescending(w => w.Team))
+        foreach(var player in NetworkingManager.AllValidPlayers.OrderByDescending(w => $"{w.Team}_{w.NickName}"))
         {
             if (!TryGetPlayerEntry(player, out var entry))
             {
@@ -66,7 +76,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
         }
     }
 
-    private void OnPlayerCountChanged()
+    public void RecreateTeamDisplay()
     {
         foreach (var entry in _entries)
         {
@@ -77,9 +87,14 @@ internal class PUI_TeamDisplay : MonoBehaviour
         UpdateTeamDisplay();
     }
 
+    private void OnPlayerCountChanged()
+    {
+        RecreateTeamDisplay();
+    }
+
     private void OnPlayerChangedTeams(PlayerWrapper player, int team)
     {
-        UpdateTeamDisplay();
+        RecreateTeamDisplay();
     }
 
     private PlayerEntry CreatePlayerEntry(PlayerWrapper player)
@@ -100,6 +115,7 @@ internal class PUI_TeamDisplay : MonoBehaviour
 
     private class PlayerEntry : IDisposable
     {
+        public static bool HasPrefab => Prefab != null;
         internal static Transform Parent { private get; set; }
         internal static GameObject Prefab { private get; set; }
 

@@ -101,6 +101,25 @@ internal class HideAndSeekMode : GamemodeBase
             "PlayerSynced" // <-- Added
         });
 
+        DEFAULT_MASK_BULLETWEAPON_RAY = LayerManager.MASK_BULLETWEAPON_RAY;
+        MODIFIED_MASK_BULLETWEAPON_RAY = LayerManager.Current.GetMask(new string[]
+        {
+            "Default",
+            "Default_NoGraph",
+            "Default_BlockGraph",
+            "EnemyDamagable",
+            "ProjectileBlocker",
+            "Dynamic",
+            //"PlayerSynced" // <-- Removed
+        });
+
+        DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS = LayerManager.MASK_BULLETWEAPON_PIERCING_PASS;
+        MODIFIED_MASK_BULLETWEAPON_PIERCING_PASS = LayerManager.Current.GetMask(new string[]
+        {
+            "EnemyDamagable",
+            //"PlayerSynced" // <-- Removed
+        });
+
         GameManager = _gameManagerGO.AddComponent<HideAndSeekGameManager>();
     }
 
@@ -173,8 +192,15 @@ internal class HideAndSeekMode : GamemodeBase
     private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS;
     private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
 
+    private static int DEFAULT_MASK_BULLETWEAPON_RAY;
+    private static int DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
+
+
     private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS;
     private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+    private static int MODIFIED_MASK_BULLETWEAPON_RAY;
+    private static int MODIFIED_MASK_BULLETWEAPON_PIERCING_PASS;
 
     public override void Enable()
     {
@@ -195,6 +221,9 @@ internal class HideAndSeekMode : GamemodeBase
 
         LayerManager.MASK_MELEE_ATTACK_TARGETS = DEFAULT_MASK_MELEE_ATTACK_TARGETS;
         LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+        LayerManager.MASK_BULLETWEAPON_RAY = DEFAULT_MASK_BULLETWEAPON_RAY;
+        LayerManager.MASK_BULLETWEAPON_PIERCING_PASS = DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
     }
 
     private void GameEvents_OnGameStateChanged(eGameStateName state)
@@ -202,8 +231,37 @@ internal class HideAndSeekMode : GamemodeBase
         if (state == eGameStateName.InLevel)
         {
             NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
-            GuiManager.PlayerLayer.WardenObjectives.gameObject.AddComponent<PUI_TeamDisplay>();
+
+            var go = GuiManager.PlayerLayer.WardenObjectives.gameObject;
+
+            if (go.GetComponent<PUI_TeamDisplay>() == null)
+            {
+                go.AddComponent<PUI_TeamDisplay>();
+            }
+
             WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
+        
+            var localPlayer = PlayerManager.GetLocalPlayerAgent();
+
+            if (localPlayer != null && localPlayer.Sound != null)
+            {
+                localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
+            }
+        }
+
+        if (state == eGameStateName.Lobby)
+        {
+            var go = GuiManager.PlayerLayer.WardenObjectives.gameObject;
+            var ui = go.GetComponent<PUI_TeamDisplay>();
+            if (ui != null)
+            {
+                UnityEngine.Object.Destroy(ui);
+            }
+
+            if (SNet.IsMaster && NetSessionManager.HasSession)
+            {
+                NetSessionManager.SendStopGamePacket();
+            }
         }
     }
 
@@ -221,15 +279,22 @@ internal class HideAndSeekMode : GamemodeBase
 
         var storage = playerInfo.PlayerAgent.gameObject.GetOrAddComponent<PaletteStorage>();
 
+        playerInfo.PlayerAgent.PlayerSyncModel.SetHelmetLightIntensity(0.1f);
+
         switch (team)
         {
             case GMTeam.Seekers:
                 StoreOriginalAndAssignCustomPalette(playerInfo, storage, seekerPalette);
 
+                playerInfo.PlayerAgent.PlayerSyncModel.SetHelmetLightIntensity(5);
+
                 if (playerInfo.IsLocal)
                 {
                     LayerManager.MASK_MELEE_ATTACK_TARGETS = MODIFIED_MASK_MELEE_ATTACK_TARGETS;
                     LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+                    LayerManager.MASK_BULLETWEAPON_RAY = DEFAULT_MASK_BULLETWEAPON_RAY;
+                    LayerManager.MASK_BULLETWEAPON_PIERCING_PASS = DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
 
                     if (!GameManager.OnLocalPlayerCaught())
                     {
@@ -256,6 +321,9 @@ internal class HideAndSeekMode : GamemodeBase
                     LayerManager.MASK_MELEE_ATTACK_TARGETS = MODIFIED_MASK_MELEE_ATTACK_TARGETS;
                     LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
 
+                    LayerManager.MASK_BULLETWEAPON_RAY = DEFAULT_MASK_BULLETWEAPON_RAY;
+                    LayerManager.MASK_BULLETWEAPON_PIERCING_PASS = DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
+
                     InstantReviveLocalPlayer();
 
                     SetLocalPlayerStatusUIElementsActive(isSeeker: false);
@@ -269,6 +337,10 @@ internal class HideAndSeekMode : GamemodeBase
                 {
                     LayerManager.MASK_MELEE_ATTACK_TARGETS = DEFAULT_MASK_MELEE_ATTACK_TARGETS;
                     LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+                    LayerManager.MASK_BULLETWEAPON_RAY = MODIFIED_MASK_BULLETWEAPON_RAY;
+                    LayerManager.MASK_BULLETWEAPON_PIERCING_PASS = MODIFIED_MASK_BULLETWEAPON_PIERCING_PASS;
+
                     SetLocalPlayerStatusUIElementsActive(isSeeker: false);
                     SetNearDeathAudioLimit(playerInfo.PlayerAgent.Cast<LocalPlayerAgent>(), true);
                 }

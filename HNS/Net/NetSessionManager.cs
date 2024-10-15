@@ -120,6 +120,9 @@ internal static class NetSessionManager
 
     private static void OnGameStopReceived(ulong sender, pHNSGameStop data)
     {
+        if (CurrentSession == null)
+            return;
+
         CurrentSession.EndSession(DateTimeOffset.FromUnixTimeSeconds(data.Time));
 
         HideAndSeekMode.GameManager.StopGame(CurrentSession);

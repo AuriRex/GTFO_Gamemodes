@@ -359,7 +359,7 @@ public class HideAndSeekGameManager : MonoBehaviour
     {
         var rounded = Mathf.RoundToInt(_gameTimer);
 
-        if (_gameTimerInt % 300 <= 10)
+        if (_gameTimerInt % 300 < 10)
         {
             style = CStyle.Warning;
             doBlink = true;

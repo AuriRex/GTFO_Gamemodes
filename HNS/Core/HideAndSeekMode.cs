@@ -185,17 +185,39 @@ internal class HideAndSeekMode : GamemodeBase
 
     public static string StartHNS(string[] args)
     {
+        if (!SNet.IsMaster)
+            return "Only the Master can start.";
+
+        WarpAllPlayersToMaster();
+
         var seekers = NetworkingManager.AllValidPlayers.Where(pw => pw.Team == (int)GMTeam.Seekers).Select(pw => pw.ID).ToArray();
 
         NetSessionManager.SendStartGamePacket(seekers);
 
-        return $"Start Game Packet sent! -> {seekers.Length} Seekers";
+        return string.Empty;
+    }
+
+    private static void WarpAllPlayersToMaster()
+    {
+        var localPlayer = PlayerManager.GetLocalPlayerAgent();
+
+        foreach (var player in NetworkingManager.AllValidPlayers)
+        {
+            if (player.IsLocal)
+                continue;
+
+            player.WarpTo(localPlayer.Position, localPlayer.TargetLookDir, localPlayer.DimensionIndex, PlayerAgent.WarpOptions.PlaySounds | PlayerAgent.WarpOptions.ShowScreenEffectForLocal | PlayerAgent.WarpOptions.WithoutBots);
+        }
     }
 
     public static string StopHNS(string[] args)
     {
+        if (!SNet.IsMaster)
+            return "Only the Master can stop.";
+
         NetSessionManager.SendStopGamePacket();
-        return "";
+
+        return string.Empty;
     }
 
     private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS;

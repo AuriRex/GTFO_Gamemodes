@@ -13,18 +13,18 @@ namespace Gamemodes.Patches.Required;
 
 [HarmonyWrapSafe]
 [HarmonyPatch(typeof(PlayerChatManager), nameof(PlayerChatManager.PostMessage))]
-public static class ChatCommandsHandler
+internal static class ChatCommandsHandler
 {
     public static readonly string PatchGroup = PatchGroups.REQUIRED;
 
     private static readonly Dictionary<string, MethodInfo> _commands = new();
 
-    public static void AddCommand(string command, Func<string[], string> func)
+    internal static void AddCommand(string command, Func<string[], string> func)
     {
         AddCommand(command, func.Method);
     }
 
-    public static void AddCommand(string command, MethodInfo methodInfo)
+    internal static void AddCommand(string command, MethodInfo methodInfo)
     {
         if (_commands.ContainsKey(command))
         {
@@ -86,8 +86,13 @@ public static class ChatCommandsHandler
 
             if (!_commands.TryGetValue(command, out var commandMI))
             {
-                Plugin.PostLocalMessage($"Unknown command \"{command}\".", eGameEventChatLogType.Alert);
-                return SkipOG();
+                var customCommands = GamemodeManager.CurrentMode?.ChatCommands;
+
+                if (customCommands == null || !customCommands.Get(command, out commandMI))
+                {
+                    Plugin.PostLocalMessage($"Unknown command \"{command}\".", eGameEventChatLogType.Alert);
+                    return SkipOG();
+                }
             }
 
             try

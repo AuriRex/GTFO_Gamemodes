@@ -55,11 +55,11 @@ internal class HideAndSeekMode : GamemodeBase
         _harmonyInstance = new Harmony(Plugin.GUID);
         NetSessionManager.Init();
 
-        ChatCommandsHandler.AddCommand("hnsstart", StartHNS);
-        ChatCommandsHandler.AddCommand("hnsstop", StopHNS);
-        ChatCommandsHandler.AddCommand("seeker", SwitchToSeeker);
-        ChatCommandsHandler.AddCommand("hider", SwitchToHider);
-        ChatCommandsHandler.AddCommand("lobby", SwitchToLobby);
+        ChatCommands.Add("hnsstart", StartHNS)
+            .Add("hnsstop", StopHNS)
+            .Add("seeker", SwitchToSeeker)
+            .Add("hider", SwitchToHider)
+            .Add("lobby", SwitchToLobby);
 
         CreateSeekerPalette();
 

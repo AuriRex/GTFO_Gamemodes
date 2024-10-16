@@ -6,6 +6,10 @@ public class ModeGTFO : GamemodeBase
 
     public override string DisplayName => "Normal GTFO";
 
+    public override string Description => "Just plain simple old normal GTFO.\nNo alterations.";
+
+    public override string SubTitle => "Vanilla";
+
     public override ModeSettings Settings => new()
     {
         PreventDefaultFailState = false,

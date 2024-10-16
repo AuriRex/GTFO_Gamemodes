@@ -25,6 +25,8 @@ internal class HideAndSeekMode : GamemodeBase
 
     public override string DisplayName => "Hide and Seek";
 
+    public override string Description => "No Enemies\nAll Doors Open\n\n<#f00>Seekers</color> have to catch all <#0ff>Hiders</color>";
+
     public override ModeSettings Settings => new ModeSettings
     {
         AllowMidGameModeSwitch = false,

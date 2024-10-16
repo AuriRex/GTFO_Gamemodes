@@ -1,5 +1,6 @@
 ﻿using Gamemodes.Net;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Gamemodes.Mode;
 
@@ -8,6 +9,10 @@ public abstract class GamemodeBase
     public abstract string ID { get; }
 
     public abstract string DisplayName { get; }
+    public virtual string SubTitle { get; } = string.Empty;
+    public virtual string Description { get; } = string.Empty;
+    public virtual Sprite SpriteSmall { get; } = null;
+    public virtual Sprite SpriteLarge { get; } = null;
 
     public abstract ModeSettings Settings { get; }
 

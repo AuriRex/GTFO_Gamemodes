@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Gamemodes.Mode;
 
@@ -19,6 +20,11 @@ public class ModeInfo
     public string ID { get; init; }
 
     public string DisplayName { get; init; }
+    public string SubTitle => Implementation.SubTitle;
+    public string Description => Implementation.Description;
+    public Sprite SpriteSmall => Implementation.SpriteSmall;
+    public Sprite SpriteLarge => Implementation.SpriteLarge;
 
     public GamemodeBase Implementation { get; init; }
+
 }

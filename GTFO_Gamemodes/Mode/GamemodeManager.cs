@@ -30,6 +30,8 @@ public class GamemodeManager
 
     private static bool _isGamedataReady = false;
 
+    internal static event Action<ModeInfo> OnGamemodeChanged;
+
     internal static void Init()
     {
         NetworkingManager.DoSwitchModeReceived += OnSwitchModeReceived;
@@ -117,6 +119,17 @@ public class GamemodeManager
         HandleSpecialRequirements(_currentMode.Settings);
 
         _currentMode.Enable();
+
+        try
+        {
+            OnGamemodeChanged?.Invoke(mode);
+        }
+        catch(Exception ex)
+        {
+            Plugin.L.LogError($"{ex.GetType().Name} thrown in OnGamemodeChanged event.");
+            Plugin.L.LogError(ex.Message);
+            Plugin.L.LogWarning("Stacktrace:\n"+ex.StackTrace);
+        }
 
         return true;
     }

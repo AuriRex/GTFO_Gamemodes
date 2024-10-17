@@ -21,6 +21,9 @@ public class PatchManager
         public const string USE_TEAM_VISIBILITY = "UseTeamVis";
         public const string NO_TERMINAL_COMMANDS = "NoTerminalCommands";
         public const string NO_BLOOD_DOORS = "NoBloodDoors";
+        public const string NO_PLAYER_REVIVE = "NoPlayerRevive";
+        public const string INF_PLAYER_AMMO = "InfPlayerAmmo";
+        public const string INF_SENTRY_AMMO = "InfSentryAmmo";
     }
 
     private class PatchGroup

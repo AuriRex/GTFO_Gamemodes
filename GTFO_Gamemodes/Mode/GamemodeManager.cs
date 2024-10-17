@@ -157,6 +157,9 @@ public class GamemodeManager
         ApplyPatchGroup(PatchGroups.USE_TEAM_VISIBILITY, settings.UseTeamVisibility);
         ApplyPatchGroup(PatchGroups.NO_TERMINAL_COMMANDS, settings.RemoveTerminalCommands);
         ApplyPatchGroup(PatchGroups.NO_BLOOD_DOORS, settings.RemoveBloodDoors);
+        ApplyPatchGroup(PatchGroups.NO_PLAYER_REVIVE, settings.PreventPlayerRevives);
+        ApplyPatchGroup(PatchGroups.INF_SENTRY_AMMO, settings.InfiniteSentryAmmo);
+        ApplyPatchGroup(PatchGroups.INF_PLAYER_AMMO, settings.InfiniteBackpackAmmo);
     }
 
     private static void HandleSpecialRequirementsOnInLevel()

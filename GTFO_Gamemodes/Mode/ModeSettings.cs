@@ -19,6 +19,8 @@ public class ModeSettings
     public bool UseTeamVisibility;
     public bool RemoveTerminalCommands;
     public bool RemoveBloodDoors;
+    public bool InfiniteSentryAmmo;
+    public bool InfiniteBackpackAmmo;
 
     /*
         Events on drop in

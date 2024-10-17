@@ -1,4 +1,5 @@
 ﻿using Gamemodes.Net;
+using Player;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -42,5 +43,23 @@ public abstract class GamemodeBase
 
     }
 
+    public static void PostLocalChatMessage(string msg)
+    {
+        Plugin.PostLocalMessage(msg);
+    }
 
+    public static void InstantReviveLocalPlayer()
+    {
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return;
+
+        var ploc = localPlayer.Locomotion;
+
+        if (ploc.m_currentStateEnum == PlayerLocomotion.PLOC_State.Downed)
+        {
+            ploc.ChangeState(PlayerLocomotion.PLOC_State.Stand, wasWarpedIntoState: false);
+        }
+
+        localPlayer.Damage.AddHealth(localPlayer.Damage.HealthMax, localPlayer);
+    }
 }

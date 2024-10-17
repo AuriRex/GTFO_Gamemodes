@@ -47,6 +47,8 @@ internal class HideAndSeekMode : GamemodeBase
         UseTeamVisibility = true,
         RemoveBloodDoors = true,
         RemoveTerminalCommands = true,
+        InfiniteBackpackAmmo = true,
+        InfiniteSentryAmmo = true,
     };
 
     private Harmony _harmonyInstance;
@@ -244,6 +246,8 @@ internal class HideAndSeekMode : GamemodeBase
         GameEvents.OnGameStateChanged += GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
 
+        LayerManager.LAYER_ENEMY = LayerManager.LAYER_PLAYER_SYNCED;
+
         AddAngySentries();
     }
 
@@ -259,6 +263,8 @@ internal class HideAndSeekMode : GamemodeBase
 
         LayerManager.MASK_BULLETWEAPON_RAY = DEFAULT_MASK_BULLETWEAPON_RAY;
         LayerManager.MASK_BULLETWEAPON_PIERCING_PASS = DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
+
+        LayerManager.LAYER_ENEMY = LayerMask.NameToLayer("Enemy");
 
         RemoveAngySentries();
     }
@@ -288,15 +294,16 @@ internal class HideAndSeekMode : GamemodeBase
                 localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
             }
 
-            Gamemodes.Plugin.PostLocalMessage("<align=center><color=orange><b><size=120%>Welcome to Hide and Seek!</align></color></b></size>");
-            Gamemodes.Plugin.PostLocalMessage("---------------------------------------------------------------");
-            Gamemodes.Plugin.PostLocalMessage("Use the <u>chat-commands</u> '<#f00>/seeker</color>' and '<#0ff>/hider</color>'");
-            Gamemodes.Plugin.PostLocalMessage("to assign yourself to the two teams.");
-            Gamemodes.Plugin.PostLocalMessage("---------------------------------------------------------------");
-            Gamemodes.Plugin.PostLocalMessage("<#f00>Host only:</color>");
-            Gamemodes.Plugin.PostLocalMessage("Use the command '<color=orange>/hnsstart</color>' to start the game.");
-            Gamemodes.Plugin.PostLocalMessage("<#888>You can use '<color=orange>/hnsstop</color>' to end an active game at any time.</color>");
-            Gamemodes.Plugin.PostLocalMessage("---------------------------------------------------------------");
+            PostLocalChatMessage(" ");
+            PostLocalChatMessage("<align=center><color=orange><b><size=120%>Welcome to Hide and Seek!</align></color></b></size>");
+            PostLocalChatMessage("---------------------------------------------------------------");
+            PostLocalChatMessage("Use the <u>chat-commands</u> '<#f00>/seeker</color>' and '<#0ff>/hider</color>'");
+            PostLocalChatMessage("to assign yourself to the two teams.");
+            PostLocalChatMessage("---------------------------------------------------------------");
+            PostLocalChatMessage("<#f00>Host only:</color>");
+            PostLocalChatMessage("Use the command '<color=orange>/hnsstart</color>' to start the game.");
+            PostLocalChatMessage("<#888>You can use '<color=orange>/hnsstop</color>' to end an active game at any time.</color>");
+            PostLocalChatMessage("---------------------------------------------------------------");
         }
 
         if (state == eGameStateName.Lobby)
@@ -528,22 +535,6 @@ internal class HideAndSeekMode : GamemodeBase
             child.SetActive(!isSeeker);
         }
     }
-
-    public static void InstantReviveLocalPlayer()
-    {
-        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
-            return;
-
-        var ploc = localPlayer.Locomotion;
-
-        if (ploc.m_currentStateEnum == PlayerLocomotion.PLOC_State.Downed)
-        {
-            ploc.ChangeState(PlayerLocomotion.PLOC_State.Stand, wasWarpedIntoState: false);
-        }
-
-        localPlayer.Damage.AddHealth(localPlayer.Damage.HealthMax, localPlayer);
-    }
-
 
     private const string PREFIX_ANGY_SENTRY = "Angry_";
 

@@ -283,6 +283,16 @@ internal class HideAndSeekMode : GamemodeBase
                 localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
                 localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
             }
+
+            Gamemodes.Plugin.PostLocalMessage("<align=center><color=orange><b><size=120%>Welcome to Hide and Seek!</align></color></b></size>");
+            Gamemodes.Plugin.PostLocalMessage("---------------------------------------------------------------");
+            Gamemodes.Plugin.PostLocalMessage("Use the <u>chat-commands</u> '<#f00>/seeker</color>' and '<#0ff>/hider</color>'");
+            Gamemodes.Plugin.PostLocalMessage("to assign yourself to the two teams.");
+            Gamemodes.Plugin.PostLocalMessage("---------------------------------------------------------------");
+            Gamemodes.Plugin.PostLocalMessage("<#f00>Host only:</color>");
+            Gamemodes.Plugin.PostLocalMessage("Use the command '<color=orange>/hnsstart</color>' to start the game.");
+            Gamemodes.Plugin.PostLocalMessage("<#888>You can use '<color=orange>/hnsstop</color>' to end an active game at any time.</color>");
+            Gamemodes.Plugin.PostLocalMessage("---------------------------------------------------------------");
         }
 
         if (state == eGameStateName.Lobby)
@@ -303,6 +313,10 @@ internal class HideAndSeekMode : GamemodeBase
 
     private static float ORIGINAL_m_nearDeathAudioLimit = -1;
 
+    private static float SEEKER_LIGHT_INTENSITY = 5;
+    private static float SEEKER_LIGHT_RANGE = 0.15f;
+    private static Color SEEKER_LIGHT_COLOR = Color.red;
+
     private void OnPlayerChangedTeams(PlayerWrapper playerInfo, int teamInt)
     {
         GMTeam team = (GMTeam)teamInt;
@@ -317,12 +331,16 @@ internal class HideAndSeekMode : GamemodeBase
 
         playerInfo.PlayerAgent.PlayerSyncModel.SetHelmetLightIntensity(0.1f);
 
+        var syncModel = playerInfo.PlayerAgent.PlayerSyncModel;
+
+        SetHelmetLights(syncModel);
+
         switch (team)
         {
             case GMTeam.Seekers:
                 StoreOriginalAndAssignCustomPalette(playerInfo, storage, seekerPalette);
 
-                playerInfo.PlayerAgent.PlayerSyncModel.SetHelmetLightIntensity(5);
+                SetHelmetLights(syncModel, SEEKER_LIGHT_INTENSITY, SEEKER_LIGHT_RANGE, SEEKER_LIGHT_COLOR);
 
                 if (playerInfo.IsLocal)
                 {
@@ -385,10 +403,39 @@ internal class HideAndSeekMode : GamemodeBase
 
         EndGameCheck();
 
+        // Defaults:
+        // Range: 0.06
+        // Intensity: 0.8
+        // Color: 0.6471 0.7922 0.6824 1
+
         // Set Seekers Palette / Helmet light lol
         // Range: 0.2
         // Intensity: 5
         // Red flashlight in third person? hmmm
+    }
+
+    private static readonly Color HELMET_LIGHT_DEFAULT_COLOR = new Color(0.6471f, 0.7922f, 0.6824f, 1);
+
+    private static void SetHelmetLights(PlayerSyncModelData syncModel, float intensity = 0.8f, float range = 0.06f, Color? color = null)
+    {
+        if (!color.HasValue)
+        {
+            color = HELMET_LIGHT_DEFAULT_COLOR;
+        }
+
+        foreach (var kvp in syncModel.m_helmetLights)
+        {
+            var light = kvp.Key;
+            if (light == null)
+                continue;
+
+            if (light.name.Contains("Flashlight"))
+                continue;
+
+            light.color = color.Value;
+            light.intensity = intensity;
+            light.range = range;
+        }
     }
 
     private static void StoreOriginalAndAssignCustomPalette(PlayerWrapper info, PaletteStorage storage, ClothesPalette paletteToSet)

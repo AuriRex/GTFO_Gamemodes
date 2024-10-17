@@ -1,8 +1,9 @@
-﻿using Gamemodes;
+﻿using GameData;
+using Gamemodes;
 using Gamemodes.Extensions;
 using Gamemodes.Mode;
 using Gamemodes.Net;
-using Gamemodes.Patches.Required;
+using Gear;
 using HarmonyLib;
 using HNS.Components;
 using HNS.Net;
@@ -242,13 +243,14 @@ internal class HideAndSeekMode : GamemodeBase
 
         GameEvents.OnGameStateChanged += GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
+
+        AddAngySentries();
     }
 
     public override void Disable()
     {
         _gameManagerGO.SetActive(false);
         _harmonyInstance.UnpatchSelf();
-
         GameEvents.OnGameStateChanged -= GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
 
@@ -257,6 +259,8 @@ internal class HideAndSeekMode : GamemodeBase
 
         LayerManager.MASK_BULLETWEAPON_RAY = DEFAULT_MASK_BULLETWEAPON_RAY;
         LayerManager.MASK_BULLETWEAPON_PIERCING_PASS = DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
+
+        RemoveAngySentries();
     }
 
     private void GameEvents_OnGameStateChanged(eGameStateName state)
@@ -538,5 +542,126 @@ internal class HideAndSeekMode : GamemodeBase
         }
 
         localPlayer.Damage.AddHealth(localPlayer.Damage.HealthMax, localPlayer);
+    }
+
+
+    private const string PREFIX_ANGY_SENTRY = "Angry_";
+
+    private static void RemoveAngySentries()
+    {
+        var allBlocks = PlayerOfflineGearDataBlock.Wrapper.Blocks.ToArray();
+
+        foreach (var block in allBlocks)
+        {
+            if (block.name.StartsWith("SentryGun"))
+            {
+                block.internalEnabled = true;
+                continue;
+            }
+
+            if (block.name.StartsWith(PREFIX_ANGY_SENTRY))
+            {
+                PlayerOfflineGearDataBlock.RemoveBlockByID(block.persistentID);
+                PlayerOfflineGearDataBlock.s_blockIDByName.Remove(block.name);
+                PlayerOfflineGearDataBlock.s_blockByID.Remove(block.persistentID);
+                PlayerOfflineGearDataBlock.s_dirtyBlocks.Remove(block.persistentID);
+                continue;
+            }
+        }
+
+        RefreshGear();
+
+        PlayerBackpackManager.EquipLocalGear(GearManager.Current.m_gearPerSlot[(int)InventorySlot.GearClass][0]);
+    }
+
+    private static void AddAngySentries()
+    {
+        var allBlocks = PlayerOfflineGearDataBlock.Wrapper.Blocks.ToArray();
+
+        bool refreshGear = false;
+
+        foreach (var block in allBlocks)
+        {
+            if (!block.name.StartsWith("SentryGun"))
+                continue;
+
+            var angyName = $"{PREFIX_ANGY_SENTRY}{block.name}";
+
+            if (allBlocks.Any(b => b.name == angyName))
+                continue;
+
+            SetupAngySentry(block, angyName);
+            refreshGear = true;
+
+            block.internalEnabled = false;
+        }
+
+        if (refreshGear)
+        {
+            RefreshGear();
+        }
+    }
+
+    private static void RefreshGear()
+    {
+        GearManager manager = GearManager.Current;
+
+        int length = Enum.GetValues(typeof(InventorySlot)).Length;
+        manager.m_gearPerSlot = new Il2CppSystem.Collections.Generic.List<GearIDRange>[length];
+        for (int j = 0; j < length; j++)
+        {
+            manager.m_gearPerSlot[j] = new();
+        }
+
+        manager.LoadOfflineGearDatas();
+        GearManager.GenerateAllGearIcons();
+    }
+
+    private static void SetupAngySentry(PlayerOfflineGearDataBlock blockOriginal, string angyName)
+    {
+        var block = new PlayerOfflineGearDataBlock();
+
+        block.persistentID = 0;
+        block.name = angyName;
+        block.Type = blockOriginal.Type;
+        block.internalEnabled = true;
+
+        Plugin.L.LogDebug($"Setting up {angyName} ...");
+
+        var gearIDRange = new GearIDRange(blockOriginal.GearJSON);
+
+        gearIDRange.SetCompID(eGearComponent.ToolTargetingType, (int)eSentryGunDetectionType.EnemiesAndPlayers);
+        gearIDRange.SetCompID(eGearComponent.ToolTargetingPart, 4); // idk lol
+
+        var fireMode = (eWeaponFireMode)gearIDRange.GetCompID(eGearComponent.FireMode);
+
+        string displayName = "???";
+
+        switch (fireMode)
+        {
+            default:
+                break;
+            case eWeaponFireMode.SentryGunBurst:
+                displayName = "Burst";
+                break;
+            case eWeaponFireMode.SentryGunSemi:
+                displayName = "Sniper";
+                break;
+            case eWeaponFireMode.SentryGunAuto:
+                displayName = "Auto";
+                break;
+            case eWeaponFireMode.SentryGunShotgunSemi:
+                displayName = "Shotgun";
+                break;
+        }
+
+        displayName = $"<#c00>Angry {displayName} Sentry</color>";
+
+        gearIDRange.PublicGearName = displayName;
+        gearIDRange.PlayfabItemName = displayName;
+
+        block.GearJSON = gearIDRange.ToJSON();
+
+        PlayerOfflineGearDataBlock.AddBlock(block);
     }
 }

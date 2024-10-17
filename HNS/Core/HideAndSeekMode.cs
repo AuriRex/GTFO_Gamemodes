@@ -49,6 +49,7 @@ internal class HideAndSeekMode : GamemodeBase
         RemoveTerminalCommands = true,
         InfiniteBackpackAmmo = true,
         InfiniteSentryAmmo = true,
+        PushForceMultiplier = 2.5f,
     };
 
     private Harmony _harmonyInstance;

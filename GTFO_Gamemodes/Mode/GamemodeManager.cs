@@ -1,6 +1,7 @@
 ﻿using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Mode.Tests;
 using Gamemodes.Net;
+using Gamemodes.Patches.Required;
 using Player;
 using System;
 using System.Collections.Generic;
@@ -160,6 +161,8 @@ public class GamemodeManager
         ApplyPatchGroup(PatchGroups.NO_PLAYER_REVIVE, settings.PreventPlayerRevives);
         ApplyPatchGroup(PatchGroups.INF_SENTRY_AMMO, settings.InfiniteSentryAmmo);
         ApplyPatchGroup(PatchGroups.INF_PLAYER_AMMO, settings.InfiniteBackpackAmmo);
+
+        PushForcePatch.PushForceMultiplier = settings.PushForceMultiplier;
     }
 
     private static void HandleSpecialRequirementsOnInLevel()

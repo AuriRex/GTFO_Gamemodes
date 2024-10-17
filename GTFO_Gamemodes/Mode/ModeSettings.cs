@@ -21,6 +21,7 @@ public class ModeSettings
     public bool RemoveBloodDoors;
     public bool InfiniteSentryAmmo;
     public bool InfiniteBackpackAmmo;
+    public float PushForceMultiplier = 1f;
 
     /*
         Events on drop in

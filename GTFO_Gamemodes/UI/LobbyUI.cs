@@ -42,6 +42,23 @@ internal static class LobbyUI
         SetSubText(GamemodeManager.CurrentMode.DisplayName);
 
         GamemodeManager.OnGamemodeChanged += OnModeChange;
+        GameEvents.OnGameStateChanged += OnGameStateChanged;
+    }
+
+    private static void OnGameStateChanged(eGameStateName state)
+    {
+        if (_changeGameModeButton == null)
+            return;
+
+        if (state == eGameStateName.Generating)
+        {
+            _changeGameModeButton.gameObject.SetActive(false);
+        }
+
+        if (state == eGameStateName.Lobby)
+        {
+            _changeGameModeButton.gameObject.SetActive(true);
+        }
     }
 
     private static void SetSubText(string text)

@@ -163,6 +163,22 @@ internal static class ChatCommandsHandler
     {
         throw new Exception("This is supposed to happen. :)");
     }
+
+    public static string PushForceDebug(string[] args) => PushForceMulti(args);
+    public static string PushForceMulti(string[] args)
+    {
+        float? oldPushMulti = null;
+        if (args.Length > 0 && float.TryParse(args[0], out var value))
+        {
+            oldPushMulti = PushForcePatch.PushForceMultiplier;
+            PushForcePatch.PushForceMultiplier = value;
+
+            if (oldPushMulti == value)
+                oldPushMulti = null;
+        }
+
+        return $"PushForceMulti: {(oldPushMulti.HasValue ? $"{oldPushMulti.Value} -> " : string.Empty)}{PushForcePatch.PushForceMultiplier}";
+    }
 #endif
 
     public static string ManualJoin(string[] args)

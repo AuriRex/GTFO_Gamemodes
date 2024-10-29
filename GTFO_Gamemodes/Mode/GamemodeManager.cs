@@ -1,11 +1,11 @@
 ﻿using BepInEx.Unity.IL2CPP.Utils.Collections;
-using Gamemodes.Mode.Tests;
 using Gamemodes.Net;
 using Gamemodes.Patches.Required;
 using Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Gamemodes.Mode.TestModes;
 using static Gamemodes.PatchManager;
 
 namespace Gamemodes.Mode;
@@ -44,6 +44,7 @@ public class GamemodeManager
 #if DEBUG
         RegisterMode<ModeTesting>();
         RegisterMode<ModeNoSleepers>();
+        RegisterMode<GtfoButTheLevelSplitsUp>();
 #endif
     }
 

@@ -1,4 +1,4 @@
-﻿namespace Gamemodes.Mode.Tests;
+﻿namespace Gamemodes.Mode.TestModes;
 
 #if DEBUG
 internal class ModeNoSleepers : GamemodeBase

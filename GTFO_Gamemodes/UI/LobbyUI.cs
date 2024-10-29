@@ -5,32 +5,45 @@ using SNetwork;
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Gamemodes.UI;
 
 internal static class LobbyUI
 {
     private static string _selectedGamemodeID = null;
-    private static CM_TimedButton _changeGameModeButton;
+    private static CM_Item _changeGameModeButton;
     private static TextMeshPro _subText;
 
     internal static void Setup(CM_PageLoadout instance)
     {
         Plugin.L.LogDebug("Setting up Gamemodes UI ...");
 
-        _changeGameModeButton = instance.m_guiLayer.AddRectComp(instance.m_readyButtonPrefab, GuiAnchor.TopCenter, new Vector2(500f, 0f), instance.m_readyButtonAlign).TryCast<CM_TimedButton>();
-        _changeGameModeButton.gameObject.SetActive(true);
+        var timedButton = instance.m_guiLayer.AddRectComp(instance.m_readyButtonPrefab, GuiAnchor.TopCenter, new Vector2(500f, 0f), instance.m_readyButtonAlign).Cast<CM_TimedButton>();
+        var go = timedButton.gameObject;
+
+        var texts = timedButton.GetTexts();
+        timedButton.enabled = false;
+        UnityEngine.Object.Destroy(timedButton);
+        
+        _changeGameModeButton = go.AddComponent<CM_Item>();
+        _changeGameModeButton.m_texts = texts;
         _changeGameModeButton.TextMeshRoot = instance.transform;
         _changeGameModeButton.SetText("<#ccc><b>Switch Gamemode</b></color>");
-        _changeGameModeButton.OnBtnPressCallback = new Action<int>((_) => {
+
+        go.SetActive(true);
+        
+        var action = new Action<int>((_) => {
             Plugin.L.LogDebug("Attempting to show popup ...");
             // Shouldn't matter which lobby slot we're picking, riiiight? :D
             ShowGamemodeSelectionPopup(instance.m_playerLobbyBars[0], instance.m_popupAlign);
         });
 
-        _changeGameModeButton.m_holdButtonDuration = 0f;
+        _changeGameModeButton.m_onBtnPress = new UnityEvent();
+        
+        _changeGameModeButton.OnBtnPressCallback = action;
 
-        var transform = _changeGameModeButton.transform;
+        var transform = go.transform;
 
         transform.FindChild("ProgressFillBase").gameObject.SetActive(false);
         transform.FindChild("ProgressFill").gameObject.SetActive(false);

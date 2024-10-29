@@ -14,6 +14,7 @@ using SNetwork;
 using System;
 using System.Linq;
 using System.Reflection;
+using Gamemodes.Components;
 using UnityEngine;
 
 namespace HNS.Core;
@@ -80,9 +81,8 @@ internal class HideAndSeekMode : GamemodeBase
 
         _gameManagerGO.SetActive(false);
 
-        if (!ClassInjector.IsTypeRegisteredInIl2Cpp<HideAndSeekGameManager>())
+        if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {
-            ClassInjector.RegisterTypeInIl2Cpp<HideAndSeekGameManager>();
             ClassInjector.RegisterTypeInIl2Cpp<PaletteStorage>();
             ClassInjector.RegisterTypeInIl2Cpp<PUI_TeamDisplay>();
         }
@@ -126,7 +126,7 @@ internal class HideAndSeekMode : GamemodeBase
             //"PlayerSynced" // <-- Removed
         });
 
-        GameManager = _gameManagerGO.AddComponent<HideAndSeekGameManager>();
+        GameManager = new HideAndSeekGameManager(_gameManagerGO.AddComponent<TimerHUD>());
     }
 
     private static string SwitchToLobby(string[] arg)
@@ -563,7 +563,7 @@ internal class HideAndSeekMode : GamemodeBase
 
         RefreshGear();
 
-        PlayerBackpackManager.EquipLocalGear(GearManager.Current.m_gearPerSlot[(int)InventorySlot.GearClass][0]);
+        PlayerBackpackManager.EquipLocalGear(GearManager.Current.m_gearPerSlot[(int)InventorySlot.GearClass].ToArray()[0]);
     }
 
     private static void AddAngySentries()

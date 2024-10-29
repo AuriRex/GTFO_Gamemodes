@@ -19,8 +19,9 @@ public static class Utils
 
         WOM.CleanupWaveTriggers();
 
-        foreach (IWardenObjective wardenObjective in WOM.m_wardenObjectives.Values)
+        foreach (var thing in WOM.m_wardenObjectives)
         {
+            var wardenObjective = thing.Value;
             wardenObjective.OnLevelCleanup();
         }
         WOM.m_wardenObjectives.Clear();
@@ -36,7 +37,7 @@ public static class Utils
         WOM.ProgressionObjectiveManager.OnLevelCleanup();
 
         WOM.StopAllCoroutines();
-        WOM.TryCast<IWardenObjectiveContext>().StopAllWardenObjectiveEnemyWaves();
+        WOM.TryCast<IWardenObjectiveContext>()?.StopAllWardenObjectiveEnemyWaves();
     }
 
     public static void DisableAllWorldEventTriggers()

@@ -36,6 +36,7 @@ public class Plugin : BasePlugin
         Version = new PrimitiveVersion(VERSION);
 
         ClassInjector.RegisterTypeInIl2Cpp<PlayerToken>();
+        ClassInjector.RegisterTypeInIl2Cpp<TimerHUD>();
 
         PatchManager.Init();
         NetworkingManager.Init();

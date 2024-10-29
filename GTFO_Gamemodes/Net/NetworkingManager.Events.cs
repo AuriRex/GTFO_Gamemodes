@@ -158,7 +158,7 @@ public partial class NetworkingManager
 
         WarpOptions options = (WarpOptions)data.WarpOptions;
 
-        Plugin.L.LogDebug($"{OnForcedTeleportReceived}: {data}");
+        Plugin.L.LogDebug($"{nameof(OnForcedTeleportReceived)}: {data}");
         PlayerManager.GetLocalPlayerAgent()?.TryWarpTo(dim, pos, lookDir, options);
     }
 

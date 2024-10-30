@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Gamemodes.UI;
 
-public record struct TimerStyleOverride(bool DoOverride, TimerDisplayStyle Style, bool DoBlink);
+public record struct TimerStyleOverride(TimerDisplayStyle Style, bool DoBlink = false, Color? CustomColor = null, string CustomColorHex = null);

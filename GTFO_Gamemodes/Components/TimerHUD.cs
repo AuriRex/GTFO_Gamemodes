@@ -3,6 +3,7 @@ using Gamemodes.Interfaces;
 using Gamemodes.Net;
 using Gamemodes.UI;
 using Il2CppInterop.Runtime.Attributes;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace Gamemodes.Components;
@@ -18,7 +19,7 @@ public class TimerHUD : MonoBehaviour
     private float _countdown = 1;
     private int _countdownInt = 0;
     private int _countdownMax = 60;
-    private Func<TimerStyleOverride> _countdownStyleProvider;
+    private Func<TimerStyleOverride?> _countdownStyleProvider;
 
     private float _gameTimer = 0;
     private int _gameTimerInt = 0;
@@ -27,7 +28,7 @@ public class TimerHUD : MonoBehaviour
     
     public const string COUNTDOWN_TIMER_MARKER = "[COUNTDOWN]";
     public const string GAME_TIMER_MARKER = "[GAMETIMER]";
-    public const string DEFAULT_COUNTDOWN_FORMATTEXT = $"{COUNTDOWN_TIMER_MARKER} left.";
+    public const string DEFAULT_COUNTDOWN_FORMATTEXT = $"{COUNTDOWN_TIMER_MARKER}";
 
     public string GameTimerFormatText { get; set; } = $"Time elapsed: {GAME_TIMER_MARKER}";
     public float GameTimerHighlightEveryXSeconds { get; set; } = 300;
@@ -68,7 +69,7 @@ public class TimerHUD : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    public void StartCountdown(int duration, Func<TimerStyleOverride> styleProvider, string formatText = null)
+    public void StartCountdown(int duration, string formatText = null, Func<TimerStyleOverride?> styleProvider = null)
     {
         _countdown = duration;
         _countdownMax = duration;
@@ -98,8 +99,7 @@ public class TimerHUD : MonoBehaviour
             _gameTimer += Time.deltaTime;
         }
 
-        TimerDisplayStyle style = TimerDisplayStyle.Default;
-        bool doBlink = false;
+        TimerStyleOverride? styleOverride = null;
         bool showCountdownTimer = _countdown > 0;
 
         if (showCountdownTimer)
@@ -112,11 +112,11 @@ public class TimerHUD : MonoBehaviour
         
         if (showCountdownTimer)
         {
-            DisplayCountdownTimer(ref style, ref doBlink);
+            DisplayCountdownTimer(ref styleOverride);
         }
         else
         {
-            DisplayGameTimer(ref style, ref doBlink);
+            DisplayGameTimer(ref styleOverride);
         }
 
         if (!_gameTimerActive && !showCountdownTimer)
@@ -138,34 +138,41 @@ public class TimerHUD : MonoBehaviour
         _timerHudGraphics.SetVisible(true);
         _messageVisible = true;
 
-        // TODO: Rework timer style things
-        switch (style)
+        TimerStyleOverride style = TSO_DEFAULT;
+        if (styleOverride.HasValue)
+        {
+            style = styleOverride.Value;
+        }
+
+        switch (style.Style)
         {
             default:
             case TimerDisplayStyle.Default:
-                SetStyle("CCC", Color.gray, blinking: doBlink);
+                SetStyle("CCC", Color.gray, style.DoBlink);
                 break;
             case TimerDisplayStyle.Green:
-                SetStyle("0C0", Color.green, blinking: doBlink);
+                SetStyle("0C0", Color.green, style.DoBlink);
                 break;
             case TimerDisplayStyle.Warning:
-                SetStyle("FC0", Color.yellow, blinking: doBlink);
+                SetStyle("FC0", Color.yellow, style.DoBlink);
                 break;
             case TimerDisplayStyle.Red:
-                SetStyle("F00", Color.red, blinking: doBlink);
+                SetStyle("F00", Color.red, style.DoBlink);
+                break;
+            case TimerDisplayStyle.Custom:
+                SetStyle(style.CustomColorHex, style.CustomColor ?? Color.gray, style.DoBlink);
                 break;
         }
     }
 
     [HideFromIl2Cpp]
-    private void DisplayGameTimer(ref TimerDisplayStyle style, ref bool doBlink)
+    private void DisplayGameTimer(ref TimerStyleOverride? styleOverride)
     {
         var rounded = Mathf.RoundToInt(_gameTimer);
         
         if (_gameTimerInt % GameTimerHighlightEveryXSeconds < GameTimerHighlightFoxXSeconds)
         {
-            style = TimerDisplayStyle.Warning;
-            doBlink = true;
+            styleOverride = TSO_ORANGE_WARNING_BLINKING;
         }
 
         if (rounded == _gameTimerInt)
@@ -179,7 +186,7 @@ public class TimerHUD : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    private void DisplayCountdownTimer(ref TimerDisplayStyle style, ref bool doBlink)
+    private void DisplayCountdownTimer(ref TimerStyleOverride? styleOverride)
     {
         var rounded = Mathf.RoundToInt(_countdown);
 
@@ -196,36 +203,26 @@ public class TimerHUD : MonoBehaviour
             return;
         }
 
-        var styleOverride = result.Value;
-
-        if (!styleOverride.DoOverride)
-        {
-            return;
-        }
-
-        style = styleOverride.Style;
-        doBlink = styleOverride.DoBlink;
+        styleOverride = result.Value;
     }
 
+    public static readonly TimerStyleOverride TSO_DEFAULT = new(TimerDisplayStyle.Default);
+    public static readonly TimerStyleOverride TSO_GREEN = new(TimerDisplayStyle.Green);
+    public static readonly TimerStyleOverride TSO_GREEN_BLINKING = new(TimerDisplayStyle.Green, DoBlink: true);
+    public static readonly TimerStyleOverride TSO_ORANGE_WARNING = new(TimerDisplayStyle.Warning);
+    public static readonly TimerStyleOverride TSO_ORANGE_WARNING_BLINKING = new(TimerDisplayStyle.Warning, DoBlink: true);
+    public static readonly TimerStyleOverride TSO_RED_WARNING = new(TimerDisplayStyle.Red);
+    public static readonly TimerStyleOverride TSO_RED_WARNING_BLINKING = new(TimerDisplayStyle.Red, DoBlink: true);
+    
     [HideFromIl2Cpp]
-    private TimerStyleOverride GetDefaultGameStartCountdownStyle()
+    private TimerStyleOverride? GetDefaultGameStartCountdownStyle()
     {
-        var ret = new TimerStyleOverride(false, TimerDisplayStyle.Default, false);
-
-        switch (_countdownInt)
+        return _countdownInt switch
         {
-            case <= 10 and > 0:
-                ret.Style = TimerDisplayStyle.Red;
-                ret.DoBlink = true;
-                ret.DoOverride = true;
-                break;
-            case <= 20 and > 10:
-                ret.Style = TimerDisplayStyle.Warning;
-                ret.DoOverride = true;
-                break;
-        }
-
-        return ret;
+            <= 10 and > 0 => TSO_RED_WARNING_BLINKING,
+            <= 20 and > 10 => TSO_ORANGE_WARNING,
+            _ => TSO_DEFAULT
+        };
     }
 
     [HideFromIl2Cpp]

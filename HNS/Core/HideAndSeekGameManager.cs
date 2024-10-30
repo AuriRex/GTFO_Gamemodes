@@ -46,7 +46,7 @@ public class HideAndSeekGameManager
         _session = session;
         _gameTimerDisplay.ResetGameTimer();
         _gameTimerDisplay.StartGameTimer();
-        _gameTimerDisplay.StartCountdown(blindDuration, GetDefaultGameStartCountdownStyle, GAMESTART_COUNTDOWN_FORMATTEXT);
+        _gameTimerDisplay.StartCountdown(blindDuration, GAMESTART_COUNTDOWN_FORMATTEXT);
 
         _localPlayerIsSeeker = localPlayerIsSeeker;
         _startedAsSeeker = localPlayerIsSeeker;
@@ -72,12 +72,12 @@ public class HideAndSeekGameManager
             _localPlayerIsSeeker = true;
             _session.LocalPlayerCaught();
             var hiddenForMsg = $"<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>";
-            _gameTimerDisplay.StartCountdown(5, StyleRed, $"You've been caught!\n{hiddenForMsg}\nReviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}");
+            _gameTimerDisplay.StartCountdown(5, $"You've been caught!\n{hiddenForMsg}\nReviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}", StyleRed);
             Gamemodes.Plugin.PostLocalMessage(hiddenForMsg);
         }
         else
         {
-            _gameTimerDisplay.StartCountdown(5, StyleRed, $"Reviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}");
+            _gameTimerDisplay.StartCountdown(5, $"Reviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}", StyleRed);
         }
 
         CoroutineManager.StartCoroutine(RevivePlayerRoutine(5).WrapToIl2Cpp());
@@ -92,7 +92,7 @@ public class HideAndSeekGameManager
         if (localPlayer.Locomotion.m_currentStateEnum != PlayerLocomotion.PLOC_State.Downed)
             return;
 
-        _gameTimerDisplay.StartCountdown(reviveDelay, StyleDefault, $"Reviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}");
+        _gameTimerDisplay.StartCountdown(reviveDelay, $"Reviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}", StyleDefault);
 
         CoroutineManager.StartCoroutine(RevivePlayerRoutine(5, showSeekerMessage).WrapToIl2Cpp());
     }
@@ -112,7 +112,7 @@ public class HideAndSeekGameManager
 
         if (_session != null && _session.IsActive && showSeekerMessage)
         {
-            _gameTimerDisplay.StartCountdown(5, StyleRed, $"You've been caught!\nFind the remaining hiders!");
+            _gameTimerDisplay.StartCountdown(5, $"You've been caught!\nFind the remaining hiders!", StyleRed);
         }
     }
 
@@ -151,7 +151,7 @@ public class HideAndSeekGameManager
             return;
         }
 
-        _gameTimerDisplay.StartCountdown(10, StyleImportant, message);
+        _gameTimerDisplay.StartCountdown(10, message, StyleImportant);
 
         if (SNet.IsMaster)
         {
@@ -178,19 +178,19 @@ public class HideAndSeekGameManager
         }
     }
 
-    private TimerStyleOverride StyleDefault()
+    private TimerStyleOverride? StyleDefault()
     {
-        return new TimerStyleOverride(false, TimerDisplayStyle.Default, false);
+        return TimerHUD.TSO_DEFAULT;
     }
     
-    private TimerStyleOverride StyleImportant()
+    private TimerStyleOverride? StyleImportant()
     {
-        return new TimerStyleOverride(true, TimerDisplayStyle.Green, true);
+        return TimerHUD.TSO_GREEN_BLINKING;
     }
 
-    private TimerStyleOverride StyleRed()
+    private TimerStyleOverride? StyleRed()
     {
-        return new TimerStyleOverride(false, TimerDisplayStyle.Red, true);
+        return TimerHUD.TSO_RED_WARNING_BLINKING;
     }
 
     private Blinds BlindPlayer()
@@ -212,26 +212,6 @@ public class HideAndSeekGameManager
         if (_blinds == blinds)
             _blinds = null;
 
-        _gameTimerDisplay.StartCountdown(10, StyleImportant, "Seekers have been released!");
-    }
-
-    private TimerStyleOverride GetDefaultGameStartCountdownStyle()
-    {
-        var ret = new TimerStyleOverride(false, TimerDisplayStyle.Default, false);
-        
-        switch (_gameTimerDisplay.Countdown)
-        {
-            case <= 10 and > 0:
-                ret.Style = TimerDisplayStyle.Red;
-                ret.DoBlink = true;
-                ret.DoOverride = true;
-                break;
-            case <= 20 and > 10:
-                ret.Style = TimerDisplayStyle.Warning;
-                ret.DoOverride = true;
-                break;
-        }
-
-        return ret;
+        _gameTimerDisplay.StartCountdown(10, "Seekers have been released!", StyleImportant);
     }
 }

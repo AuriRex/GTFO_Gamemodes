@@ -6,4 +6,5 @@ public enum TimerDisplayStyle
     Green,
     Warning,
     Red,
+    Custom,
 }

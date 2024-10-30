@@ -79,7 +79,7 @@ public class GtfoButTheLevelSplitsUp : GamemodeBase
     {
         if (state == eGameStateName.InLevel)
         {
-            _timerHUD.StartCountdown(5, Style, "Time remaining until chaos: [COUNTDOWN]");
+            _timerHUD.StartCountdown(5, "Time remaining until chaos: [COUNTDOWN]", Style);
             _timerHUD.ResetGameTimer();
             _timerHUD.StartGameTimer();
             
@@ -104,10 +104,9 @@ public class GtfoButTheLevelSplitsUp : GamemodeBase
         NetworkingManager.SendEvent<pStart>(new(), invokeLocal: true);
     }
 
-    private static TimerStyleOverride _overrideStyle = new TimerStyleOverride(true, TimerDisplayStyle.Red, true);
-    private TimerStyleOverride Style()
+    private TimerStyleOverride? Style()
     {
-        return _overrideStyle;
+        return TimerHUD.TSO_RED_WARNING_BLINKING;
     }
 
     private class ChaosManager : MonoBehaviour

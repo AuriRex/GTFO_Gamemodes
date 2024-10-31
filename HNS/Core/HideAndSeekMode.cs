@@ -84,7 +84,6 @@ internal class HideAndSeekMode : GamemodeBase
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {
             ClassInjector.RegisterTypeInIl2Cpp<PaletteStorage>();
-            ClassInjector.RegisterTypeInIl2Cpp<PUI_TeamDisplay>();
         }
 
         DEFAULT_MASK_MELEE_ATTACK_TARGETS = LayerManager.MASK_MELEE_ATTACK_TARGETS;
@@ -270,20 +269,26 @@ internal class HideAndSeekMode : GamemodeBase
         RemoveAngySentries();
     }
 
+    private static string SeekersExtraInfoUpdater(PlayerWrapper player)
+    {
+        var area = player.PlayerAgent.CourseNode?.m_area;
+
+        if (area == null)
+            return null;
+        
+        return $"<color=white>[ZONE {area.m_zone.NavInfo.Number}, Area {area.m_navInfo.Suffix}]";
+    }
+    
     private void GameEvents_OnGameStateChanged(eGameStateName state)
     {
         if (state == eGameStateName.InLevel)
         {
             NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
 
-            var go = GuiManager.PlayerLayer.WardenObjectives.gameObject;
-
-            if (go.GetComponent<PUI_TeamDisplay>() == null)
-            {
-                var teamDisplay = go.AddComponent<PUI_TeamDisplay>();
-
-                teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
-            }
+            var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
+            teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN));
+            teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
 
             WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
         
@@ -309,12 +314,7 @@ internal class HideAndSeekMode : GamemodeBase
 
         if (state == eGameStateName.Lobby)
         {
-            var go = GuiManager.PlayerLayer.WardenObjectives.gameObject;
-            var ui = go.GetComponent<PUI_TeamDisplay>();
-            if (ui != null)
-            {
-                UnityEngine.Object.Destroy(ui);
-            }
+            PUI_TeamDisplay.DestroyInstanceOnWardenObjectives();
 
             if (SNet.IsMaster && NetSessionManager.HasSession)
             {

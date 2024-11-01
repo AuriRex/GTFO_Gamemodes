@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace HNS.Core;
 
-internal class HideAndSeekMode : GamemodeBase
+internal partial class HideAndSeekMode : GamemodeBase
 {
     public static HideAndSeekGameManager GameManager { get; private set; }
 
@@ -57,13 +57,35 @@ internal class HideAndSeekMode : GamemodeBase
 
     private GameObject _gameManagerGO;
 
+    private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS;
+    private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+    private static int DEFAULT_MASK_BULLETWEAPON_RAY;
+    private static int DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
+
+
+    private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS;
+    private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+    private static int MODIFIED_MASK_BULLETWEAPON_RAY;
+    private static int MODIFIED_MASK_BULLETWEAPON_PIERCING_PASS;
+    
+    private static ClothesPalette _seekerPalette;
+    private static ClothesPalette _spectatorPalette;
+    
+    private static float ORIGINAL_m_nearDeathAudioLimit = -1;
+
+    private static float SEEKER_LIGHT_INTENSITY = 5;
+    private static float SEEKER_LIGHT_RANGE = 0.15f;
+    private static Color SEEKER_LIGHT_COLOR = Color.red;
+    
     public override void Init()
     {
         _harmonyInstance = new Harmony(Plugin.GUID);
         NetSessionManager.Init();
 
-        ChatCommands.Add("hnsstart", StartHNS)
-            .Add("hnsstop", StopHNS)
+        ChatCommands.Add("hnsstart", StartGame)
+            .Add("hnsstop", StopGame)
             .Add("seeker", SwitchToSeeker)
             .Add("hider", SwitchToHider)
             .Add("lobby", SwitchToLobby);
@@ -128,40 +150,10 @@ internal class HideAndSeekMode : GamemodeBase
         GameManager = new HideAndSeekGameManager(_gameManagerGO.AddComponent<TimerHUD>());
     }
 
-    private static string SwitchToLobby(string[] arg)
-    {
-        if (NetSessionManager.HasSession)
-            return "Can't switch teams mid session.";
-
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
-        return string.Empty;
-    }
-
-    private static string SwitchToHider(string[] arg)
-    {
-        if (NetSessionManager.HasSession)
-            return "Can't switch teams mid session.";
-
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Hiders);
-        return string.Empty;
-    }
-
-    private static string SwitchToSeeker(string[] arg)
-    {
-        if (NetSessionManager.HasSession)
-            return "Can't switch teams mid session.";
-
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Seekers);
-        return string.Empty;
-    }
-
-    private static ClothesPalette seekerPalette;
-    private static ClothesPalette spectatorPalette;
-
     private static void CreateSeekerPalette()
     {
-        CreatePalette("SeekerPalette", Color.red, 6, out seekerPalette);
-        CreatePalette("SpectatorPalette", Color.cyan, 9, out spectatorPalette);
+        CreatePalette("SeekerPalette", Color.red, 6, out _seekerPalette);
+        CreatePalette("SpectatorPalette", Color.cyan, 9, out _spectatorPalette);
     }
 
     private static void CreatePalette(string name, Color color, int material, out ClothesPalette palette)
@@ -188,20 +180,6 @@ internal class HideAndSeekMode : GamemodeBase
         palette.m_quinaryTone = tone;
     }
 
-    public static string StartHNS(string[] args)
-    {
-        if (!SNet.IsMaster)
-            return "Only the Master can start.";
-
-        WarpAllPlayersToMaster();
-
-        var seekers = NetworkingManager.AllValidPlayers.Where(pw => pw.Team == (int)GMTeam.Seekers).Select(pw => pw.ID).ToArray();
-
-        NetSessionManager.SendStartGamePacket(seekers);
-
-        return string.Empty;
-    }
-
     private static void WarpAllPlayersToMaster()
     {
         var localPlayer = PlayerManager.GetLocalPlayerAgent();
@@ -214,29 +192,6 @@ internal class HideAndSeekMode : GamemodeBase
             player.WarpTo(localPlayer.Position, localPlayer.TargetLookDir, localPlayer.DimensionIndex, PlayerAgent.WarpOptions.PlaySounds | PlayerAgent.WarpOptions.ShowScreenEffectForLocal | PlayerAgent.WarpOptions.WithoutBots);
         }
     }
-
-    public static string StopHNS(string[] args)
-    {
-        if (!SNet.IsMaster)
-            return "Only the Master can stop.";
-
-        NetSessionManager.SendStopGamePacket();
-
-        return string.Empty;
-    }
-
-    private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS;
-    private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
-
-    private static int DEFAULT_MASK_BULLETWEAPON_RAY;
-    private static int DEFAULT_MASK_BULLETWEAPON_PIERCING_PASS;
-
-
-    private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS;
-    private static int MODIFIED_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
-
-    private static int MODIFIED_MASK_BULLETWEAPON_RAY;
-    private static int MODIFIED_MASK_BULLETWEAPON_PIERCING_PASS;
 
     public override void Enable()
     {
@@ -281,53 +236,52 @@ internal class HideAndSeekMode : GamemodeBase
     
     private void GameEvents_OnGameStateChanged(eGameStateName state)
     {
-        if (state == eGameStateName.InLevel)
+        switch (state)
         {
-            NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
+            case eGameStateName.InLevel:
+            {
+                NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
 
-            var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
-            teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-            teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN));
-            teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
+                var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
+                teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN));
+                teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
 
-            WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
+                WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
         
-            var localPlayer = PlayerManager.GetLocalPlayerAgent();
+                var localPlayer = PlayerManager.GetLocalPlayerAgent();
 
-            if (localPlayer != null && localPlayer.Sound != null)
-            {
-                localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
-                localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
+                if (localPlayer != null && localPlayer.Sound != null)
+                {
+                    localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
+                    localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
+                }
+
+                PostLocalChatMessage(" ");
+                PostLocalChatMessage("<align=center><color=orange><b><size=120%>Welcome to Hide and Seek!</align></color></b></size>");
+                PostLocalChatMessage("---------------------------------------------------------------");
+                PostLocalChatMessage("Use the <u>chat-commands</u> '<#f00>/seeker</color>' and '<#0ff>/hider</color>'");
+                PostLocalChatMessage("to assign yourself to the two teams.");
+                PostLocalChatMessage("---------------------------------------------------------------");
+                PostLocalChatMessage("<#f00>Host only:</color>");
+                PostLocalChatMessage("Use the command '<color=orange>/hnsstart</color>' to start the game.");
+                PostLocalChatMessage("<#888>You can use '<color=orange>/hnsstop</color>' to end an active game at any time.</color>");
+                PostLocalChatMessage("---------------------------------------------------------------");
+                break;
             }
-
-            PostLocalChatMessage(" ");
-            PostLocalChatMessage("<align=center><color=orange><b><size=120%>Welcome to Hide and Seek!</align></color></b></size>");
-            PostLocalChatMessage("---------------------------------------------------------------");
-            PostLocalChatMessage("Use the <u>chat-commands</u> '<#f00>/seeker</color>' and '<#0ff>/hider</color>'");
-            PostLocalChatMessage("to assign yourself to the two teams.");
-            PostLocalChatMessage("---------------------------------------------------------------");
-            PostLocalChatMessage("<#f00>Host only:</color>");
-            PostLocalChatMessage("Use the command '<color=orange>/hnsstart</color>' to start the game.");
-            PostLocalChatMessage("<#888>You can use '<color=orange>/hnsstop</color>' to end an active game at any time.</color>");
-            PostLocalChatMessage("---------------------------------------------------------------");
-        }
-
-        if (state == eGameStateName.Lobby)
-        {
-            PUI_TeamDisplay.DestroyInstanceOnWardenObjectives();
-
-            if (SNet.IsMaster && NetSessionManager.HasSession)
+            case eGameStateName.Lobby:
             {
-                NetSessionManager.SendStopGamePacket();
+                PUI_TeamDisplay.DestroyInstanceOnWardenObjectives();
+
+                if (SNet.IsMaster && NetSessionManager.HasSession)
+                {
+                    NetSessionManager.SendStopGamePacket();
+                }
+
+                break;
             }
         }
     }
-
-    private static float ORIGINAL_m_nearDeathAudioLimit = -1;
-
-    private static float SEEKER_LIGHT_INTENSITY = 5;
-    private static float SEEKER_LIGHT_RANGE = 0.15f;
-    private static Color SEEKER_LIGHT_COLOR = Color.red;
 
     private void OnPlayerChangedTeams(PlayerWrapper playerInfo, int teamInt)
     {
@@ -350,7 +304,7 @@ internal class HideAndSeekMode : GamemodeBase
         switch (team)
         {
             case GMTeam.Seekers:
-                StoreOriginalAndAssignCustomPalette(playerInfo, storage, seekerPalette);
+                StoreOriginalAndAssignCustomPalette(playerInfo, storage, _seekerPalette);
 
                 SetHelmetLights(syncModel, SEEKER_LIGHT_INTENSITY, SEEKER_LIGHT_RANGE, SEEKER_LIGHT_COLOR);
 
@@ -379,7 +333,7 @@ internal class HideAndSeekMode : GamemodeBase
                 break;
             default:
             case GMTeam.PreGameAndOrSpectator:
-                StoreOriginalAndAssignCustomPalette(playerInfo, storage, spectatorPalette);
+                StoreOriginalAndAssignCustomPalette(playerInfo, storage, _spectatorPalette);
 
                 if (playerInfo.IsLocal)
                 {
@@ -430,10 +384,7 @@ internal class HideAndSeekMode : GamemodeBase
 
     private static void SetHelmetLights(PlayerSyncModelData syncModel, float intensity = 0.8f, float range = 0.06f, Color? color = null)
     {
-        if (!color.HasValue)
-        {
-            color = HELMET_LIGHT_DEFAULT_COLOR;
-        }
+        color ??= HELMET_LIGHT_DEFAULT_COLOR;
 
         foreach (var kvp in syncModel.m_helmetLights)
         {
@@ -459,7 +410,7 @@ internal class HideAndSeekMode : GamemodeBase
 
         if (paletteToSet == null)
         {
-            paletteToSet = seekerPalette;
+            paletteToSet = _seekerPalette;
         }
 
         info.PlayerAgent.RigSwitch.ApplyPalette(paletteToSet);
@@ -467,14 +418,14 @@ internal class HideAndSeekMode : GamemodeBase
 
     private static void RevertToOriginalPalette(PlayerWrapper info, PaletteStorage storage)
     {
-        if (storage.hiderPalette != null)
-        {
-            info.PlayerAgent.RigSwitch.ApplyPalette(storage.hiderPalette);
-            storage.hiderPalette = null;
-        }
+        if (storage.hiderPalette == null)
+            return;
+
+        info.PlayerAgent.RigSwitch.ApplyPalette(storage.hiderPalette);
+        storage.hiderPalette = null;
     }
 
-    private void EndGameCheck()
+    private static void EndGameCheck()
     {
         if (!SNet.IsMaster)
             return;
@@ -482,7 +433,7 @@ internal class HideAndSeekMode : GamemodeBase
         if (!NetSessionManager.HasSession)
             return;
 
-        if (!NetworkingManager.AllValidPlayers.All(pl => pl.Team == (int)GMTeam.Seekers))
+        if (NetworkingManager.AllValidPlayers.Any(pl => pl.Team != (int)GMTeam.Seekers))
             return;
 
         NetSessionManager.SendStopGamePacket();
@@ -551,14 +502,13 @@ internal class HideAndSeekMode : GamemodeBase
                 continue;
             }
 
-            if (block.name.StartsWith(PREFIX_ANGY_SENTRY))
-            {
-                PlayerOfflineGearDataBlock.RemoveBlockByID(block.persistentID);
-                PlayerOfflineGearDataBlock.s_blockIDByName.Remove(block.name);
-                PlayerOfflineGearDataBlock.s_blockByID.Remove(block.persistentID);
-                PlayerOfflineGearDataBlock.s_dirtyBlocks.Remove(block.persistentID);
+            if (!block.name.StartsWith(PREFIX_ANGY_SENTRY))
                 continue;
-            }
+
+            PlayerOfflineGearDataBlock.RemoveBlockByID(block.persistentID);
+            PlayerOfflineGearDataBlock.s_blockIDByName.Remove(block.name);
+            PlayerOfflineGearDataBlock.s_blockByID.Remove(block.persistentID);
+            PlayerOfflineGearDataBlock.s_dirtyBlocks.Remove(block.persistentID);
         }
 
         RefreshGear();

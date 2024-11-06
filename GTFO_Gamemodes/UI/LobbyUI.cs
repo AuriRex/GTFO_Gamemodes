@@ -128,6 +128,8 @@ internal static class LobbyUI
 
             var isActive = modeInfo.ID == GamemodeManager.CurrentMode?.ID;
 
+            var isVanilla = modeInfo.ID == ModeGTFO.MODE_ID;
+            
             var emptyIcon = scrollItem.transform.FindChild("EmptyIcon"); // '+' icon
             emptyIcon.gameObject.SetActive(false);
 
@@ -148,7 +150,12 @@ internal static class LobbyUI
 
             if (isActive)
             {
-                subtitleText = "<color=orange>Active</color>";
+                subtitleText = "<color=orange>Active</color> ";
+            }
+
+            if (isVanilla && (string.IsNullOrEmpty(subtitleText) || isActive) && GamemodeManager.ModeSwitchCount > 1)
+            {
+                subtitleText = $"{subtitleText}<#F00>{(isActive ? string.Empty : "<alpha=#33>")}<u>/!\\</u> Restart Recommended to play Vanilla again!</color>";
             }
 
             scrollItem.m_subTitleText.SetText(subtitleText);

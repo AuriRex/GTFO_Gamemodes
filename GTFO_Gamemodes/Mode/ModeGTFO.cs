@@ -2,7 +2,8 @@
 
 public class ModeGTFO : GamemodeBase
 {
-    public override string ID => "BaseGameGTFO";
+    public const string MODE_ID = "GTFO";
+    public override string ID => MODE_ID;
 
     public override string DisplayName => "Normal GTFO";
 

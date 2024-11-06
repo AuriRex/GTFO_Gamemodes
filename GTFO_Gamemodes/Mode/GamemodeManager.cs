@@ -33,8 +33,10 @@ public class GamemodeManager
 
     private static bool _isGamedataReady = false;
 
+    public static int ModeSwitchCount { get; private set; }
+    
     internal static event Action<ModeInfo> OnGamemodeChanged;
-    public static bool IsVanilla => CurrentMode == null || CurrentMode.ID == "BaseGameGTFO";
+    public static bool IsVanilla => CurrentMode == null || CurrentMode.ID == ModeGTFO.MODE_ID;
 
     internal static void Init()
     {
@@ -112,10 +114,9 @@ public class GamemodeManager
                 return false;
             }
         }
-
-        var msg = $"Switching mode [{_currentMode?.ID ?? "None"}] => [{mode.ID}]";
-        Plugin.L.LogDebug(msg);
-        Plugin.PostLocalMessage(msg);
+        
+        Plugin.L.LogDebug($"Switching mode [{_currentMode?.ID ?? "None"}] => [{mode.ID}]");
+        Plugin.PostLocalMessage($"<color=green>Switching to gamemode <color=orange>{mode.DisplayName}</color>!");
 
         try
         {
@@ -129,7 +130,8 @@ public class GamemodeManager
         CleanupSpecialRequirements(_currentMode?.Settings);
         
         _currentMode = mode.Implementation;
-
+        ModeSwitchCount++;
+        
         HandleSpecialRequirements(_currentMode.Settings);
 
         try

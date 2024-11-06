@@ -12,8 +12,10 @@ using Il2CppInterop.Runtime.Injection;
 using Player;
 using SNetwork;
 using System;
+using System.Collections;
 using System.Linq;
 using System.Reflection;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
 using UnityEngine;
 
@@ -193,6 +195,25 @@ internal partial class HideAndSeekMode : GamemodeBase
         }
     }
 
+    private static IEnumerator LightBringer()
+    {
+        var yielder = new WaitForSeconds(5f);
+        yield return yielder;
+        Plugin.L.LogDebug("There shall be light! (LRFs are being distributed.)");
+        GiveAllPlayersLights();
+    }
+    
+    private static void GiveAllPlayersLights()
+    {
+        foreach (var player in PlayerManager.PlayerAgentsInLevel)
+        {
+            if (player.Owner.IsBot)
+                continue;
+            
+            NetworkingManager.SendSpawnItemForPlayer(player.Owner, SpawnUtils.Consumables.LONG_RANGE_FLASHLIGHT);
+        }
+    }
+    
     public override void Enable()
     {
         _harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
@@ -255,6 +276,11 @@ internal partial class HideAndSeekMode : GamemodeBase
                 {
                     localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
                     localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
+                }
+
+                if (SNet.IsMaster)
+                {
+                    CoroutineManager.StartCoroutine(LightBringer().WrapToIl2Cpp());
                 }
 
                 PostLocalChatMessage(" ");

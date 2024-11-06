@@ -68,4 +68,7 @@ public record class PlayerWrapper
     {
         return TeamVisibility.LocalPlayerCanSeeTeam(Team);
     }
+
+    public static implicit operator PlayerAgent(PlayerWrapper player) => player?.PlayerAgent;
+    public static implicit operator SNet_Player(PlayerWrapper player) => player?.NetPlayer;
 }

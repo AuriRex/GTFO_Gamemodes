@@ -32,6 +32,7 @@ public class GamemodeManager
     private static bool _isGamedataReady = false;
 
     internal static event Action<ModeInfo> OnGamemodeChanged;
+    public static bool IsVanilla => CurrentMode == null || CurrentMode.ID == "BaseGameGTFO";
 
     internal static void Init()
     {

@@ -6,6 +6,7 @@ using Player;
 using SNetwork;
 using System;
 using System.Collections;
+using AIGraph;
 using UnityEngine;
 using static Player.PlayerAgent;
 
@@ -27,6 +28,8 @@ public partial class NetworkingManager
         RegisterEvent<pSetTeam>(OnSetTeamReceived);
         RegisterEvent<pWelcome>(OnWelcomeReceived);
         RegisterEvent<pChatLogMessage>(OnChatLogReceived);
+        RegisterEvent<pSpawnItemInLevel>(OnSpawnItemInLevelReceived);
+        RegisterEvent<pSpawnItemForPlayer>(OnSpawnItemForPlayerReceived);
     }
 
     public static void PostChatLog(string message)
@@ -256,5 +259,68 @@ public partial class NetworkingManager
             return;
 
         DoSwitchModeReceived?.Invoke(data.GamemodeID);
+    }
+
+    public static void SendSpawnItemInLevel(AIG_CourseNode node, Vector3 position, uint itemId, float ammoMultiplier = 1.0f)
+    {
+        if (!SNet.IsMaster)
+            return;
+        
+        var data = new pSpawnItemInLevel
+        {
+            ItemID = itemId,
+            AmmoMultiplier = ammoMultiplier,
+            Position = position,
+            Node = node,
+        };
+        
+        SendEvent(data, invokeLocal: true);
+    }
+
+    private static void OnSpawnItemInLevelReceived(ulong senderId, pSpawnItemInLevel data)
+    {
+        GetPlayerInfo(senderId, out var senderInfo);
+
+        if (!senderInfo.IsMaster)
+            return;
+
+        var success =
+            SpawnUtils.SpawnItemLocally(data.ItemID, data.Node, data.Position, out var item, data.AmmoMultiplier);
+        
+        Plugin.L.LogDebug($"{nameof(OnSpawnItemInLevelReceived)}: Spawned Item?: {success} | Item: {item?.ItemDataBlock?.publicName}");
+    }
+    
+    public static void SendSpawnItemForPlayer(SNet_Player target, uint itemId, float ammoMultiplier = 1.0f,
+        bool doWield = false)
+    {
+        if (!SNet.IsMaster)
+            return;
+        
+        var data = new pSpawnItemForPlayer
+        {
+            PlayerID = target?.Lookup ?? 0,
+            ItemID = itemId,
+            AmmoMultiplier = ammoMultiplier,
+            DoWield = doWield,
+        };
+        
+        SendEvent(data, invokeLocal: true);
+    }
+    
+    private static void OnSpawnItemForPlayerReceived(ulong sender, pSpawnItemForPlayer data)
+    {
+        GetPlayerInfo(sender, out var senderInfo);
+
+        if (!senderInfo.IsMaster)
+            return;
+
+        PlayerWrapper targetPlayer = null;
+        
+        if (data.PlayerID != 0)
+            GetPlayerInfo(data.PlayerID, out targetPlayer);
+        
+        var success = SpawnUtils.SpawnItemAndPickUp(data.ItemID, targetPlayer, data.AmmoMultiplier, data.DoWield);
+        
+        Plugin.L.LogDebug($"{nameof(OnSpawnItemForPlayerReceived)}: Spawned Item for player {targetPlayer?.NickName} ({data.PlayerID}): {success}");
     }
 }

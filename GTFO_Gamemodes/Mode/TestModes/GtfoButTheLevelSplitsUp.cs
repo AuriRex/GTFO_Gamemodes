@@ -56,8 +56,6 @@ public class GtfoButTheLevelSplitsUp : GamemodeBase
         _chaos = _gameobject.AddComponent<ChaosManager>();
         
         _gameobject.SetActive(false);
-        
-        GameEvents.OnGameStateChanged += OnGameStateChanged;
     }
 
     private void OnStartReceived(ulong sender, pStart start)
@@ -68,11 +66,15 @@ public class GtfoButTheLevelSplitsUp : GamemodeBase
     public override void Enable()
     {
         _gameobject.SetActive(true);
+        
+        GameEvents.OnGameStateChanged += OnGameStateChanged;
     }
 
     public override void Disable()
     {
         _gameobject.SetActive(false);
+        
+        GameEvents.OnGameStateChanged -= OnGameStateChanged;
     }
 
     private void OnGameStateChanged(eGameStateName state)

@@ -179,8 +179,33 @@ internal static class ChatCommandsHandler
 
         return $"PushForceMulti: {(oldPushMulti.HasValue ? $"{oldPushMulti.Value} -> " : string.Empty)}{PushForcePatch.PushForceMultiplier}";
     }
+
+    public static string SpawnItem(string[] args)
+    {
+        if (!SNet.IsMaster)
+            return "Master only!";
+
+        if (GamemodeManager.IsVanilla)
+            return "No.";
+        
+        if (args.Length < 1 || !uint.TryParse(args[0], out uint itemId))
+            return "Could not parse item id from arguments.";
+        
+        if (args.Length < 2 || !float.TryParse(args[1], out var ammoMultiplier))
+        {
+            ammoMultiplier = 1f;
+        }
+        
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var player))
+            return "Not in level. / No Agent.";
+        
+        NetworkingManager.SendSpawnItemInLevel(player.CourseNode, player.Position, itemId, ammoMultiplier);
+        return "SpawnItem sent.";
+    }
 #endif
 
+    public static string Sync(string[] args) => ManualJoin(args);
+    
     public static string ManualJoin(string[] args)
     {
         NetworkingManager.SendJoinInfo();
@@ -193,6 +218,9 @@ internal static class ChatCommandsHandler
         if (!SNet.IsMaster)
             return "Master only.";
 
+        if (GamemodeManager.IsVanilla)
+            return "No.";
+        
         var team = args[0];
 
         if (int.TryParse(team, out var teamInt))
@@ -217,6 +245,9 @@ internal static class ChatCommandsHandler
         if (!SNet.IsMaster)
             return "Master only.";
 
+        if (GamemodeManager.IsVanilla)
+            return "No.";
+        
         if (args.Length == 0)
             throw new ArgumentException("No player to TP to specified.", nameof(args));
 
@@ -256,6 +287,9 @@ internal static class ChatCommandsHandler
         if (!SNet.IsMaster)
             return "Master only.";
 
+        if (GamemodeManager.IsVanilla)
+            return "No.";
+        
         var lp = PlayerManager.GetLocalPlayerAgent();
 
         if (!NetworkingManager.InLevel || lp == null)

@@ -16,6 +16,9 @@ internal static class PlayerSyncModelData_RefreshGhostRenderersVisibility_Patch
 
     public static void Prefix(PlayerSyncModelData __instance)
     {
+        if (__instance == null || __instance.Owner == null || __instance.Owner.Owner == null)
+            return;
+        
         var visible = TeamVisibility.LocalPlayerCanSee(__instance.Owner.Owner);
 
         __instance.m_ghostEnabled = visible && __instance.m_ghostEnabled;

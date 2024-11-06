@@ -7,7 +7,7 @@ public class ModeSettings
     public bool AllowMidGameModeSwitch;
     public bool PreventExpeditionEnemiesSpawning;
     public bool PreventRespawnRoomsRespawning;
-    public bool PreventPlayerRevives; // TODO
+    public bool PreventPlayerRevives;
     public bool OpenAllSecurityDoors;
     public bool OpenAllWeakDoors;
     public bool RemoveCheckpoints;
@@ -22,9 +22,4 @@ public class ModeSettings
     public bool InfiniteSentryAmmo;
     public bool InfiniteBackpackAmmo;
     public float PushForceMultiplier = 1f;
-
-    /*
-        Events on drop in
-        wardenmessage on drop 
-     */
 }

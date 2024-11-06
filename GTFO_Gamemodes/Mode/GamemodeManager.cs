@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Gamemodes.Mode.TestModes;
+using UnityEngine;
 using static Gamemodes.PatchManager;
+using Object = UnityEngine.Object;
 
 namespace Gamemodes.Mode;
 
@@ -115,13 +117,29 @@ public class GamemodeManager
         Plugin.L.LogDebug(msg);
         Plugin.PostLocalMessage(msg);
 
-        _currentMode?.Disable();
-
+        try
+        {
+            _currentMode?.Disable();
+        }
+        catch (Exception ex)
+        {
+            Plugin.LogException(ex, $"Gamemode.{nameof(GamemodeBase.Disable)}()", printInChat: true);
+        }
+        
+        CleanupSpecialRequirements(_currentMode?.Settings);
+        
         _currentMode = mode.Implementation;
 
         HandleSpecialRequirements(_currentMode.Settings);
 
-        _currentMode.Enable();
+        try
+        {
+            _currentMode.Enable();
+        }
+        catch (Exception ex)
+        {
+            Plugin.LogException(ex, $"Gamemode.{nameof(GamemodeBase.Disable)}()", printInChat: true);
+        }
 
         try
         {
@@ -129,9 +147,7 @@ public class GamemodeManager
         }
         catch(Exception ex)
         {
-            Plugin.L.LogError($"{ex.GetType().Name} thrown in OnGamemodeChanged event.");
-            Plugin.L.LogError(ex.Message);
-            Plugin.L.LogWarning("Stacktrace:\n"+ex.StackTrace);
+            Plugin.LogException(ex, $"{nameof(OnGamemodeChanged)} event");
         }
 
         return true;
@@ -167,6 +183,23 @@ public class GamemodeManager
         PushForcePatch.PushForceMultiplier = settings.PushForceMultiplier;
     }
 
+    private static void CleanupSpecialRequirements(ModeSettings settings)
+    {
+        if (settings == null)
+            return;
+        
+        if (settings.PreventPlayerRevives)
+        {
+            foreach (var agent in Object.FindObjectsOfType<PlayerAgent>())
+            {
+                if (agent == null || agent.ReviveInteraction == null)
+                    continue;
+                
+                agent.ReviveInteraction.gameObject.SetActive(true);
+            }
+        }
+    }
+
     private static void HandleSpecialRequirementsOnInLevel()
     {
         if (CurrentSettings.BlockWorldEvents)
@@ -185,6 +218,14 @@ public class GamemodeManager
             }
         }
 
+        if (CurrentSettings.PreventPlayerRevives)
+        {
+            foreach (var agent in PlayerManager.PlayerAgentsInLevel)
+            {
+                agent.ReviveInteraction.gameObject.SetActive(false);
+            }
+        }
+        
         if (!SNetwork.SNet.IsMaster)
             return;
 

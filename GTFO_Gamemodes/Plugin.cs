@@ -1,4 +1,5 @@
-﻿using BepInEx;
+﻿using System;
+using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using CellMenu;
@@ -69,5 +70,15 @@ public class Plugin : BasePlugin
         if (log == null)
             return;
         log.AddLogItem(msg, type);
+    }
+
+    internal static void LogException(Exception ex, string info, bool printInChat = false)
+    {
+        var msg = $"{ex.GetType().Name} thrown in {info}.";
+        if (printInChat)
+            PostLocalMessage(msg, eGameEventChatLogType.Alert);
+        L.LogError(msg);
+        L.LogError(ex.Message);
+        L.LogWarning("Stacktrace:\n"+ex.StackTrace);
     }
 }

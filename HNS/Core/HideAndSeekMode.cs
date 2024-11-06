@@ -245,14 +245,33 @@ internal partial class HideAndSeekMode : GamemodeBase
         RemoveAngySentries();
     }
 
+    private static string HiderExtraInfoUpdater(PlayerWrapper player)
+    {
+        if (!player.IsLocal)
+            return null;
+        
+        return GetZoneAndAreaInfo(player, "color=green");
+    }
+    
     private static string SeekersExtraInfoUpdater(PlayerWrapper player)
+    {
+        if (!player.CanBeSeenByLocalPlayer())
+            return null;
+        
+        if (!player.IsLocal)
+            return GetZoneAndAreaInfo(player);
+        
+        return GetZoneAndAreaInfo(player, "color=green");
+    }
+
+    private static string GetZoneAndAreaInfo(PlayerWrapper player, string color = "color=white")
     {
         var area = player.PlayerAgent.CourseNode?.m_area;
 
         if (area == null)
             return null;
         
-        return $"<color=white>[ZONE {area.m_zone.NavInfo.Number}, Area {area.m_navInfo.Suffix}]";
+        return $"<{color}>[<color=orange>ZONE {area.m_zone.NavInfo.Number}</color>, <color=orange>Area {area.m_navInfo.Suffix}</color>]";
     }
     
     private void GameEvents_OnGameStateChanged(eGameStateName state)
@@ -265,7 +284,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
                 var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
                 teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN));
+                teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
                 teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
 
                 WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");

@@ -24,6 +24,7 @@ public class PatchManager
         public const string NO_PLAYER_REVIVE = "NoPlayerRevive";
         public const string INF_PLAYER_AMMO = "InfPlayerAmmo";
         public const string INF_SENTRY_AMMO = "InfSentryAmmo";
+        internal const string ACHIEVEMENT_PATCHES = "Achievement_Patch_Beeg_Lag_Yay";
     }
 
     private class PatchGroup

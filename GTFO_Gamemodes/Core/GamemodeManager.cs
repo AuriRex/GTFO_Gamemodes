@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Gamemodes.Core.TestModes;
-using UnityEngine;
 using static Gamemodes.PatchManager;
 using Object = UnityEngine.Object;
 
@@ -168,6 +167,9 @@ public class GamemodeManager
 
     private static void HandleSpecialRequirements(ModeSettings settings)
     {
+        // Adds like 4 seconds of lag time due to the amount of patches ...
+        //ApplyPatchGroup(PatchGroups.ACHIEVEMENT_PATCHES, !IsVanilla);
+        
         ApplyPatchGroup(PatchGroups.NO_FAIL, settings.PreventDefaultFailState);
         ApplyPatchGroup(PatchGroups.NO_RESPAWN, settings.PreventRespawnRoomsRespawning);
         ApplyPatchGroup(PatchGroups.NO_SLEEPING_ENEMIES, settings.PreventExpeditionEnemiesSpawning);

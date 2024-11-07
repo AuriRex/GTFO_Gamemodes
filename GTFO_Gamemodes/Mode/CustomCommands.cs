@@ -19,12 +19,15 @@ public class CustomCommands
     {
         command = command.ToLower();
 
-        if (_commands.ContainsKey(command))
+        if (!methodInfo.IsStatic)
+        {
+            throw new ArgumentException($"Method \"{methodInfo.Name}\" ({command}) must be static", nameof(methodInfo));
+        }
+        
+        if (!_commands.TryAdd(command, methodInfo))
         {
             throw new ArgumentException($"Command \"{command}\" already registered!", nameof(command));
         }
-
-        _commands.Add(command, methodInfo);
 
         return this;
     }

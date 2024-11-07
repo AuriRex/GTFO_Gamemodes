@@ -118,6 +118,10 @@
 			<HintPath>$(LatestGeneratedGameAssembliesPath)UnityEngine.UIModule.dll</HintPath>
 			<Private>false</Private>
 		</Reference>
+		<Reference Include="UnityEngine.ImageConversionModule">
+			<HintPath>$(LatestGeneratedGameAssembliesPath)UnityEngine.ImageConversionModule.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -174,5 +178,20 @@
 			<HintPath>$(LatestGeneratedGameAssembliesPath)Wwise-ASM.dll</HintPath>
 			<Private>false</Private>
 		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Resources\Data.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Data.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Resources\Data.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Data.resx</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 </Project>

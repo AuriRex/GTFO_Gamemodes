@@ -22,4 +22,10 @@ public static class GameObjectExtensions
 
         return comp != null;
     }
+    
+    public static void DontDestroyAndSetHideFlags(this UnityEngine.Object obj)
+    {
+        UnityEngine.Object.DontDestroyOnLoad(obj);
+        obj.hideFlags = HideFlags.HideAndDontSave | HideFlags.DontUnloadUnusedAsset;
+    }
 }

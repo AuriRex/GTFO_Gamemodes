@@ -9,7 +9,7 @@ namespace Gamemodes.Mode;
 
 public static class Utils
 {
-    public static void StopWardenObjectiveManager()
+    internal static void StopWardenObjectiveManager()
     {
         var WOM = WardenObjectiveManager.Current;
 
@@ -40,7 +40,7 @@ public static class Utils
         WOM.TryCast<IWardenObjectiveContext>()?.StopAllWardenObjectiveEnemyWaves();
     }
 
-    public static void DisableAllWorldEventTriggers()
+    internal static void DisableAllWorldEventTriggers()
     {
         int count = DisableWEComponent<LG_CollisionWorldEventTrigger>();
         count += DisableWEComponent<LG_InteractWorldEventTrigger>();

@@ -1,4 +1,4 @@
-﻿namespace Gamemodes.Mode;
+﻿namespace Gamemodes.Core;
 
 public class ModeSettings
 {

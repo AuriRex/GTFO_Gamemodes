@@ -1,4 +1,4 @@
-﻿using Gamemodes.Mode;
+﻿using Gamemodes.Core;
 using System;
 
 namespace GamemodesTests;

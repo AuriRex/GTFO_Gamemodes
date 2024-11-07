@@ -1,7 +1,7 @@
 ﻿using GameData;
 using Gamemodes;
 using Gamemodes.Extensions;
-using Gamemodes.Mode;
+using Gamemodes.Core;
 using Gamemodes.Net;
 using Gear;
 using HarmonyLib;

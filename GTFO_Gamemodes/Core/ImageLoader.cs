@@ -2,7 +2,7 @@
 using UnityEngine;
 using static Gamemodes.Extensions.GameObjectExtensions;
 
-namespace Gamemodes.Mode;
+namespace Gamemodes.Core;
 
 public static class ImageLoader
 {

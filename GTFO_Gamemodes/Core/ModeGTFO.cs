@@ -1,7 +1,7 @@
 ﻿using Gamemodes.Resources;
 using UnityEngine;
 
-namespace Gamemodes.Mode;
+namespace Gamemodes.Core;
 
 public class ModeGTFO : GamemodeBase
 {

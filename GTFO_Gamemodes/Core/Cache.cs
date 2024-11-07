@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Gamemodes.Mode;
+namespace Gamemodes.Core;
 
 public class Cache<T>
 {

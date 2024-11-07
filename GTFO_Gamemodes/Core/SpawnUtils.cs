@@ -6,7 +6,7 @@ using LevelGeneration;
 using Player;
 using UnityEngine;
 
-namespace Gamemodes.Mode;
+namespace Gamemodes.Core;
 
 public static class SpawnUtils
 {

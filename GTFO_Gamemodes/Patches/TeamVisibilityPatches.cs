@@ -1,7 +1,7 @@
 ﻿using CellMenu;
 using Gamemodes.Components;
 using Gamemodes.Extensions;
-using Gamemodes.Mode;
+using Gamemodes.Core;
 using HarmonyLib;
 using Player;
 using SNetwork;

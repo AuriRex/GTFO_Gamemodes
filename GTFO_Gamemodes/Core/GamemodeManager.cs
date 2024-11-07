@@ -5,12 +5,12 @@ using Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Gamemodes.Mode.TestModes;
+using Gamemodes.Core.TestModes;
 using UnityEngine;
 using static Gamemodes.PatchManager;
 using Object = UnityEngine.Object;
 
-namespace Gamemodes.Mode;
+namespace Gamemodes.Core;
 
 public class GamemodeManager
 {

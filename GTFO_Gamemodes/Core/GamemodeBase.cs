@@ -3,7 +3,7 @@ using Player;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Gamemodes.Mode;
+namespace Gamemodes.Core;
 
 public abstract class GamemodeBase
 {

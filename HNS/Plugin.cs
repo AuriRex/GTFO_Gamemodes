@@ -25,6 +25,6 @@ public class Plugin : BasePlugin
     {
         L = Log;
 
-        Gamemodes.Mode.GamemodeManager.RegisterMode<HideAndSeekMode>();
+        Gamemodes.Core.GamemodeManager.RegisterMode<HideAndSeekMode>();
     }
 }

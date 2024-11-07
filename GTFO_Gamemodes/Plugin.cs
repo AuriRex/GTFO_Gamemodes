@@ -4,7 +4,7 @@ using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using CellMenu;
 using Gamemodes.Components;
-using Gamemodes.Mode;
+using Gamemodes.Core;
 using Gamemodes.Net;
 using Gamemodes.Patches;
 using Il2CppInterop.Runtime.Injection;

@@ -1,6 +1,6 @@
 ﻿using BepInEx.Unity.IL2CPP.Utils;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
-using Gamemodes.Mode;
+using Gamemodes.Core;
 using Gamemodes.Net.Packets;
 using Player;
 using SNetwork;

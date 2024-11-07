@@ -1,4 +1,4 @@
-﻿namespace Gamemodes.Mode.TestModes;
+﻿namespace Gamemodes.Core.TestModes;
 
 #if DEBUG
 internal class ModeTesting : GamemodeBase

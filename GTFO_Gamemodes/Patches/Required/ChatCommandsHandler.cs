@@ -1,4 +1,4 @@
-﻿using Gamemodes.Mode;
+﻿using Gamemodes.Core;
 using Gamemodes.Net;
 using HarmonyLib;
 using Player;

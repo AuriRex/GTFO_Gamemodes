@@ -1,4 +1,4 @@
-﻿using Gamemodes.Mode;
+﻿using Gamemodes.Core;
 using Il2CppSystem.Reflection;
 using Player;
 using SNetwork;

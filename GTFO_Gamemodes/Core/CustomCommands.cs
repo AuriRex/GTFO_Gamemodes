@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Gamemodes.Mode;
+namespace Gamemodes.Core;
 
 public class CustomCommands
 {

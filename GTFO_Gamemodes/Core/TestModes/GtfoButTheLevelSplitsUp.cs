@@ -15,7 +15,7 @@ using SNetwork;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Gamemodes.Mode.TestModes;
+namespace Gamemodes.Core.TestModes;
 #if DEBUG
 public class GtfoButTheLevelSplitsUp : GamemodeBase
 {

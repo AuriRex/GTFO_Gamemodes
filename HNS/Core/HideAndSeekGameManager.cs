@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
+using Gamemodes.Core;
 using Gamemodes.Net;
 using Gamemodes.UI;
 using HNS.Net;
@@ -60,6 +61,8 @@ public class HideAndSeekGameManager
         }
 
         _unblindPlayerCoroutine = CoroutineManager.StartCoroutine(GameStartSetupTimeCoroutine(blindDuration, blinds).WrapToIl2Cpp());
+        
+        Utils.LocallyResetAllWeakDoors();
     }
     
     public bool OnLocalPlayerCaught()

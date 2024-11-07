@@ -3,6 +3,7 @@ using LevelGeneration;
 using System;
 using System.Collections;
 using System.Linq;
+using SNetwork;
 using UnityEngine;
 
 namespace Gamemodes.Core;
@@ -274,4 +275,34 @@ public static class Utils
         }
     }
     #endregion
+
+    public static void LocallyResetAllWeakDoors()
+    {
+        var doors = UnityEngine.Object.FindObjectsOfType<LG_WeakDoor>();
+
+        foreach (var door in doors)
+        {
+            LocallyResetWeakDoor(door);
+        }
+    }
+    
+    public static void LocallyResetWeakDoor(LG_WeakDoor door)
+    {
+        var state = new pDoorState()
+        {
+            status = eDoorStatus.Open,
+            animProgress = 1f,
+            damageTaken = 0f,
+            glueRel = 0f,
+            hasBeenApproached = true,
+            hasBeenOpenedDuringGame = true,
+            instigator = new SNetStructs.pPlayer(),
+            markedOnMap = true,
+            sourcePosZ = true,
+            triggerTryOpenBroken = false,
+            triggerTryOpenStuckInGlue = false,
+        };
+
+        door.m_sync.Cast<LG_Door_Sync>().m_stateReplicator.OnStateChangeReceive_Recall(state);
+    }
 }

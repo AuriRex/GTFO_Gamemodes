@@ -202,6 +202,13 @@ internal static class ChatCommandsHandler
         NetworkingManager.SendSpawnItemInLevel(player.CourseNode, player.Position, itemId, ammoMultiplier);
         return "SpawnItem sent.";
     }
+
+    public static string DoorTest(string[] args)
+    {
+        Utils.LocallyResetAllWeakDoors();
+        
+        return "Door Test complete.";
+    }
 #endif
 
     public static string Sync(string[] args) => ManualJoin(args);

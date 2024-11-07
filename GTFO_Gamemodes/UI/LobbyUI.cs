@@ -140,6 +140,8 @@ internal static class LobbyUI
 
             if (isSelected)
             {
+                // Setting sprite to null so it correctly refreshes the size/aspect ratio on the new one
+                __this.m_popupScrollWindow.InfoBox.SetInfoBox(modeInfo.DisplayName, modeInfo.SubTitle, modeInfo.Description, string.Empty, string.Empty, null);
                 __this.m_popupScrollWindow.InfoBox.SetInfoBox(modeInfo.DisplayName, modeInfo.SubTitle, modeInfo.Description, string.Empty, string.Empty, modeInfo.SpriteLarge);
 
                 if (SNet.IsMaster)

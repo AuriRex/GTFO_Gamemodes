@@ -31,6 +31,10 @@ internal partial class HideAndSeekMode : GamemodeBase
 
     public override string Description => "No Enemies\nAll Doors Open\n\n<#f00>Seekers</color> have to catch all <#0ff>Hiders</color>";
 
+    public override Sprite SpriteLarge => _banner;
+    
+    public override Sprite SpriteSmall => _icon;
+
     public override ModeSettings Settings => new ModeSettings
     {
         AllowMidGameModeSwitch = false,
@@ -80,6 +84,9 @@ internal partial class HideAndSeekMode : GamemodeBase
     private static float SEEKER_LIGHT_INTENSITY = 5;
     private static float SEEKER_LIGHT_RANGE = 0.15f;
     private static Color SEEKER_LIGHT_COLOR = Color.red;
+
+    private Sprite _icon;
+    private Sprite _banner;
     
     public override void Init()
     {
@@ -150,6 +157,9 @@ internal partial class HideAndSeekMode : GamemodeBase
         });
 
         GameManager = new HideAndSeekGameManager(_gameManagerGO.AddComponent<TimerHUD>());
+        
+        ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Icon, out _icon);
+        ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Banner, out _banner);
     }
 
     private static void CreateSeekerPalette()

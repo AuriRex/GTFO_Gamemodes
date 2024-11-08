@@ -3,6 +3,7 @@ using Gamemodes.Core;
 using Gamemodes.Net;
 using SNetwork;
 using System;
+using Gamemodes.UI.Menu;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -11,7 +12,6 @@ namespace Gamemodes.UI;
 
 internal static class LobbyUI
 {
-    private static string _selectedGamemodeID = null;
     private static CM_Item _changeGameModeButton;
     private static TextMeshPro _subText;
 
@@ -35,8 +35,7 @@ internal static class LobbyUI
         
         var action = new Action<int>((_) => {
             Plugin.L.LogDebug("Attempting to show popup ...");
-            // Shouldn't matter which lobby slot we're picking, riiiight? :D
-            ShowGamemodeSelectionPopup(instance.m_playerLobbyBars[0], instance.m_popupAlign);
+            TrySetupOrGetMenu().Show();
         });
 
         _changeGameModeButton.m_onBtnPress = new UnityEvent();
@@ -84,121 +83,72 @@ internal static class LobbyUI
         SetSubText(mode.DisplayName);
     }
 
-    public static void ShowGamemodeSelectionPopup(CM_PlayerLobbyBar __this, Transform align)
+    private static SelectionPopupMenu _menu;
+    private static SelectionPopupMenu TrySetupOrGetMenu()
     {
-        _selectedGamemodeID = GamemodeManager.CurrentMode?.ID;
+        if (_menu != null)
+            return _menu;
 
-        __this.m_popupVisible = true;
-        __this.m_popupHolder.transform.position = align.position + new Vector3(300f, 0f, 0f);
-        __this.m_popupScrollWindow.m_infoBoxWidth = 600f;
-        __this.m_popupHolder.gameObject.SetActive(true);
-        __this.m_popupItemHolder.gameObject.SetActive(true);
-        __this.m_popupScrollWindow.SetSize(new Vector2(1600f, 760f));
-        __this.m_popupScrollWindow.ResetHeaders();
-        __this.m_popupScrollWindow.AddHeader("Gamemode Selection", 1, new Action<int>((_) => {
-                UpdateGamemodeWindowInfo(__this, align);
-            })
-        );
+        var header = new SelectionPopupHeader("Gamemode Selection");
+        
+        header.ActiveItemID = ModeGTFO.MODE_ID;
+        header.LastSelectedItemID = ModeGTFO.MODE_ID;
+        header.IsActiveText = "<color=orange>Active</color>";
+        header.SetActiveConfirmText = "<color=orange>Click again to switch to mode.</color>";
 
-        __this.m_popupScrollWindow.SetPosition(new Vector2(0f, 350f));
-        __this.m_popupScrollWindow.RespawnInfoBoxFromPrefab(__this.m_popupInfoBoxWeaponPrefab);
-        UpdateGamemodeWindowInfo(__this, align);
+        header.AllowedToSelectItem = (self, item) =>
+        {
+            return SNet.IsMaster
+                   && (!NetworkingManager.InLevel
+                       || (NetworkingManager.InLevel && (GamemodeManager.CurrentSettings?.AllowMidGameModeSwitch ?? false)));
+        };
+        
+        header.PreDraw = self =>
+        {
+            self.ActiveItemID = GamemodeManager.CurrentMode?.ID;
+            if (!self.IsUpdating)
+            {
+                self.LastSelectedItemID = GamemodeManager.CurrentMode?.ID;
+            }
+        };
+        
+        foreach (var modeInfo in GamemodeManager.LoadedModes)
+        {
+            header.AddItem(new SelectionPopupItem()
+            {
+                DisplayName = modeInfo.DisplayName,
+                SubTitle = modeInfo.SubTitle,
+                ID = modeInfo.ID,
+                Description = modeInfo.Description,
+                SpriteSmall = modeInfo.SpriteSmall,
+                SpriteLarge = modeInfo.SpriteLarge,
+                clickedAction = ModeSelectItemClickedAction,
+                upperTextCustomization = UpperTextCustomization
+            });
+        }
+            
+        
+        _menu = new SelectionPopupMenu().AddHeader(header);
+
+        return _menu;
     }
 
-    private static void UpdateGamemodeWindowInfo(CM_PlayerLobbyBar __this, Transform align)
+    private static void ModeSelectItemClickedAction(ISelectionPopupItem self)
     {
-        var list = new Il2CppSystem.Collections.Generic.List<iScrollWindowContent>();
-
-        int c = 0;
-        foreach(var modeInfo in GamemodeManager.LoadedModes)
+        if (SNet.IsMaster && self.WasDoubleClick && !self.IsActive)
         {
-            var scrollItem = GOUtil.SpawnChildAndGetComp<CM_LobbyScrollItem>(__this.m_clothesCardPrefab, __this.transform);
-            list.Add(new iScrollWindowContent(scrollItem.Pointer));
+            NetworkingManager.SendSwitchModeAll(self.ID);
+        }
+    }
 
-            scrollItem.TextMeshRoot = __this.m_parentPage.transform;
-            scrollItem.SetupFromLobby(__this.transform, __this, true);
-            scrollItem.ForcePopupLayer(true, null);
-            scrollItem.transform.localScale = Vector3.one;
-
-            scrollItem.m_nameText.SetText($"{modeInfo.DisplayName}");
-
-            var isSelected = modeInfo.ID == _selectedGamemodeID;
-
-            scrollItem.IsSelected = isSelected;
-
-            var isActive = modeInfo.ID == GamemodeManager.CurrentMode?.ID;
-
-            var isVanilla = modeInfo.ID == ModeGTFO.MODE_ID;
-            
-            var emptyIcon = scrollItem.transform.FindChild("EmptyIcon"); // '+' icon
-            emptyIcon.gameObject.SetActive(false);
-
-            var bg = scrollItem.transform.FindChild("Background");
-            bg.gameObject.SetActive(isSelected);
-
-            string subtitleText = string.Empty;
-
-            if (isSelected)
-            {
-                // Setting sprite to null so it correctly refreshes the size/aspect ratio on the new one
-                __this.m_popupScrollWindow.InfoBox.SetInfoBox(modeInfo.DisplayName, modeInfo.SubTitle, modeInfo.Description, string.Empty, string.Empty, null);
-                __this.m_popupScrollWindow.InfoBox.SetInfoBox(modeInfo.DisplayName, modeInfo.SubTitle, modeInfo.Description, string.Empty, string.Empty, modeInfo.SpriteLarge);
-
-                if (SNet.IsMaster)
-                {
-                    subtitleText = "<color=orange>Click again to switch to mode.</color>";
-                }
-            }
-
-            if (isActive)
-            {
-                subtitleText = "<color=orange>Active</color> ";
-            }
-
-            if (isVanilla && (string.IsNullOrEmpty(subtitleText) || isActive) && GamemodeManager.ModeSwitchCount > 1)
-            {
-                subtitleText = $"{subtitleText}<#F00>{(isActive ? string.Empty : "<alpha=#33>")}<u>/!\\</u> Restart Recommended to play Vanilla again!</color>";
-            }
-
-            scrollItem.m_subTitleText.SetText(subtitleText);
-
-            scrollItem.m_descText.SetText($"   <#666>{modeInfo.ID}</color>");
-
-            scrollItem.OnBtnPressCallback = new Action<int>((_) => {
-                if (SNet.IsMaster && _selectedGamemodeID == modeInfo.ID)
-                {
-                    NetworkingManager.SendSwitchModeAll(modeInfo.ID);
-                }
-
-                _selectedGamemodeID = modeInfo.ID;
-
-                __this.m_popupScrollWindow.InfoBox.SetInfoBox(modeInfo.DisplayName, modeInfo.SubTitle, modeInfo.Description, string.Empty, string.Empty, modeInfo.SpriteLarge);
-
-                UpdateGamemodeWindowInfo(__this, align);
-            });
-
-            if (modeInfo.SpriteSmall != null)
-            {
-                scrollItem.m_icon.sprite = modeInfo.SpriteSmall;
-            }
-
-            scrollItem.PlayIntro(c * 0.1f, -1);
-
-            scrollItem.m_alphaSpriteOnHover = true;
-            scrollItem.m_alphaTextOnHover = true;
-
-            c++;
+    private static string UpperTextCustomization(ISelectionPopupItem self, string upperText)
+    {
+        var isVanilla = self.ID == ModeGTFO.MODE_ID;
+        if (isVanilla && (string.IsNullOrEmpty(upperText) || self.IsActive) && GamemodeManager.ModeSwitchCount > 1)
+        {
+            return $"{upperText}<#F00>{(self.IsActive ? string.Empty : "<alpha=#33>")}<u>/!\\</u> Restart Recommended to play Vanilla again!</color>";
         }
 
-        __this.m_popupScrollWindow.SetContentItems(list, 0f);
-
-        foreach(var item in list)
-        {
-            item.TryCast<CM_LobbyScrollItem>().UpdateSizesAndOffsets();
-        }
-
-        __this.Select();
-        __this.ShowPopup();
-        __this.m_popupScrollWindow.SelectHeader(1);
+        return upperText;
     }
 }

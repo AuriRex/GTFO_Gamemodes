@@ -21,5 +21,6 @@ public class ModeSettings
     public bool RemoveBloodDoors;
     public bool InfiniteSentryAmmo;
     public bool InfiniteBackpackAmmo;
-    public float PushForceMultiplier = 1f;
+    public float InitialPushForceMultiplier = 1f;
+    public float InitialSlidePushForceMultiplier = 1f;
 }

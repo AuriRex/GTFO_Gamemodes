@@ -35,6 +35,9 @@ internal partial class HideAndSeekMode : GamemodeBase
     
     public override Sprite SpriteSmall => _icon;
 
+    public const float PUSH_FORCE_MULTI_DEFAULT = 2.5f;
+    public const float PUSH_FORCE_MULTI_HIDER = -0.2f;
+    
     public override ModeSettings Settings => new ModeSettings
     {
         AllowMidGameModeSwitch = false,
@@ -56,7 +59,8 @@ internal partial class HideAndSeekMode : GamemodeBase
         RemoveTerminalCommands = true,
         InfiniteBackpackAmmo = true,
         InfiniteSentryAmmo = true,
-        PushForceMultiplier = 2.5f,
+        InitialPushForceMultiplier = PUSH_FORCE_MULTI_DEFAULT,
+        InitialSlidePushForceMultiplier = PUSH_FORCE_MULTI_DEFAULT,
     };
 
     private Harmony _harmonyInstance;
@@ -356,6 +360,11 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         SetHelmetLights(syncModel);
 
+        if (playerInfo.IsLocal)
+        {
+            SetPushForceMultiplierForLocalPlayer(PUSH_FORCE_MULTI_DEFAULT, PUSH_FORCE_MULTI_DEFAULT);
+        }
+        
         switch (team)
         {
             case GMTeam.Seekers:
@@ -418,6 +427,8 @@ internal partial class HideAndSeekMode : GamemodeBase
 
                     SetLocalPlayerStatusUIElementsActive(isSeeker: false);
                     SetNearDeathAudioLimit(playerInfo.PlayerAgent.Cast<LocalPlayerAgent>(), true);
+                    
+                    SetPushForceMultiplierForLocalPlayer(PUSH_FORCE_MULTI_HIDER, PUSH_FORCE_MULTI_DEFAULT);
                 }
                 break;
         }

@@ -1,6 +1,7 @@
 ﻿using Gamemodes.Net;
 using Player;
 using System.Collections.Generic;
+using Gamemodes.Patches.Required;
 using UnityEngine;
 
 namespace Gamemodes.Core;
@@ -43,6 +44,12 @@ public abstract class GamemodeBase
 
     }
 
+    public static void SetPushForceMultiplierForLocalPlayer(float pushForceMultiplier, float slidePushForceMultiplier)
+    {
+        PushForcePatch.PushForceMultiplier = pushForceMultiplier;
+        PushForcePatch.SlidePushForceMultiplier = slidePushForceMultiplier;
+    }
+    
     public static void PostLocalChatMessage(string msg)
     {
         Plugin.PostLocalMessage(msg);

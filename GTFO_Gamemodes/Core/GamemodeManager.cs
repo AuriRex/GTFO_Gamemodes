@@ -184,7 +184,8 @@ public class GamemodeManager
         ApplyPatchGroup(PatchGroups.INF_SENTRY_AMMO, settings.InfiniteSentryAmmo);
         ApplyPatchGroup(PatchGroups.INF_PLAYER_AMMO, settings.InfiniteBackpackAmmo);
 
-        PushForcePatch.PushForceMultiplier = settings.PushForceMultiplier;
+        PushForcePatch.PushForceMultiplier = settings.InitialPushForceMultiplier;
+        PushForcePatch.SlidePushForceMultiplier = settings.InitialSlidePushForceMultiplier;
     }
 
     private static void CleanupSpecialRequirements(ModeSettings settings)

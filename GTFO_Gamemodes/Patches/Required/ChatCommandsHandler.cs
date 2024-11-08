@@ -168,6 +168,7 @@ internal static class ChatCommandsHandler
     public static string PushForceMulti(string[] args)
     {
         float? oldPushMulti = null;
+        float? oldSlidePushMulti = null;
         if (args.Length > 0 && float.TryParse(args[0], out var value))
         {
             oldPushMulti = PushForcePatch.PushForceMultiplier;
@@ -176,8 +177,20 @@ internal static class ChatCommandsHandler
             if (oldPushMulti == value)
                 oldPushMulti = null;
         }
+        
+        if (args.Length > 1 && float.TryParse(args[1], out var slidePush))
+        {
+            oldSlidePushMulti = PushForcePatch.SlidePushForceMultiplier;
+            PushForcePatch.SlidePushForceMultiplier = slidePush;
 
-        return $"PushForceMulti: {(oldPushMulti.HasValue ? $"{oldPushMulti.Value} -> " : string.Empty)}{PushForcePatch.PushForceMultiplier}";
+            if (oldSlidePushMulti == slidePush)
+                oldSlidePushMulti = null;
+        }
+
+        var msg = $"PushForceMulti: {(oldPushMulti.HasValue ? $"{oldPushMulti.Value} -> " : string.Empty)}{PushForcePatch.PushForceMultiplier}";
+        msg += $" | Sl: {(oldSlidePushMulti.HasValue ? $"{oldSlidePushMulti.Value} -> " : string.Empty)}{PushForcePatch.SlidePushForceMultiplier}";
+        
+        return msg;
     }
 
     public static string SpawnItem(string[] args)

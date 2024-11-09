@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Gamemodes.Net;
 using Gear;
 using Player;
 using SNetwork;
@@ -64,6 +65,16 @@ public class CustomGearSelector
         if (!TryGetItemByIDFromAvailable(item.ID, out var gear))
         {
             return;
+        }
+
+        if (NetworkingManager.InLevel && PlayerBackpackManager.LocalBackpack.IsDeployed(InventorySlot.GearClass))
+        {
+            var sentries = UnityEngine.Object.FindObjectsOfType<SentryGunInstance>().ToArray();
+
+            foreach (var sentry in sentries.Where(s => s.m_belongsToBackpack.IsLocal))
+            {
+                sentry.m_interactPickup.TriggerInteractionAction(PlayerManager.GetLocalPlayerAgent());
+            }
         }
         
         PlayerBackpackManager.ResetLocalAmmoStorage(full: true);

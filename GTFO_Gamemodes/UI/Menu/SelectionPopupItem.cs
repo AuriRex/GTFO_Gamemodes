@@ -16,6 +16,7 @@ public class SelectionPopupItem : ISelectionPopupItem
     public bool IsActive { get; set; }
     public bool IsSelected { get; set; }
     public bool IsAllowedToSelect { get; set; }
+    public bool CloseMenu { get; set; }
     
     public Action<ISelectionPopupItem> clickedAction = null!;
     public Func<ISelectionPopupItem, string, string> upperTextCustomization = null!;

@@ -134,6 +134,13 @@ public class SelectionPopupHeader
                 
                 item.OnClicked();
 
+                if (item.CloseMenu)
+                {
+                    item.CloseMenu = false;
+                    Hide();
+                    return;
+                }
+                
                 if (doubleClick)
                     ActiveItemID = item.ID;
                 
@@ -162,7 +169,10 @@ public class SelectionPopupHeader
 
         foreach(var item in list)
         {
-            item.Cast<CM_LobbyScrollItem>().UpdateSizesAndOffsets();
+            var scrollItem = item.TryCast<CM_LobbyScrollItem>();
+            if (scrollItem == null)
+                continue;
+            scrollItem.UpdateSizesAndOffsets();
         }
         
         _lobbyBar.Select();

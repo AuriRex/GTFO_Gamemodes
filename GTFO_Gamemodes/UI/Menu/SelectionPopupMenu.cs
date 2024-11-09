@@ -23,6 +23,18 @@ public class SelectionPopupMenu
     
     public void Show(int key = 0)
     {
+        FocusStateManager.EnterMenu();
+
+        switch (GameStateManager.CurrentStateName)
+        {
+            case eGameStateName.Generating:
+            case eGameStateName.InLevel:
+                FocusStateManager.Current.m_previousToggleState = eFocusState.FPS;
+                break;
+            default:
+                break;
+        }
+        
         _lobbyBar = CM_PageLoadout.Current.m_playerLobbyBars.FirstOrDefault(plb => plb.isActiveAndEnabled);
 
         if (_lobbyBar == null)
@@ -38,9 +50,7 @@ public class SelectionPopupMenu
         if (_lobbyBar == null)
             return;
         
-        _lobbyBar.m_popupVisible = false;
-        _lobbyBar.m_popupHolder.gameObject.SetActive(false);
-        _lobbyBar.m_popupItemHolder.gameObject.SetActive(false);
+        _lobbyBar.HidePopup();
     }
 
     public int GetKey(SelectionPopupHeader header)

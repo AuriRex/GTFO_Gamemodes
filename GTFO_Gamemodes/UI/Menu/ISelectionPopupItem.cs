@@ -15,6 +15,7 @@ public interface ISelectionPopupItem
     public bool IsActive { get; set; }
     public bool IsSelected { get; set; }
     public bool IsAllowedToSelect { get; set; }
+    public bool CloseMenu { get; set; }
 
     public void OnClicked();
 

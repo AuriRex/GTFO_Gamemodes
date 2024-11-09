@@ -4,9 +4,14 @@ using HarmonyLib;
 using Player;
 using SNetwork;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
+using CellMenu;
+using Gamemodes.UI.Menu;
+using Gear;
 using static Gamemodes.PatchManager;
 
 namespace Gamemodes.Patches.Required;
@@ -221,6 +226,24 @@ internal static class ChatCommandsHandler
         Utils.LocallyResetAllWeakDoors();
         
         return "Door Test complete.";
+    }
+
+    public static string GearTest(string[] args)
+    {
+        CoroutineManager.StartCoroutine(GearTestButOneFrameDelay().WrapToIl2Cpp());
+        
+        return "ok";
+    }
+
+    private static IEnumerator GearTestButOneFrameDelay()
+    {
+        yield return null;
+        
+        var items = GearManager.GetAllGearForSlot(InventorySlot.GearClass).ToArray();
+
+        var selector = new CustomGearSelector(items, InventorySlot.GearClass);
+        
+        selector.Show();
     }
 #endif
 

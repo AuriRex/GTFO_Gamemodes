@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Gamemodes.Extensions;
 using Gamemodes.UI;
+using Il2CppInterop.Runtime.Attributes;
 using TMPro;
 using UnityEngine;
 
@@ -144,11 +145,13 @@ public partial class PUI_TeamDisplay : MonoBehaviour
         RecreateTeamDisplay();
     }
 
+    [HideFromIl2Cpp]
     private void OnPlayerChangedTeams(PlayerWrapper player, int team)
     {
         RecreateTeamDisplay();
     }
 
+    [HideFromIl2Cpp]
     private PlayerEntry CreatePlayerEntry(PlayerWrapper player)
     {
         if (!player.HasAgent)
@@ -159,12 +162,14 @@ public partial class PUI_TeamDisplay : MonoBehaviour
         return entry;
     }
 
+    [HideFromIl2Cpp]
     private bool TryGetPlayerEntry(PlayerWrapper player, out PlayerEntry entry)
     {
         entry = _entries.FirstOrDefault(entry => entry.Wrapper == player);
         return entry != null;
     }
     
+    [HideFromIl2Cpp]
     public PUI_TeamDisplay SetTeamDisplayData(int team, TeamDisplayData data)
     {
         TeamDisplay[team] = data;

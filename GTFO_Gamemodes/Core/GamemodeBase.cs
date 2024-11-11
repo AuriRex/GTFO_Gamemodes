@@ -16,6 +16,8 @@ public abstract class GamemodeBase
     public virtual Sprite SpriteSmall { get; } = null;
     public virtual Sprite SpriteLarge { get; } = null;
 
+    public GameObject gameObject;
+    
     public abstract ModeSettings Settings { get; }
 
     public TeamVisibility TeamVisibility { get; protected set; } = new();

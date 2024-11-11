@@ -5,7 +5,10 @@ using Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Gamemodes.Core.BuiltIn;
 using Gamemodes.Core.TestModes;
+using Gamemodes.Extensions;
+using UnityEngine;
 using static Gamemodes.PatchManager;
 using Object = UnityEngine.Object;
 
@@ -45,6 +48,9 @@ public class GamemodeManager
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
 
         _modeGTFO = RegisterMode<ModeGTFO>();
+
+        RegisterMode<TheDarkness>();
+        
 #if DEBUG
         RegisterMode<ModeTesting>();
         RegisterMode<ModeNoSleepers>();
@@ -120,6 +126,7 @@ public class GamemodeManager
         try
         {
             _currentMode?.Disable();
+            _currentMode?.gameObject.SetActive(false);
         }
         catch (Exception ex)
         {
@@ -136,10 +143,11 @@ public class GamemodeManager
         try
         {
             _currentMode.Enable();
+            _currentMode.gameObject.SetActive(true);
         }
         catch (Exception ex)
         {
-            Plugin.LogException(ex, $"Gamemode.{nameof(GamemodeBase.Disable)}()", printInChat: true);
+            Plugin.LogException(ex, $"Gamemode.{nameof(GamemodeBase.Enable)}()", printInChat: true);
         }
 
         try
@@ -251,6 +259,10 @@ public class GamemodeManager
     {
         var impl = Activator.CreateInstance<T>();
 
+        impl.gameObject = new GameObject($"{typeof(T).Name}_Manager");
+        impl.gameObject.DontDestroyAndSetHideFlags();
+        impl.gameObject.SetActive(false);
+        
         var id = impl.ID;
         var displayName = impl.DisplayName;
 

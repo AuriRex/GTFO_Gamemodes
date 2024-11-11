@@ -11,6 +11,7 @@ public static class GameEvents
     public static event Action<SNet_Lobby> OnJoinedLobby;
     public static event Action<eGameStateName> OnGameStateChanged;
     public static event Action OnFoundMaster;
+    public static event Action OnItemPrefabsSetup;
 
     internal static void InvokeOnGameDataInit() => OnGameDataInit?.Invoke();
     internal static void InvokeOnGameSessionStart() => OnGameSessionStart?.Invoke();
@@ -18,4 +19,5 @@ public static class GameEvents
     internal static void InvokeOnJoinedLobby(SNet_Lobby lobby) => OnJoinedLobby?.Invoke(lobby);
     internal static void InvokeOnGameStateChanged(eGameStateName nextState) => OnGameStateChanged?.Invoke(nextState);
     internal static void InvokeOnFoundMaster() => OnFoundMaster?.Invoke();
+    internal static void InvokeOnItemPrefabsSetup() => OnItemPrefabsSetup?.Invoke();
 }

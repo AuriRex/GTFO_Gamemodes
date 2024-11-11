@@ -62,6 +62,16 @@ namespace Gamemodes.Resources {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] flashbundle {
+            get {
+                object obj = ResourceManager.GetObject("flashbundle", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] GTFO_Icon {
             get {
                 object obj = ResourceManager.GetObject("GTFO_Icon", resourceCulture);

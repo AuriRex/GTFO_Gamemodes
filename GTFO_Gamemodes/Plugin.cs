@@ -10,6 +10,7 @@ using Gamemodes.Patches;
 using Il2CppInterop.Runtime.Injection;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Gamemodes.Components.L2;
 
 [assembly: AssemblyVersion(Gamemodes.Plugin.VERSION)]
 [assembly: AssemblyFileVersion(Gamemodes.Plugin.VERSION)]
@@ -39,10 +40,16 @@ public class Plugin : BasePlugin
         ClassInjector.RegisterTypeInIl2Cpp<PlayerToken>();
         ClassInjector.RegisterTypeInIl2Cpp<TimerHUD>();
         ClassInjector.RegisterTypeInIl2Cpp<PUI_TeamDisplay>();
+        
+        ClassInjector.RegisterTypeInIl2Cpp<FlashBlinder>();
+        ClassInjector.RegisterTypeInIl2Cpp<FlashGrenadeInstance>();
 
         PatchManager.Init();
         NetworkingManager.Init();
         GamemodeManager.Init();
+
+        GameEvents.OnGameDataInit += PrefabManager.Init;
+        GameEvents.OnItemPrefabsSetup += PrefabManager.OnAssetLoaded;
     }
 
     public static void SendChatMessage(string msg)

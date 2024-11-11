@@ -22,4 +22,7 @@
     <data name="GTFO_Icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
         <value>GTFO_Icon.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </data>
+    <data name="flashbundle" type="System.Resources.ResXFileRef, System.Windows.Forms">
+        <value>flashbang;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </data>
 </root>

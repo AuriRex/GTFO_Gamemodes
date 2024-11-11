@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace Gamemodes.Extensions;
 
@@ -22,10 +23,36 @@ public static class GameObjectExtensions
 
         return comp != null;
     }
-    
-    public static void DontDestroyAndSetHideFlags(this UnityEngine.Object obj)
+
+    public static void SafeDestroy(this Object obj)
     {
-        UnityEngine.Object.DontDestroyOnLoad(obj);
+        if (obj == null)
+            return;
+
+        Object.Destroy(obj);
+    }
+    
+    public static void SafeDestroyGameObject(this Component component)
+    {
+        if (component == null)
+            return;
+
+        Object.Destroy(component.gameObject);
+    }
+    
+    public static IEnumerable<Transform> Children(this GameObject gameObject) => Children(gameObject.transform);
+    
+    public static IEnumerable<Transform> Children(this Transform transform)
+    {
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            yield return transform.GetChild(i);
+        }
+    }
+    
+    public static void DontDestroyAndSetHideFlags(this Object obj)
+    {
+        Object.DontDestroyOnLoad(obj);
         obj.hideFlags = HideFlags.HideAndDontSave | HideFlags.DontUnloadUnusedAsset;
     }
 }

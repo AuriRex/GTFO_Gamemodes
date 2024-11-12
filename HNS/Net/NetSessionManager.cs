@@ -5,6 +5,7 @@ using Player;
 using SNetwork;
 using System;
 using System.Linq;
+using Gamemodes.Core;
 using UnityEngine;
 
 namespace HNS.Net;
@@ -14,10 +15,10 @@ internal static class NetSessionManager
     public static bool HasSession => CurrentSession != null && CurrentSession.IsActive;
     public static Session CurrentSession { get; private set; }
 
-    internal static void Init()
+    internal static void Init(NetEvents events)
     {
-        NetworkingManager.RegisterEvent<pHNSGameStart>(OnGameStartReceived);
-        NetworkingManager.RegisterEvent<pHNSGameStop>(OnGameStopReceived);
+        events.RegisterEvent<pHNSGameStart>(OnGameStartReceived);
+        events.RegisterEvent<pHNSGameStop>(OnGameStopReceived);
     }
 
     public static void SendStartGamePacket(params ulong[] seekers)

@@ -154,7 +154,6 @@ public partial class NetworkingManager
         return LocalPlayerId == senderId;
     }
 
-
     public static void SendEventAndInvokeLocally<T>(T data, SNet_Player targetPlayer = null) where T : struct
     {
         SendEvent(data, targetPlayer, invokeLocal: true);
@@ -185,7 +184,29 @@ public partial class NetworkingManager
         eventAction.Invoke(LocalPlayerId, data);
     }
 
-    public static void RegisterEvent<T>(Action<ulong, T> onReceive) where T : struct
+    private static void EventInvoker<T>(ulong sender, T data) where T : struct
+    {
+        var net = GamemodeManager.CurrentMode.Net;
+
+        if (!net.HasEvent<T>())
+            return;
+
+        net.InvokeEvent(sender, data);
+    }
+    
+    internal static void RegisterEventWrapped<T>() where T : struct
+    {
+        var eventName = GetEventName<T>();
+
+        if (NetworkAPI.IsEventRegistered(eventName))
+            return;
+        
+        _eventStorage.Add(typeof(T), EventInvoker<T>);
+        
+        NetworkAPI.RegisterEvent<T>(eventName, EventInvoker<T>);
+    }
+    
+    private static void RegisterEventInternal<T>(Action<ulong, T> onReceive) where T : struct
     {
         var eventName = GetEventName<T>();
 
@@ -220,6 +241,4 @@ public partial class NetworkingManager
 
         return name;
     }
-
-    
 }

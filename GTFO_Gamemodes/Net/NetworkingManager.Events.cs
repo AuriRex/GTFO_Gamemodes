@@ -20,16 +20,16 @@ public partial class NetworkingManager
 
     private static void RegisterAllEvents()
     {
-        RegisterEvent<pJoinInfo>(OnJoinInfoReceived);
-        RegisterEvent<pInstalledMode>(OnInstalledModeReceived);
-        RegisterEvent<pSwitchMode>(OnModeSwitchReceived);
-        RegisterEvent<pForcedTeleport>(OnForcedTeleportReceived);
-        RegisterEvent<pSpectatorSwitch>(OnSpectatorPacketReceived);
-        RegisterEvent<pSetTeam>(OnSetTeamReceived);
-        RegisterEvent<pWelcome>(OnWelcomeReceived);
-        RegisterEvent<pChatLogMessage>(OnChatLogReceived);
-        RegisterEvent<pSpawnItemInLevel>(OnSpawnItemInLevelReceived);
-        RegisterEvent<pSpawnItemForPlayer>(OnSpawnItemForPlayerReceived);
+        RegisterEventInternal<pJoinInfo>(OnJoinInfoReceived);
+        RegisterEventInternal<pInstalledMode>(OnInstalledModeReceived);
+        RegisterEventInternal<pSwitchMode>(OnModeSwitchReceived);
+        RegisterEventInternal<pForcedTeleport>(OnForcedTeleportReceived);
+        RegisterEventInternal<pSpectatorSwitch>(OnSpectatorPacketReceived);
+        RegisterEventInternal<pSetTeam>(OnSetTeamReceived);
+        RegisterEventInternal<pWelcome>(OnWelcomeReceived);
+        RegisterEventInternal<pChatLogMessage>(OnChatLogReceived);
+        RegisterEventInternal<pSpawnItemInLevel>(OnSpawnItemInLevelReceived);
+        RegisterEventInternal<pSpawnItemForPlayer>(OnSpawnItemForPlayerReceived);
     }
 
     public static void PostChatLog(string message)

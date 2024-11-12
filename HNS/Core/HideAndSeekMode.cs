@@ -95,7 +95,7 @@ internal partial class HideAndSeekMode : GamemodeBase
     public override void Init()
     {
         _harmonyInstance = new Harmony(Plugin.GUID);
-        NetSessionManager.Init();
+        NetSessionManager.Init(Net);
 
         ChatCommands.Add("hnsstart", StartGame)
             .Add("hnsstop", StopGame)

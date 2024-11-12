@@ -15,8 +15,6 @@ public partial class TheDarkness
         {
             _player = GetComponent<LocalPlayerAgent>();
             _camera = _player.FPSCamera;
-            
-            BlindPlayer();
         }
 
         private void OnDestroy()

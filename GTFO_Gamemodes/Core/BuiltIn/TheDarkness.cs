@@ -18,7 +18,7 @@ public partial class TheDarkness : GamemodeBase
 
     public override string DisplayName => "The Darkness";
 
-    public override string Description => "";
+    public override string Description => "Every player except for <color=orange>the chosen one</color> will become <#F00>blind</color>.";
 
     public override string SubTitle => "I see no evil.";
 
@@ -33,11 +33,12 @@ public partial class TheDarkness : GamemodeBase
     
     public override void Init()
     {
-        ClassInjector.RegisterTypeInIl2Cpp<Blinder>();
+        if (!ClassInjector.IsTypeRegisteredInIl2Cpp<Blinder>())
+            ClassInjector.RegisterTypeInIl2Cpp<Blinder>();
 
         _timer = gameObject.AddComponent<TimerHUD>();
         
-        NetworkingManager.RegisterEvent<pChosenOne>(ChosenOneReceived);
+        Net.RegisterEvent<pChosenOne>(ChosenOneReceived);
     }
 
     public override void Enable()
@@ -113,7 +114,7 @@ public partial class TheDarkness : GamemodeBase
             if (chosenOne.IsLocal)
                 return;
 
-            PlayerManager.GetLocalPlayerAgent().gameObject.GetOrAddComponent<Blinder>();
+            PlayerManager.GetLocalPlayerAgent().gameObject.GetOrAddComponent<Blinder>().BlindPlayer();
 
             return;
         }

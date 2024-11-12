@@ -26,6 +26,8 @@ public abstract class GamemodeBase
     public IEnumerable<PlayerWrapper> ValidPlayers => NetworkingManager.AllValidPlayers;
     public IEnumerable<PlayerWrapper> Spectators => NetworkingManager.Spectators;
 
+    public NetEvents Net { get; } = new();
+
     public virtual void Init()
     {
 

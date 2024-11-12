@@ -43,7 +43,7 @@ public class GtfoButTheLevelSplitsUp : GamemodeBase
     
     public override void Init()
     {
-        NetworkingManager.RegisterEvent<pStart>(OnStartReceived);
+        Net.RegisterEvent<pStart>(OnStartReceived);
         
         _gameobject = new GameObject($"{nameof(GtfoButTheLevelSplitsUp)}_Manager");
         

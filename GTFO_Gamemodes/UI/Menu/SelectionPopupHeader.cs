@@ -24,7 +24,8 @@ public class SelectionPopupHeader
     internal Action<int> DrawAction => _drawAction ??= Draw;
     internal SelectionPopupMenu Parent { get; set; }
     public bool IsUpdating { get; private set; }
-
+    public ISelectionPopupItem LastClickedItem { get; private set; }
+    
     private CM_PlayerLobbyBar _lobbyBar;
 
     public SelectionPopupHeader(string headerText)
@@ -64,12 +65,12 @@ public class SelectionPopupHeader
         UpdateContent(key);
     }
     
-    private void UpdateContent(int key)
+    private void UpdateContent(int key, float? scrollPosOffset = null, float? scrollHandlePosY = null)
     {
         PreDraw?.Invoke(this);
         
         var list = new Il2CppSystem.Collections.Generic.List<iScrollWindowContent>();
-
+        
         int c = 0;
         foreach(var item in Items)
         {
@@ -147,9 +148,10 @@ public class SelectionPopupHeader
                 LastSelectedItemID = item.ID;
 
                 _lobbyBar.m_popupScrollWindow.InfoBox.SetInfoBox(item.DisplayName, item.SubTitle, item.Description, string.Empty, string.Empty, item.SpriteLarge);
-
+                
                 IsUpdating = true;
-                UpdateContent(key);
+                LastClickedItem = item;
+                UpdateContent(key, _lobbyBar.m_popupScrollWindow.m_posOffset, _lobbyBar.m_popupScrollWindow.m_scrollBar.GetHandlePosition().y);
             });
 
             if (item.SpriteSmall != null)
@@ -161,7 +163,7 @@ public class SelectionPopupHeader
 
             scrollItem.m_alphaSpriteOnHover = true;
             scrollItem.m_alphaTextOnHover = true;
-
+            
             c++;
         }
 
@@ -174,9 +176,30 @@ public class SelectionPopupHeader
                 continue;
             scrollItem.UpdateSizesAndOffsets();
         }
+ 
+        if (scrollPosOffset.HasValue)
+            ScrollTo(scrollPosOffset.Value, scrollHandlePosY ?? 0);
         
         _lobbyBar.Select();
         _lobbyBar.ShowPopup();
         _lobbyBar.m_popupScrollWindow.SelectHeader(key);
+    }
+
+    private void ScrollTo(float posOffset, float handleY)
+    {
+        var window = _lobbyBar.m_popupScrollWindow;
+        
+        if (!window.m_scrollBar.Visible)
+        {
+            return;
+        }
+        window.m_posOffset = Mathf.Clamp(posOffset, 0f, window.m_contentContainerHeight - window.m_windowHeight);
+        Vector2 position = window.m_contentContainer.GetPosition();
+        position.y = window.m_posStart + window.m_posOffset;
+        window.m_contentContainer.SetPosition(position);
+        window.UpdateContentItemVisibility();
+        
+        var pos = window.m_scrollBar.GetHandlePosition();
+        window.m_scrollBar.SetHandlePosition(new Vector2(pos.x, handleY));
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Gamemodes.Net;
 using HNS.Net;
@@ -56,6 +57,36 @@ internal partial class HideAndSeekMode
             return "Can't switch teams mid session.";
 
         NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Seekers);
+        return string.Empty;
+    }
+
+    private static string SelectMelee(string[] arg)
+    {
+        _gearMeleeSelector.Show();
+        
+        return string.Empty;
+    }
+
+    private static string SelectTool(string[] args)
+    {
+
+        if (NetSessionManager.HasSession)
+        {
+            if (!IsLocalPlayerAllowedToPickTool)
+                return $"<i>Not allowed to change tool.</i> (CD: {(_pickToolCooldownEnd - DateTimeOffset.UtcNow).Seconds} seconds)";
+
+            _pickToolCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(TOOL_SELECT_COOLDOWN);
+        }
+        
+        var info = NetworkingManager.GetLocalPlayerInfo();
+
+        if (info.Team == (int)GMTeam.Seekers)
+        {
+            _gearSeekerSelector.Show();
+            return string.Empty;
+        }
+        
+        _gearHiderSelector.Show();
         return string.Empty;
     }
 }

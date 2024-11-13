@@ -137,7 +137,7 @@ public partial class NetworkingManager
         return GetPlayerInfo(player.Lookup, out playerInfo, forceReset);
     }
 
-    internal static PlayerWrapper GetLocalPlayerInfo()
+    public static PlayerWrapper GetLocalPlayerInfo()
     {
         _syncedPlayers.TryGetValue(LocalPlayerId, out var playerInfo);
 

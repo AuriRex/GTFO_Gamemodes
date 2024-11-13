@@ -17,6 +17,7 @@ using System.Linq;
 using System.Reflection;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
+using Gamemodes.UI.Menu;
 using UnityEngine;
 
 namespace HNS.Core;
@@ -34,9 +35,11 @@ internal partial class HideAndSeekMode : GamemodeBase
     public override Sprite SpriteLarge => _banner;
     
     public override Sprite SpriteSmall => _icon;
-
-    public const float PUSH_FORCE_MULTI_DEFAULT = 2.5f;
-    public const float PUSH_FORCE_MULTI_HIDER = -0.2f;
+    
+    private const string PREFIX_ANGY_SENTRY = "Angry_";
+    private const float TOOL_SELECT_COOLDOWN = 60;
+    private const float PUSH_FORCE_MULTI_DEFAULT = 2.5f;
+    private const float PUSH_FORCE_MULTI_HIDER = -0.2f;
     
     public override ModeSettings Settings => new ModeSettings
     {
@@ -65,8 +68,6 @@ internal partial class HideAndSeekMode : GamemodeBase
 
     private Harmony _harmonyInstance;
 
-    private GameObject _gameManagerGO;
-
     private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS;
     private static int DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
 
@@ -92,6 +93,13 @@ internal partial class HideAndSeekMode : GamemodeBase
     private Sprite _icon;
     private Sprite _banner;
     
+    private static CustomGearSelector _gearMeleeSelector;
+    private static CustomGearSelector _gearHiderSelector;
+    private static CustomGearSelector _gearSeekerSelector;
+    
+    private static DateTimeOffset _pickToolCooldownEnd = DateTimeOffset.UtcNow;
+    private static bool IsLocalPlayerAllowedToPickTool => DateTimeOffset.UtcNow > _pickToolCooldownEnd;
+    
     public override void Init()
     {
         _harmonyInstance = new Harmony(Plugin.GUID);
@@ -101,21 +109,16 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("hnsstop", StopGame)
             .Add("seeker", SwitchToSeeker)
             .Add("hider", SwitchToHider)
-            .Add("lobby", SwitchToLobby);
+            .Add("lobby", SwitchToLobby)
+            .Add("melee", SelectMelee)
+            .Add("tool", SelectTool);
 
         CreateSeekerPalette();
 
         TeamVisibility.Team((int)GMTeam.Seekers).CanSeeSelf();
 
         TeamVisibility.Team((int)GMTeam.PreGameAndOrSpectator).CanSeeSelf().And((int)GMTeam.Seekers, (int)GMTeam.Hiders);
-
-        _gameManagerGO = new GameObject("HideAndSeek_Manager");
-
-        UnityEngine.Object.DontDestroyOnLoad(_gameManagerGO);
-        _gameManagerGO.hideFlags = HideFlags.HideAndDontSave | HideFlags.DontUnloadUnusedAsset;
-
-        _gameManagerGO.SetActive(false);
-
+        
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {
             ClassInjector.RegisterTypeInIl2Cpp<PaletteStorage>();
@@ -160,7 +163,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             //"PlayerSynced" // <-- Removed
         });
 
-        GameManager = new HideAndSeekGameManager(_gameManagerGO.AddComponent<TimerHUD>());
+        GameManager = new HideAndSeekGameManager(gameObject.AddComponent<TimerHUD>());
         
         ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Icon, out _icon);
         ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Banner, out _banner);
@@ -224,14 +227,14 @@ internal partial class HideAndSeekMode : GamemodeBase
             if (player.Owner.IsBot)
                 continue;
             
-            NetworkingManager.SendSpawnItemForPlayer(player.Owner, SpawnUtils.Consumables.LONG_RANGE_FLASHLIGHT);
+            NetworkingManager.SendSpawnItemForPlayer(player.Owner, PrefabManager.SpecialLRF_BlockID);
         }
     }
     
     public override void Enable()
     {
         _harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
-        _gameManagerGO.SetActive(true);
+        gameObject.SetActive(true);
 
         GameEvents.OnGameStateChanged += GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
@@ -239,11 +242,38 @@ internal partial class HideAndSeekMode : GamemodeBase
         LayerManager.LAYER_ENEMY = LayerManager.LAYER_PLAYER_SYNCED;
 
         AddAngySentries();
+
+        SetupGearSelectors();
+    }
+
+    private static void SetupGearSelectors()
+    {
+        if (_gearMeleeSelector != null)
+        {
+            return;
+        }
+        
+        var gear = GearManager.GetAllGearForSlot(InventorySlot.GearMelee).ToArray();
+
+        _gearMeleeSelector = new(gear, InventorySlot.GearMelee);
+
+        var classGear = GearManager.GetAllGearForSlot(InventorySlot.GearClass).ToArray();
+
+        _gearHiderSelector = new (classGear.Where(g => !g.PublicGearName?.Contains("Sentry") ?? false), InventorySlot.GearClass);
+
+        var seekerStuffs = new string[]
+        {
+            "Krieger",
+            //"Stalwart Flow",
+            "Optron"
+        };
+        
+        _gearSeekerSelector = new (classGear.Where(g => g.PublicGearName.Contains("Sentry") || seekerStuffs.Any(s => g.PublicGearName.Contains(s))), InventorySlot.GearClass);
     }
 
     public override void Disable()
     {
-        _gameManagerGO.SetActive(false);
+        gameObject.SetActive(false);
         _harmonyInstance.UnpatchSelf();
         GameEvents.OnGameStateChanged -= GameEvents_OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
@@ -553,8 +583,6 @@ internal partial class HideAndSeekMode : GamemodeBase
             child.SetActive(!isSeeker);
         }
     }
-
-    private const string PREFIX_ANGY_SENTRY = "Angry_";
 
     private static void RemoveAngySentries()
     {

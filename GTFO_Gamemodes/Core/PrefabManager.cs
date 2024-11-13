@@ -1,9 +1,11 @@
 using System.Linq;
 using GameData;
+using Gamemodes.Components;
 using Gamemodes.Components.L2;
 using Gamemodes.Extensions;
 using Il2CppSystem.Collections.Generic;
 using Localization;
+using Player;
 using UnityEngine;
 using Object = System.Object;
 
@@ -19,6 +21,14 @@ public static class PrefabManager
     private static GameObject _flashbangFPPrefab;
     private static GameObject _flashbangPickupPrefab;
     private static GameObject _flashbangInstancePrefab;
+    
+    private static GameObject _specialLRFPickupPrefab;
+
+    
+    private static ItemDataBlock _flashBlock;
+    private static ItemDataBlock _specialLRF;
+    
+    public static uint SpecialLRF_BlockID { get; private set; }
     
     internal static void Init()
     {
@@ -47,62 +57,46 @@ public static class PrefabManager
     {
         CreatePrefabs();
     }
-
-    private static ItemDataBlock _flashBlock;
     
     public static void PreItemLoading()
     {
-        var glowsticks = ItemDataBlock.GetBlock(114);
-
-        _flashBlock = new ItemDataBlock();
+        _flashBlock = CloneBlock(ItemDataBlock.GetBlock(SpawnUtils.Consumables.GLOWSTICKS_GREEN));
 
         _flashBlock.publicName = "Flashbang";
         _flashBlock.LocalizedName = new LocalizedText();
-        
         _flashBlock.LocalizedName.UntranslatedText = "Flashbang";
+        _flashBlock.LocalizedName.Id = 0;
         
-        _flashBlock.terminalItemShortName = glowsticks.terminalItemShortName;
-        _flashBlock.terminalItemLongName = glowsticks.terminalItemLongName;
-        _flashBlock.addSerialNumberToName = glowsticks.addSerialNumberToName;
-        _flashBlock.registerInTerminalSystem = glowsticks.registerInTerminalSystem;
-        _flashBlock.DimensionWarpType = glowsticks.DimensionWarpType;
-        
-        _flashBlock.Shard = glowsticks.Shard;
-        _flashBlock.inventorySlot = glowsticks.inventorySlot;
-        _flashBlock.FPSSettings = glowsticks.FPSSettings;
-        
-        _flashBlock.crosshair = glowsticks.crosshair;
-        _flashBlock.HUDIcon = glowsticks.HUDIcon;
-        _flashBlock.ShowCrosshairWhenAiming = glowsticks.ShowCrosshairWhenAiming;
-        _flashBlock.GUIShowAmmoClip = glowsticks.GUIShowAmmoClip;
-        _flashBlock.GUIShowAmmoPack = glowsticks.GUIShowAmmoPack;
-        _flashBlock.GUIShowAmmoInfinite = glowsticks.GUIShowAmmoInfinite;
-        _flashBlock.GUIShowAmmoTotalRel = glowsticks.GUIShowAmmoTotalRel;
-        _flashBlock.canMoveQuick = glowsticks.canMoveQuick;
         _flashBlock.ConsumableAmmoMax = 1;
         _flashBlock.ConsumableAmmoMin = 1;
-        _flashBlock.audioEventEquip = glowsticks.audioEventEquip;
-        
+
+        var og = _flashBlock.FirstPersonPrefabs;
         _flashBlock.FirstPersonPrefabs = new List<string>();
-        _flashBlock.FirstPersonPrefabs.Add(glowsticks.FirstPersonPrefabs[0]);
-        
-        _flashBlock.ThirdPersonPrefabs = glowsticks.ThirdPersonPrefabs;
-        
-        _flashBlock.PickupPrefabs = glowsticks.PickupPrefabs;
-        
-        _flashBlock.InstancePrefabs = glowsticks.InstancePrefabs;
+        _flashBlock.FirstPersonPrefabs.Add(og[0]);
         
         _flashBlock.EquipTransitionTime = 0.25f;
         _flashBlock.AimTransitionTime = 0.5f;
-        _flashBlock.LeftHandGripAlign = glowsticks.LeftHandGripAlign;
-        _flashBlock.LeftHandGripAnim = glowsticks.LeftHandGripAnim;
-        _flashBlock.RightHandGripAlign = glowsticks.RightHandGripAlign;
-        _flashBlock.RightHandGripAnim = glowsticks.RightHandGripAnim;
         _flashBlock.name = "CONSUMABLE_Flashbang";
-        _flashBlock.internalEnabled = true;
         
         ItemDataBlock.AddBlock(_flashBlock);
+        
+        _specialLRF = CloneBlock(ItemDataBlock.GetBlock(SpawnUtils.Consumables.LONG_RANGE_FLASHLIGHT));
+
+        _specialLRF.publicName = "Personal LRF";
+        _specialLRF.LocalizedName = new LocalizedText();
+        _specialLRF.LocalizedName.UntranslatedText = "Personal LRF";
+        _specialLRF.LocalizedName.Id = 0;
+        
+        _specialLRF.inventorySlot = InventorySlot.ResourcePack;
+
+        _specialLRF.name = $"Personal_{_specialLRF.name}";
+        
+        ItemDataBlock.AddBlock(_specialLRF);
+
+        SpecialLRF_BlockID = _specialLRF.persistentID;
     }
+
+    
     
     private static void CreatePrefabs()
     {
@@ -128,6 +122,18 @@ public static class PrefabManager
         ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][1] = _flashbangPrefab;
         
         Plugin.L.LogWarning($"Added Flashbang prefab! ID:{id}");
+
+
+        _specialLRFPickupPrefab = UnityEngine.Object.Instantiate(
+            ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][SpecialLRF_BlockID][0]);
+        _specialLRFPickupPrefab.DontDestroyAndSetHideFlags();
+        _specialLRFPickupPrefab.name = "Personal_LRF_Pickup";
+        _specialLRFPickupPrefab.transform.localPosition = new Vector3(0, -100, 0);
+        var pickupCore = _specialLRFPickupPrefab.GetComponent<ConsumablePickup_Core>();
+        SpecialConsumablePickup_Core.TransformOriginal(pickupCore);
+
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][SpecialLRF_BlockID][0] =
+            _specialLRFPickupPrefab;
     }
 
     private static void ReplaceMatShader(Material mat)
@@ -141,5 +147,55 @@ public static class PrefabManager
         
         mat.SetFloat("_EnableFPSRendering", 1);
         mat.EnableKeyword("ENABLE_FPS_RENDERING");
+    }
+    
+    
+    private static ItemDataBlock CloneBlock(ItemDataBlock original)
+    {
+        var clonedBlock = new ItemDataBlock();
+
+        clonedBlock.publicName = original.publicName;
+        clonedBlock.LocalizedName = original.LocalizedName;
+        
+        clonedBlock.terminalItemShortName = original.terminalItemShortName;
+        clonedBlock.terminalItemLongName = original.terminalItemLongName;
+        clonedBlock.addSerialNumberToName = original.addSerialNumberToName;
+        clonedBlock.registerInTerminalSystem = original.registerInTerminalSystem;
+        clonedBlock.DimensionWarpType = original.DimensionWarpType;
+        
+        clonedBlock.Shard = original.Shard;
+        clonedBlock.inventorySlot = original.inventorySlot;
+        clonedBlock.FPSSettings = original.FPSSettings;
+        
+        clonedBlock.crosshair = original.crosshair;
+        clonedBlock.HUDIcon = original.HUDIcon;
+        clonedBlock.ShowCrosshairWhenAiming = original.ShowCrosshairWhenAiming;
+        clonedBlock.GUIShowAmmoClip = original.GUIShowAmmoClip;
+        clonedBlock.GUIShowAmmoPack = original.GUIShowAmmoPack;
+        clonedBlock.GUIShowAmmoInfinite = original.GUIShowAmmoInfinite;
+        clonedBlock.GUIShowAmmoTotalRel = original.GUIShowAmmoTotalRel;
+        clonedBlock.canMoveQuick = original.canMoveQuick;
+        clonedBlock.ConsumableAmmoMax = original.ConsumableAmmoMax;
+        clonedBlock.ConsumableAmmoMin = original.ConsumableAmmoMin;
+        clonedBlock.audioEventEquip = original.audioEventEquip;
+
+        clonedBlock.FirstPersonPrefabs = original.FirstPersonPrefabs;
+        
+        clonedBlock.ThirdPersonPrefabs = original.ThirdPersonPrefabs;
+        
+        clonedBlock.PickupPrefabs = original.PickupPrefabs;
+        
+        clonedBlock.InstancePrefabs = original.InstancePrefabs;
+        
+        clonedBlock.EquipTransitionTime = original.EquipTransitionTime;
+        clonedBlock.AimTransitionTime = original.AimTransitionTime;
+        clonedBlock.LeftHandGripAlign = original.LeftHandGripAlign;
+        clonedBlock.LeftHandGripAnim = original.LeftHandGripAnim;
+        clonedBlock.RightHandGripAlign = original.RightHandGripAlign;
+        clonedBlock.RightHandGripAnim = original.RightHandGripAnim;
+        clonedBlock.name = original.name;
+        clonedBlock.internalEnabled = true;
+
+        return clonedBlock;
     }
 }

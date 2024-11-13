@@ -1,4 +1,3 @@
-using System;
 using Player;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
@@ -35,6 +34,9 @@ public partial class TheDarkness
             {
                 case DarknessLevel.Overload:
                     GuiManager.PlayerLayer.SetVisible(false);
+                    GuiManager.InteractionLayer.SetVisible(false);
+                    GuiManager.CrosshairLayer.SetVisible(false);
+                    GuiManager.WatermarkLayer.SetVisible(false);
                     goto case DarknessLevel.Extreme;
                 case DarknessLevel.Extreme:
                     GuiManager.NavMarkerLayer.SetVisible(false);

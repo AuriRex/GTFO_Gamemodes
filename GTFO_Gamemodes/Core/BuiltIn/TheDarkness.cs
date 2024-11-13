@@ -14,18 +14,28 @@ namespace Gamemodes.Core.BuiltIn;
 
 public partial class TheDarkness : GamemodeBase
 {
-    public override string ID => "the_darkness";
+    private const string MODE_ID = "the_darkness";
+    public override string ID => $"{MODE_ID}_{Level}";
 
-    public override string DisplayName => "The Darkness";
+    public override string DisplayName => $"The Darkness {Level}";
 
     public override string Description => "Every player except for <color=orange>the chosen one</color> will become <#F00>blind</color>.";
 
-    public override string SubTitle => "I see no evil.";
+    public override string SubTitle => $"{Level}";
 
     public override ModeSettings Settings => new ModeSettings
     {
         
     };
+
+    protected virtual DarknessLevel Level => DarknessLevel.Hard;
+
+    protected enum DarknessLevel
+    {
+        Hard,
+        Extreme,
+        Overload,
+    }
 
     private TimerHUD _timer;
 
@@ -114,7 +124,7 @@ public partial class TheDarkness : GamemodeBase
             if (chosenOne.IsLocal)
                 return;
 
-            PlayerManager.GetLocalPlayerAgent().gameObject.GetOrAddComponent<Blinder>().BlindPlayer();
+            PlayerManager.GetLocalPlayerAgent().gameObject.GetOrAddComponent<Blinder>().BlindPlayer(Level);
 
             return;
         }

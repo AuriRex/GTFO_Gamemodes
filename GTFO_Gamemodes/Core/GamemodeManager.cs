@@ -50,6 +50,8 @@ public class GamemodeManager
         _modeGTFO = RegisterMode<ModeGTFO>();
 
         RegisterMode<TheDarkness>();
+        RegisterMode<TheDarknessLevelTwo>();
+        RegisterMode<TheDarknessLevelThree>();
         
 #if DEBUG
         RegisterMode<ModeTesting>();

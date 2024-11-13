@@ -11,6 +11,9 @@ public partial class TheDarkness
     {
         private LocalPlayerAgent _player;
         private FPSCamera _camera;
+        private DarknessLevel _level = DarknessLevel.Hard;
+        private bool _isBlind;
+
         public void Awake()
         {
             _player = GetComponent<LocalPlayerAgent>();
@@ -22,13 +25,29 @@ public partial class TheDarkness
             Reset();
         }
 
-        public void BlindPlayer()
+        public void BlindPlayer(DarknessLevel? level = null)
         {
+            _level = level ?? _level;
+            
             var autoExposure = _camera.postProcessing.m_autoExposure;
 
-            autoExposure.minLuminance.value = 2000f;
-            autoExposure.maxLuminance.value = 2000f;
-            autoExposure.eyeAdaptation.value = EyeAdaptation.Progressive; 
+            switch (_level)
+            {
+                case DarknessLevel.Overload:
+                    GuiManager.PlayerLayer.SetVisible(false);
+                    goto case DarknessLevel.Extreme;
+                case DarknessLevel.Extreme:
+                    GuiManager.NavMarkerLayer.SetVisible(false);
+                    goto case DarknessLevel.Hard;
+                default:
+                case DarknessLevel.Hard:
+                    autoExposure.minLuminance.value = 2000f;
+                    autoExposure.maxLuminance.value = 2000f;
+                    autoExposure.eyeAdaptation.value = _isBlind ? EyeAdaptation.Fixed : EyeAdaptation.Progressive;
+                    break;
+            }
+
+            _isBlind = true;
         }
 
         private void Reset()
@@ -44,15 +63,8 @@ public partial class TheDarkness
             autoExposure.minLuminance.value = -8f;
             autoExposure.maxLuminance.value = 0f;
             autoExposure.eyeAdaptation.value = EyeAdaptation.Progressive;
-        }
 
-        public void ForceBlind()
-        {
-            var autoExposure = _camera.postProcessing.m_autoExposure;
-
-            autoExposure.minLuminance.value = 2000f;
-            autoExposure.maxLuminance.value = 2000f;
-            autoExposure.eyeAdaptation.value = EyeAdaptation.Fixed;
+            _isBlind = false;
         }
     }
 }

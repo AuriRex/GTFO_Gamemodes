@@ -49,8 +49,7 @@ public partial class TheDarkness
 
         if (blinder == null)
             return;
-
-        blinder.ForceBlind();
+        
         blinder.BlindPlayer();
     }
     

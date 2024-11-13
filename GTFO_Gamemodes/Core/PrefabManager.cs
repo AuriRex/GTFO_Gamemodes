@@ -1,6 +1,9 @@
 using System.Linq;
+using GameData;
 using Gamemodes.Components.L2;
 using Gamemodes.Extensions;
+using Il2CppSystem.Collections.Generic;
+using Localization;
 using UnityEngine;
 using Object = System.Object;
 
@@ -45,27 +48,86 @@ public static class PrefabManager
         CreatePrefabs();
     }
 
+    private static ItemDataBlock _flashBlock;
+    
+    public static void PreItemLoading()
+    {
+        var glowsticks = ItemDataBlock.GetBlock(114);
+
+        _flashBlock = new ItemDataBlock();
+
+        _flashBlock.publicName = "Flashbang";
+        _flashBlock.LocalizedName = new LocalizedText();
+        
+        _flashBlock.LocalizedName.UntranslatedText = "Flashbang";
+        
+        _flashBlock.terminalItemShortName = glowsticks.terminalItemShortName;
+        _flashBlock.terminalItemLongName = glowsticks.terminalItemLongName;
+        _flashBlock.addSerialNumberToName = glowsticks.addSerialNumberToName;
+        _flashBlock.registerInTerminalSystem = glowsticks.registerInTerminalSystem;
+        _flashBlock.DimensionWarpType = glowsticks.DimensionWarpType;
+        
+        _flashBlock.Shard = glowsticks.Shard;
+        _flashBlock.inventorySlot = glowsticks.inventorySlot;
+        _flashBlock.FPSSettings = glowsticks.FPSSettings;
+        
+        _flashBlock.crosshair = glowsticks.crosshair;
+        _flashBlock.HUDIcon = glowsticks.HUDIcon;
+        _flashBlock.ShowCrosshairWhenAiming = glowsticks.ShowCrosshairWhenAiming;
+        _flashBlock.GUIShowAmmoClip = glowsticks.GUIShowAmmoClip;
+        _flashBlock.GUIShowAmmoPack = glowsticks.GUIShowAmmoPack;
+        _flashBlock.GUIShowAmmoInfinite = glowsticks.GUIShowAmmoInfinite;
+        _flashBlock.GUIShowAmmoTotalRel = glowsticks.GUIShowAmmoTotalRel;
+        _flashBlock.canMoveQuick = glowsticks.canMoveQuick;
+        _flashBlock.ConsumableAmmoMax = 1;
+        _flashBlock.ConsumableAmmoMin = 1;
+        _flashBlock.audioEventEquip = glowsticks.audioEventEquip;
+        
+        _flashBlock.FirstPersonPrefabs = new List<string>();
+        _flashBlock.FirstPersonPrefabs.Add(glowsticks.FirstPersonPrefabs[0]);
+        
+        _flashBlock.ThirdPersonPrefabs = glowsticks.ThirdPersonPrefabs;
+        
+        _flashBlock.PickupPrefabs = glowsticks.PickupPrefabs;
+        
+        _flashBlock.InstancePrefabs = glowsticks.InstancePrefabs;
+        
+        _flashBlock.EquipTransitionTime = 0.25f;
+        _flashBlock.AimTransitionTime = 0.5f;
+        _flashBlock.LeftHandGripAlign = glowsticks.LeftHandGripAlign;
+        _flashBlock.LeftHandGripAnim = glowsticks.LeftHandGripAnim;
+        _flashBlock.RightHandGripAlign = glowsticks.RightHandGripAlign;
+        _flashBlock.RightHandGripAnim = glowsticks.RightHandGripAnim;
+        _flashBlock.name = "CONSUMABLE_Flashbang";
+        _flashBlock.internalEnabled = true;
+        
+        ItemDataBlock.AddBlock(_flashBlock);
+    }
+    
     private static void CreatePrefabs()
     {
         // 114 => (Green) Glowstick
+        var id = _flashBlock.persistentID;
         
-        _flashbangInstancePrefab = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][114][0]);
+        _flashbangInstancePrefab = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][0]);
         _flashbangInstancePrefab.DontDestroyAndSetHideFlags();
         _flashbangInstancePrefab.GetComponent<GlowstickInstance>().SafeDestroy();
         _flashbangInstancePrefab.AddComponent<FlashGrenadeInstance>().enabled = false;
 
-        _pickupBase = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][114][0]);
+        _pickupBase = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0]);
         _pickupBase.DontDestroyAndSetHideFlags();
         _pickupBase.Children().FirstOrDefault(c => c.name == "Glow_Stick_Pickup_Lod1").SafeDestroyGameObject();
 
         // TODO: Third-Person prefab
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.FirstPerson][114][1] = _flashbangFPPrefab;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.FirstPerson][id].Add(_flashbangFPPrefab);
         
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][114][0] = _pickupBase;
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][114].Add(_flashbangPickupPrefab);
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0] = _pickupBase;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id].Add(_flashbangPickupPrefab);
         
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][114][0] = _flashbangInstancePrefab;
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][114][1] = _flashbangPrefab;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][0] = _flashbangInstancePrefab;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][1] = _flashbangPrefab;
+        
+        Plugin.L.LogWarning($"Added Flashbang prefab! ID:{id}");
     }
 
     private static void ReplaceMatShader(Material mat)

@@ -1,4 +1,5 @@
-﻿using CellMenu;
+﻿using System;
+using CellMenu;
 using GameData;
 using Globals;
 using HarmonyLib;
@@ -29,6 +30,18 @@ internal class GameDataInit_Initialize_Patch
 internal class ItemSpawnManager_SetupItemPrefabs_Patch
 {
     public static readonly string PatchGroup = PatchGroups.REQUIRED;
+
+    public static void Prefix()
+    {
+        try
+        {
+            GameEvents.InvokePreItemPrefabsSetup();
+        }
+        catch (Exception ex)
+        {
+            Plugin.LogException(ex, $"{nameof(ItemSpawnManager_SetupItemPrefabs_Patch)}.{nameof(Prefix)}");
+        }
+    }
     
     public static void Postfix()
     {

@@ -49,6 +49,7 @@ public class Plugin : BasePlugin
         GamemodeManager.Init();
 
         GameEvents.OnGameDataInit += PrefabManager.Init;
+        GameEvents.PreItemPrefabsSetup += PrefabManager.PreItemLoading;
         GameEvents.OnItemPrefabsSetup += PrefabManager.OnAssetLoaded;
     }
 

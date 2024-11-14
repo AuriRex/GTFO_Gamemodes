@@ -29,7 +29,8 @@ public static class PrefabManager
     private static ItemDataBlock _specialLRF;
     
     public static uint SpecialLRF_BlockID { get; private set; }
-    
+    public static uint Flashbang_BlockID => _flashBlock?.persistentID ?? 0;
+
     internal static void Init()
     {
         _flashbangBundle = AssetBundle.LoadFromMemory(Resources.Data.flashbundle);
@@ -87,6 +88,8 @@ public static class PrefabManager
         _specialLRF.LocalizedName.UntranslatedText = "Personal LRF";
         _specialLRF.LocalizedName.Id = 0;
         
+        _specialLRF.EquipTransitionTime = 0.25f;
+        
         _specialLRF.inventorySlot = InventorySlot.ResourcePack;
 
         _specialLRF.name = $"Personal_{_specialLRF.name}";
@@ -111,7 +114,8 @@ public static class PrefabManager
         _pickupBase = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0]);
         _pickupBase.DontDestroyAndSetHideFlags();
         _pickupBase.Children().FirstOrDefault(c => c.name == "Glow_Stick_Pickup_Lod1").SafeDestroyGameObject();
-
+        _pickupBase.name = "PickupBase_Flashbang";
+        
         // TODO: Third-Person prefab
         ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.FirstPerson][id].Add(_flashbangFPPrefab);
         

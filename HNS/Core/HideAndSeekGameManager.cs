@@ -63,6 +63,11 @@ public class HideAndSeekGameManager
         _unblindPlayerCoroutine = CoroutineManager.StartCoroutine(GameStartSetupTimeCoroutine(blindDuration, blinds).WrapToIl2Cpp());
         
         Utils.LocallyResetAllWeakDoors();
+
+        if (SNet.IsMaster)
+        {
+            HideAndSeekMode.StartFlashSpawnerRoutine();
+        }
     }
     
     public bool OnLocalPlayerCaught()

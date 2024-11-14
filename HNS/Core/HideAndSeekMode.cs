@@ -13,11 +13,15 @@ using Player;
 using SNetwork;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using AIGraph;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
 using Gamemodes.UI.Menu;
+using LevelGeneration;
 using UnityEngine;
 
 namespace HNS.Core;
@@ -92,7 +96,8 @@ internal partial class HideAndSeekMode : GamemodeBase
 
     private Sprite _icon;
     private Sprite _banner;
-    
+    private static List<PackInfo> _originalResourcePackLocations = new();
+
     private static CustomGearSelector _gearMeleeSelector;
     private static CustomGearSelector _gearHiderSelector;
     private static CustomGearSelector _gearSeekerSelector;
@@ -301,6 +306,11 @@ internal partial class HideAndSeekMode : GamemodeBase
     {
         if (!player.CanBeSeenByLocalPlayer())
             return null;
+
+        if (NetSessionManager.HasSession && !NetSessionManager.CurrentSession.SetupTimeFinished)
+        {
+            return "<color=white>[<color=red> ? ? ? </color>]</color>";
+        }
         
         if (!player.IsLocal)
             return GetZoneAndAreaInfo(player);
@@ -341,6 +351,8 @@ internal partial class HideAndSeekMode : GamemodeBase
                     localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
                 }
 
+                HideResourcePacksAndSpawnFlashbangs();
+                
                 if (SNet.IsMaster)
                 {
                     CoroutineManager.StartCoroutine(LightBringer().WrapToIl2Cpp());
@@ -370,6 +382,110 @@ internal partial class HideAndSeekMode : GamemodeBase
                 break;
             }
         }
+    }
+
+    private static void HideResourcePacksAndSpawnFlashbangs()
+    {
+        _originalResourcePackLocations.Clear();
+        
+        foreach (var rpp in UnityEngine.Object.FindObjectsOfType<ResourcePackPickup>())
+        {
+            var pos = rpp.transform.position;
+
+            _originalResourcePackLocations.Add(new()
+            {
+                pickup = rpp,
+                position = pos,
+            });
+            
+            rpp.gameObject.SetActive(false);
+        }
+
+        if (!SNet.IsMaster)
+        {
+            return;
+        }
+
+
+        StartFlashSpawnerRoutine();
+    }
+
+    private static Coroutine _flashSpawnerRoutine;
+
+    internal static void StartFlashSpawnerRoutine()
+    {
+        StopFlashSpawnerRoutine();
+        _flashSpawnerRoutine = CoroutineManager.StartCoroutine(SpawnFlashbangs().WrapToIl2Cpp());
+    }
+    
+    private static void StopFlashSpawnerRoutine()
+    {
+        if (_flashSpawnerRoutine == null)
+            return;
+        
+        CoroutineManager.StopCoroutine(_flashSpawnerRoutine);
+        _flashSpawnerRoutine = null;
+    }
+    
+    private class PackInfo
+    {
+        public ResourcePackPickup pickup;
+
+        public Vector3 position;
+        public AIG_CourseNode node;
+        public LG_ResourceContainer_Storage container;
+
+        private bool _lateSetup;
+        
+        public void LateSetup()
+        {
+            if (_lateSetup)
+                return;
+
+            _lateSetup = true;
+            
+            container ??= pickup.gameObject.GetComponentInParent<LG_ResourceContainer_Storage>();
+            node ??= container.m_core.SpawnNode;
+            
+            foreach (var slot in container.m_storageSlots)
+            {
+                if (Vector3.Distance(slot.ResourcePack.position, position) > 0.05f)
+                    continue;
+                
+                position = slot.Consumable.position;
+                break;
+            }
+        }
+    }
+    
+    private static IEnumerator SpawnFlashbangs()
+    {
+        if (!SNet.IsMaster)
+            yield break;
+        
+        var stopWatch = Stopwatch.StartNew();
+        Plugin.L.LogDebug("Spawning Flashbangs ...");
+        var pickups = UnityEngine.Object.FindObjectsOfType<ConsumablePickup_Core>();
+        
+        var flashbangs = pickups.Where(p => p.name.Contains("Flashbang", StringComparison.InvariantCultureIgnoreCase)).ToArray();
+
+        var spawnCount = 0;
+        foreach (var info in _originalResourcePackLocations)
+        {
+            info.LateSetup();
+            
+            bool slotOccupied = pickups.Any(fb => Vector3.Distance(fb.transform.position, info.position) < 0.05f);
+
+            if (slotOccupied)
+                continue;
+            
+            NetworkingManager.SendSpawnItemInLevel(info.node, info.position, PrefabManager.Flashbang_BlockID);
+            spawnCount++;
+            yield return null;
+        }
+
+        stopWatch.Stop();
+        Plugin.L.LogDebug($"Spawning Flashbangs complete! Took {stopWatch.ElapsedMilliseconds} ms total, spawned in {spawnCount} new ones.");
     }
 
     private void OnPlayerChangedTeams(PlayerWrapper playerInfo, int teamInt)

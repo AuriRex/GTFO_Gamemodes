@@ -21,7 +21,8 @@ public static class PrefabManager
     private static GameObject _flashbangFPPrefab;
     private static GameObject _flashbangPickupPrefab;
     private static GameObject _flashbangInstancePrefab;
-    
+    private static GameObject _flashbangThirdpersonPrefab;
+
     private static GameObject _specialLRFPickupPrefab;
 
     
@@ -118,13 +119,23 @@ public static class PrefabManager
         _flashbangInstancePrefab.DontDestroyAndSetHideFlags();
         _flashbangInstancePrefab.GetComponent<GlowstickInstance>().SafeDestroy();
         _flashbangInstancePrefab.AddComponent<FlashGrenadeInstance>().enabled = false;
+        _flashbangInstancePrefab.name = "Flashbang_Instance";
 
+        _flashbangThirdpersonPrefab =
+            UnityEngine.Object.Instantiate(
+                ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id][0]);
+        _flashbangThirdpersonPrefab.DontDestroyAndSetHideFlags();
+        _flashbangThirdpersonPrefab.Children().FirstOrDefault(c => c.name == "Glowstick_1").SafeDestroyGameObject();
+        _flashbangThirdpersonPrefab.name = "Flashbang_ThirdPerson";
+        
         _pickupBase = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0]);
         _pickupBase.DontDestroyAndSetHideFlags();
         _pickupBase.Children().FirstOrDefault(c => c.name == "Glow_Stick_Pickup_Lod1").SafeDestroyGameObject();
         _pickupBase.name = "PickupBase_Flashbang";
         
-        // TODO: Third-Person prefab
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id][0] = _flashbangThirdpersonPrefab;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id].Add(_flashbangPrefab);
+        
         ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.FirstPerson][id].Add(_flashbangFPPrefab);
         
         ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0] = _pickupBase;

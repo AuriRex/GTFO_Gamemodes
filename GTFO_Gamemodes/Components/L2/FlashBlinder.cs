@@ -1,3 +1,4 @@
+using Gamemodes.Core;
 using Gamemodes.Extensions;
 using Il2CppInterop.Runtime.Attributes;
 using Player;
@@ -48,11 +49,13 @@ public class FlashBlinder : MonoBehaviour
     {
         if (Clock.Time < _blindedUntil)
             return;
+
+        var multi = GamemodeManager.PhotoSensitivityMode ? -1f : 1f;
         
         switch (_nextState)
         {
             case BlindState.Recovery:
-                ApplySettings(REC_LUMINANCE_MIN, REC_LUMINANCE_MAX, EyeAdaptation.Progressive);
+                ApplySettings(REC_LUMINANCE_MIN * multi, REC_LUMINANCE_MAX * multi, EyeAdaptation.Progressive);
                 _nextState = BlindState.End;
                 _blindedUntil = Clock.Time + RECOVERY_TIME;
                 return;
@@ -75,7 +78,8 @@ public class FlashBlinder : MonoBehaviour
         }
         
         _blindedUntil = Clock.Time + FLASH_TIME;
-        ApplySettings(-1500, -1500, EyeAdaptation.Fixed);
+        var multi = GamemodeManager.PhotoSensitivityMode ? -1f : 1f;
+        ApplySettings(-1500 * multi, -1500 * multi, EyeAdaptation.Fixed);
         _nextState = BlindState.Recovery;
     }
 

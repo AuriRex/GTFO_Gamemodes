@@ -28,6 +28,9 @@ public class FlashGrenadeInstance : Item
     public static float STUN_RADIUS = 10f;
     
     public static float FLASH_INTENSITY = 10f;
+    public static float FLASH_INTENSITY_PHOTOSENSITIVITYMODE = 20f;
+
+    public static Color NEGATIVE_COLOR = new Color(-100, -100, -100, 1);
     
     private bool _hasMadeNoise;
     private float _decayTime;
@@ -140,7 +143,8 @@ public class FlashGrenadeInstance : Item
             return;
         }
 
-        _light.Color = Color.white * Math.Min(1, _light.Intensity - LIGHT_INTENSITY_DECAY_RATE * 0.5f * Time.deltaTime);
+        var col = GamemodeManager.PhotoSensitivityMode ? NEGATIVE_COLOR : Color.white;
+        _light.Color = col * Math.Min(1, _light.Intensity - LIGHT_INTENSITY_DECAY_RATE * 0.5f * Time.deltaTime);
         _light.Range = 40f;
         _light.Intensity = Math.Max(0, _light.Intensity - LIGHT_INTENSITY_DECAY_RATE * Time.deltaTime);
     }
@@ -212,9 +216,9 @@ public class FlashGrenadeInstance : Item
 
         if (_hasLight)
         {
-            _light.Color = Color.white;
+            _light.Color = GamemodeManager.PhotoSensitivityMode ? NEGATIVE_COLOR : Color.white;
             _light.Range = 40f;
-            _light.Intensity = FLASH_INTENSITY;
+            _light.Intensity = GamemodeManager.PhotoSensitivityMode ? FLASH_INTENSITY_PHOTOSENSITIVITYMODE : FLASH_INTENSITY;
             _light.enabled = true;
         }
 

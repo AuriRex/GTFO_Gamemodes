@@ -153,6 +153,18 @@ internal static class ChatCommandsHandler
         return $"Trying to switch mode from [{previousMode}] to [{mode}].";
     }
 
+    public static string NoFlash(string[] args) => PhotoSensitivity(args);
+    public static string AntiFlash(string[] args) => PhotoSensitivity(args);
+
+    public static string PhotoSensitivity(string[] args)
+    {
+        GamemodeManager.PhotoSensitivityMode = !GamemodeManager.PhotoSensitivityMode;
+
+        Plugin.PostLocalMessage($"<color=orange>{nameof(GamemodeManager.PhotoSensitivityMode)}: {(GamemodeManager.PhotoSensitivityMode ? "<#0F0>Enabled</color>" : "<#F00>Disabled</color>")}!</color>");
+        
+        return "<color=white><i>(This value is currently not saved in between game sessions!)</i></color>";
+    }
+    
 #if DEBUG
     public static string Test(string[] args)
     {

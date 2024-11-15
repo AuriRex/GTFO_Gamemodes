@@ -40,6 +40,7 @@ public class GamemodeManager
     
     internal static event Action<ModeInfo> OnGamemodeChanged;
     public static bool IsVanilla => CurrentMode == null || CurrentMode.ID == ModeGTFO.MODE_ID;
+    public static bool PhotoSensitivityMode { get; internal set; }
 
     internal static void Init()
     {

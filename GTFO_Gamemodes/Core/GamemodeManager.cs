@@ -78,6 +78,11 @@ public class GamemodeManager
         {
             HandleSpecialRequirementsOnInLevel();
         }
+
+        if (state == eGameStateName.Lobby)
+        {
+            ToolInstanceCaches.ResetAll();
+        }
     }
 
     private static void OnGameDataInit()

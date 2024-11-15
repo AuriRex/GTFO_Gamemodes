@@ -394,8 +394,8 @@ internal partial class HideAndSeekMode : GamemodeBase
 
     internal static void DespawnOldStuffs()
     {
-        var mineInstances = UnityEngine.Object.FindObjectsOfType<MineDeployerInstance>().ToArray();
-        var cfoam = UnityEngine.Object.FindObjectsOfType<GlueGunProjectile>().ToArray();
+        var mineInstances = ToolInstanceCaches.MineCache.All; //UnityEngine.Object.FindObjectsOfType<MineDeployerInstance>().ToArray();
+        var cfoam = ToolInstanceCaches.GlueCache.All;// UnityEngine.Object.FindObjectsOfType<GlueGunProjectile>().ToArray();
 
         CoroutineManager.StartCoroutine(DespawnOldThings(cfoam, mineInstances).WrapToIl2Cpp());
     }

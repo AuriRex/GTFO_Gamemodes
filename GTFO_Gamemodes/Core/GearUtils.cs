@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Gamemodes.Net;
 using Gear;
 using Player;
@@ -95,7 +96,7 @@ public static class GearUtils
         if (!SNet.IsMaster)
             return;
 
-        var mines = UnityEngine.Object.FindObjectsOfType<MineDeployerInstance>();
+        var mines = ToolInstanceCaches.MineCache.All;
         
         foreach (var mine in mines)
         {
@@ -110,8 +111,8 @@ public static class GearUtils
     {
         if (!SNet.IsMaster)
             return;
-        
-        var cfoamBlobs = UnityEngine.Object.FindObjectsOfType<GlueGunProjectile>();
+
+        var cfoamBlobs = ToolInstanceCaches.GlueCache.All;
         
         foreach (var blob in cfoamBlobs)
         {
@@ -119,6 +120,21 @@ public static class GearUtils
                 continue;
             
             ProjectileManager.WantToDestroyGlue(blob.SyncID);
+        }
+    }
+
+    public static void LocalTryPickupDeployedSentry()
+    {
+        if (!NetworkingManager.InLevel || !PlayerBackpackManager.LocalBackpack.IsDeployed(InventorySlot.GearClass))
+        {
+            return;
+        }
+
+        var sentries = ToolInstanceCaches.SentryCache.All;
+
+        foreach (var sentry in sentries.Where(s => s.m_belongsToBackpack.IsLocal))
+        {
+            sentry.m_interactPickup.TriggerInteractionAction(PlayerManager.GetLocalPlayerAgent());
         }
     }
 }

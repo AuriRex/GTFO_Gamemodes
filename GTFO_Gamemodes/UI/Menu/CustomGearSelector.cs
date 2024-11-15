@@ -70,15 +70,8 @@ public class CustomGearSelector
             return;
         }
 
-        if (NetworkingManager.InLevel && PlayerBackpackManager.LocalBackpack.IsDeployed(InventorySlot.GearClass))
-        {
-            var sentries = UnityEngine.Object.FindObjectsOfType<SentryGunInstance>().ToArray();
-
-            foreach (var sentry in sentries.Where(s => s.m_belongsToBackpack.IsLocal))
-            {
-                sentry.m_interactPickup.TriggerInteractionAction(PlayerManager.GetLocalPlayerAgent());
-            }
-        }
+        if (_slot == InventorySlot.GearClass)
+            GearUtils.LocalTryPickupDeployedSentry();
 
         GearUtils.EquipGear(gear, _slot, RefillGunsAndToolOnPick?.Invoke() ?? false);
 

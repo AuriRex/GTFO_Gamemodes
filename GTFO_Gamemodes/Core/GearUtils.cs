@@ -11,17 +11,20 @@ public static class GearUtils
 {
     public static void EquipGear(GearIDRange gear, InventorySlot slot, bool refillGunsAndToolAmmo = false)
     {
+        if (gear == null)
+            return;
+        
         var previousChecksum = PlayerBackpackManager.GetLocalItem(slot)?.GearIDRange?.m_checksum ?? 0;
         
         if (refillGunsAndToolAmmo)
-            LocalAmmoAction(AmmoType.Guns | AmmoType.Tool, AmmoAction.Fill);
+            LocalReserveAmmoAction(AmmoType.Guns | AmmoType.Tool, AmmoAction.Fill);
         PlayerBackpackManager.EquipLocalGear(gear);
         GearManager.RegisterGearInSlotAsEquipped(gear.PlayfabItemInstanceId, slot);
 
         NetworkingManager.SendLocalPlayerGearChanged(gear.m_checksum, previousChecksum, slot);
     }
 
-    public static void LocalAmmoAction(AmmoType actUpon, AmmoAction action)
+    public static void LocalReserveAmmoAction(AmmoType actUpon, AmmoAction action)
     {
         var localAmmo = PlayerBackpackManager.LocalBackpack.AmmoStorage;
         
@@ -31,24 +34,24 @@ public static class GearUtils
         bool modified = false;
         
         if (actUpon.HasFlag(AmmoType.Main))
-            modified |= LocalAmmoAction(localAmmo.StandardAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.StandardAmmo, action);
             
         if (actUpon.HasFlag(AmmoType.Special))
-            modified |= LocalAmmoAction(localAmmo.SpecialAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.SpecialAmmo, action);
         
         if (actUpon.HasFlag(AmmoType.Tool))
-            modified |= LocalAmmoAction(localAmmo.ClassAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.ClassAmmo, action);
         
         if (actUpon.HasFlag(AmmoType.Consumable))
-            modified |= LocalAmmoAction(localAmmo.ConsumableAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.ConsumableAmmo, action);
         
         if (actUpon.HasFlag(AmmoType.ResourcePack))
-            modified |= LocalAmmoAction(localAmmo.ResourcePackAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.ResourcePackAmmo, action);
 
         localAmmo.NeedsSync |= modified;
     }
 
-    private static bool LocalAmmoAction(InventorySlotAmmo slot, AmmoAction action)
+    private static bool LocalReserveAmmoAction(InventorySlotAmmo slot, AmmoAction action)
     {
         switch (action)
         {
@@ -69,6 +72,53 @@ public static class GearUtils
         }
         return true;
     }
+
+    public static void LocalGunClipAction(AmmoAction action)
+    {
+        LocalGunClipAction(InventorySlot.GearStandard, action);
+        LocalGunClipAction(InventorySlot.GearSpecial, action);
+    }
+    
+    public static void LocalGunClipAction(InventorySlot slot, AmmoAction action)
+    {
+        var ammoStorage = PlayerBackpackManager.LocalBackpack.AmmoStorage;
+        InventorySlotAmmo slotAmmo;
+        switch (slot)
+        {
+            default:
+                return;
+            case InventorySlot.GearStandard:
+                slotAmmo = ammoStorage.StandardAmmo;
+                break;
+            case InventorySlot.GearSpecial:
+                slotAmmo = ammoStorage.SpecialAmmo;
+                break;
+        }
+        
+        if (!PlayerBackpackManager.LocalBackpack.TryGetBackpackItem(slot, out var backpackItem))
+            return;
+
+        var bulletWeapon = backpackItem.Instance.TryCast<BulletWeapon>();
+
+        if (bulletWeapon == null)
+            return;
+
+        switch (action)
+        {
+            default:
+            case AmmoAction.Keep:
+            case AmmoAction.None:
+                break;
+            case AmmoAction.Fill:
+                bulletWeapon.m_clip = bulletWeapon.ClipSize;
+                break;
+            case AmmoAction.Empty:
+                bulletWeapon.m_clip = 0;
+                break;
+        }
+
+        ammoStorage.UpdateSlotAmmoUI(slotAmmo, bulletWeapon.m_clip);
+    }
     
     [Flags]
     public enum AmmoType
@@ -83,6 +133,7 @@ public static class GearUtils
         All = Main | Special | Tool | Consumable | ResourcePack,
     }
 
+    [Flags]
     public enum AmmoAction
     {
         None,

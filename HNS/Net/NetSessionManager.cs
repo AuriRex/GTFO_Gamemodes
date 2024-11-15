@@ -4,7 +4,9 @@ using HNS.Net.Packets;
 using Player;
 using SNetwork;
 using System;
+using System.Collections;
 using System.Linq;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Core;
 using UnityEngine;
 
@@ -19,6 +21,7 @@ internal static class NetSessionManager
     {
         events.RegisterEvent<pHNSGameStart>(OnGameStartReceived);
         events.RegisterEvent<pHNSGameStop>(OnGameStopReceived);
+        events.RegisterEvent<pEpicTracer>(OnEpicTracerReceived);
     }
 
     public static void SendStartGamePacket(params ulong[] seekers)
@@ -130,5 +133,21 @@ internal static class NetSessionManager
         HideAndSeekMode.GameManager.StopGame(CurrentSession);
 
         Plugin.L.LogDebug($"Session has ended. {CurrentSession.FinalTime}");
+    }
+
+    public static void SendEpicTracer(Vector3 origin, Vector3 hitPoint)
+    {
+        var data = new pEpicTracer
+        {
+            Origin = origin,
+            Destination = hitPoint,
+        };
+        
+        NetworkingManager.SendEventAndInvokeLocally(data);
+    }
+    
+    private static void OnEpicTracerReceived(ulong sender, pEpicTracer data)
+    {
+        CoroutineManager.StartCoroutine(EpicTracer.EpicTracerRoutine(data).WrapToIl2Cpp());
     }
 }

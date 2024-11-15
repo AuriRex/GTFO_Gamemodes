@@ -1,9 +1,11 @@
 ﻿using System.Collections;
+using System.Linq;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
 using Gamemodes.Core;
 using Gamemodes.Net;
 using Gamemodes.UI;
+using Gear;
 using HNS.Net;
 using Player;
 using SNetwork;
@@ -58,8 +60,14 @@ public class HideAndSeekGameManager
         if (localPlayerIsSeeker)
         {
             blinds = BlindPlayer();
+            EquipSniper();
         }
+        
+        var bioTracker = GearManager.GetAllPlayerGear().FirstOrDefault(g => g.PublicGearName.Contains("Optron"));
+        GearUtils.EquipGear(bioTracker, InventorySlot.GearClass);
 
+        SetPlayerAmmo();
+        
         _unblindPlayerCoroutine = CoroutineManager.StartCoroutine(GameStartSetupTimeCoroutine(blindDuration, blinds).WrapToIl2Cpp());
         
         Utils.LocallyResetAllWeakDoors();
@@ -69,6 +77,26 @@ public class HideAndSeekGameManager
             HideAndSeekMode.StartFlashSpawnerRoutine();
             HideAndSeekMode.DespawnOldStuffs();
         }
+    }
+
+    private static void EquipSniper()
+    {
+        var gear = GearManager.GetAllPlayerGear().FirstOrDefault(g => g.PublicGearName.Contains("Köning"));
+        GearUtils.EquipGear(gear, InventorySlot.GearSpecial);
+    }
+
+    private void SetPlayerAmmo()
+    {
+        GearUtils.AmmoAction action = GearUtils.AmmoAction.Empty;
+        if (!_localPlayerIsSeeker)
+        {
+            action = GearUtils.AmmoAction.Fill;
+        }
+        
+        GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Guns, action);
+        GearUtils.LocalGunClipAction(action);
+        
+        GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Tool, GearUtils.AmmoAction.Fill);
     }
     
     public bool OnLocalPlayerCaught()
@@ -83,6 +111,9 @@ public class HideAndSeekGameManager
             var hiddenForMsg = $"<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>";
             _gameTimerDisplay.StartCountdown(5, $"You've been caught!\n{hiddenForMsg}\nReviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}", StyleRed);
             Gamemodes.Plugin.PostLocalMessage(hiddenForMsg);
+            EquipSniper();
+            SetPlayerAmmo();
+            DetonateAllLocalMineInstances();
         }
         else
         {
@@ -91,6 +122,17 @@ public class HideAndSeekGameManager
 
         CoroutineManager.StartCoroutine(RevivePlayerRoutine(5).WrapToIl2Cpp());
         return true;
+    }
+
+    private void DetonateAllLocalMineInstances()
+    {
+        foreach (var mine in ToolInstanceCaches.MineCache.All)
+        {
+            if (!mine.LocallyPlaced)
+                continue;
+            
+            mine.WantItemAction(null, SyncedItemAction_New.Trigger);
+        }
     }
 
     public void ReviveLocalPlayer(int reviveDelay = 5, bool showSeekerMessage = false)

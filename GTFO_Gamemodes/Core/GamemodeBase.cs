@@ -1,7 +1,10 @@
 ﻿using Gamemodes.Net;
 using Player;
 using System.Collections.Generic;
+using System.Linq;
+using Gamemodes.Net.Packets;
 using Gamemodes.Patches.Required;
+using Gear;
 using UnityEngine;
 
 namespace Gamemodes.Core;
@@ -46,6 +49,29 @@ public abstract class GamemodeBase
     public virtual void OnPlayerCountChanged()
     {
 
+    }
+    
+    public virtual void OnPlayerChangedGear(PlayerWrapper player, pGearChangeNotif data)
+    {
+        if (!data.isTool)
+            return;
+
+        var previousTool = GearManager.GetAllPlayerGear().FirstOrDefault(gear => gear.m_checksum == data.gearChecksumPrevious);
+
+        if (previousTool == null)
+            return;
+
+        if (previousTool.PublicGearName.Contains("Krieger O4"))
+        {
+            Plugin.L.LogDebug($"Cleaning up mines for player {player.NickName}");
+            GearUtils.CleanupMinesForPlayer(player);
+        }
+        
+        if (previousTool.PublicGearName.Contains("Stalwart Flow G2"))
+        {
+            Plugin.L.LogDebug($"Cleaning up cfoam blobs for player {player.NickName}");
+            GearUtils.CleanupGlueBlobsForPlayer(player);
+        }
     }
 
     public static void SetPushForceMultiplierForLocalPlayer(float pushForceMultiplier, float slidePushForceMultiplier)

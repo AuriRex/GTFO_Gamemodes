@@ -261,11 +261,13 @@ internal partial class HideAndSeekMode : GamemodeBase
         var gear = GearManager.GetAllGearForSlot(InventorySlot.GearMelee).ToArray();
 
         _gearMeleeSelector = new(gear, InventorySlot.GearMelee);
-
+        _gearMeleeSelector.RefillGunsAndToolOnPick = () => false;
+        
         var classGear = GearManager.GetAllGearForSlot(InventorySlot.GearClass).ToArray();
 
         _gearHiderSelector = new (classGear.Where(g => !g.PublicGearName?.Contains("Sentry") ?? false), InventorySlot.GearClass);
-
+        _gearHiderSelector.RefillGunsAndToolOnPick = DoRefillGunsAndToolOnPick;
+        
         var seekerStuffs = new string[]
         {
             "Krieger",
@@ -274,6 +276,12 @@ internal partial class HideAndSeekMode : GamemodeBase
         };
         
         _gearSeekerSelector = new (classGear.Where(g => g.PublicGearName.Contains("Sentry") || seekerStuffs.Any(s => g.PublicGearName.Contains(s))), InventorySlot.GearClass);
+        _gearSeekerSelector.RefillGunsAndToolOnPick = DoRefillGunsAndToolOnPick;
+    }
+
+    private static bool DoRefillGunsAndToolOnPick()
+    {
+        return !NetSessionManager.HasSession;
     }
 
     public override void Disable()
@@ -381,6 +389,53 @@ internal partial class HideAndSeekMode : GamemodeBase
 
                 break;
             }
+        }
+    }
+
+    internal static void DespawnOldStuffs()
+    {
+        var mineInstances = UnityEngine.Object.FindObjectsOfType<MineDeployerInstance>().ToArray();
+        var cfoam = UnityEngine.Object.FindObjectsOfType<GlueGunProjectile>().ToArray();
+
+        CoroutineManager.StartCoroutine(DespawnOldThings(cfoam, mineInstances).WrapToIl2Cpp());
+    }
+    
+    private static IEnumerator DespawnOldThings(IEnumerable<GlueGunProjectile> cfoamBlobs, IEnumerable<MineDeployerInstance> mines)
+    {
+        yield return null;
+        
+        int count = 0;
+        foreach (var blob in cfoamBlobs)
+        {
+            ProjectileManager.WantToDestroyGlue(blob.SyncID);
+            
+            count++;
+            if (DoYield(ref count))
+                yield return null;
+        }
+
+        foreach (var mine in mines)
+        {
+            ItemReplicationManager.DeSpawn(mine.Replicator);
+            
+            count++;
+            if (DoYield(ref count))
+                yield return null;
+        }
+
+        yield break;
+        
+        bool DoYield(ref int count)
+        {
+            const int YIELD_COUNT = 25;
+            
+            if (count < YIELD_COUNT)
+            {
+                return false;
+            }
+
+            count = 0;
+            return true;
         }
     }
 

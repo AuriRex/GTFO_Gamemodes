@@ -67,6 +67,7 @@ public class HideAndSeekGameManager
         if (SNet.IsMaster)
         {
             HideAndSeekMode.StartFlashSpawnerRoutine();
+            HideAndSeekMode.DespawnOldStuffs();
         }
     }
     

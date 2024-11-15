@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Gamemodes.Core;
 using Gamemodes.Net;
 using Gear;
 using Player;
@@ -14,6 +15,8 @@ public class CustomGearSelector
     private readonly SelectionPopupMenu _menu;
     private readonly GearIDRange[] _gear;
     private readonly InventorySlot _slot;
+
+    public Func<bool> RefillGunsAndToolOnPick { get; set; } = () => true;
     
     public CustomGearSelector(IEnumerable<GearIDRange> availableGear, InventorySlot slot, string title = "Gear Selector")
     {
@@ -41,8 +44,8 @@ public class CustomGearSelector
             {   
                 ID = gear.PlayfabItemId,
                 DisplayName = gear.PublicGearName,
-                SubTitle = "Testing",
-                Description = "Testing Description",
+                SubTitle = gear.PlayfabItemId,
+                Description = "TODO: Item description here",
                 clickedAction = OnItemClicked,
             });
         }
@@ -76,10 +79,8 @@ public class CustomGearSelector
                 sentry.m_interactPickup.TriggerInteractionAction(PlayerManager.GetLocalPlayerAgent());
             }
         }
-        
-        PlayerBackpackManager.ResetLocalAmmoStorage(full: true);
-        PlayerBackpackManager.EquipLocalGear(gear);
-        GearManager.RegisterGearInSlotAsEquipped(gear.PlayfabItemInstanceId, _slot);
+
+        GearUtils.EquipGear(gear, _slot, RefillGunsAndToolOnPick?.Invoke() ?? false);
 
         item.CloseMenu = true;
         

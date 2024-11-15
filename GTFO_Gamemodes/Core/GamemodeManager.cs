@@ -8,6 +8,7 @@ using System.Linq;
 using Gamemodes.Core.BuiltIn;
 using Gamemodes.Core.TestModes;
 using Gamemodes.Extensions;
+using Gamemodes.Net.Packets;
 using UnityEngine;
 using static Gamemodes.PatchManager;
 using Object = UnityEngine.Object;
@@ -46,6 +47,7 @@ public class GamemodeManager
         GameEvents.OnGameDataInit += OnGameDataInit;
         GameEvents.OnGameStateChanged += OnGameStateChanged;
         NetworkingManager.OnPlayerChangedTeams += OnPlayerChangedTeams;
+        NetworkingManager.OnPlayerChangedGear += OnPlayerChangedGear;
 
         _modeGTFO = RegisterMode<ModeGTFO>();
 
@@ -58,6 +60,11 @@ public class GamemodeManager
         RegisterMode<ModeNoSleepers>();
         RegisterMode<GtfoButTheLevelSplitsUp>();
 #endif
+    }
+
+    private static void OnPlayerChangedGear(PlayerWrapper player, pGearChangeNotif data)
+    {
+        CurrentMode?.OnPlayerChangedGear(player, data);
     }
 
     private static void OnPlayerChangedTeams(PlayerWrapper info, int team)

@@ -14,6 +14,7 @@ namespace Gamemodes.Net;
 
 public partial class NetworkingManager
 {
+    public static event Action<PlayerWrapper, pGearChangeNotif> OnPlayerChangedGear;
     public static event Action<PlayerWrapper, int> OnPlayerChangedTeams;
     public static event Action<string> DoSwitchModeReceived;
     public static event Action<string> OnRemoteModeInstalledReported;
@@ -30,6 +31,7 @@ public partial class NetworkingManager
         RegisterEventInternal<pChatLogMessage>(OnChatLogReceived);
         RegisterEventInternal<pSpawnItemInLevel>(OnSpawnItemInLevelReceived);
         RegisterEventInternal<pSpawnItemForPlayer>(OnSpawnItemForPlayerReceived);
+        RegisterEventInternal<pGearChangeNotif>(OnGearChangeNotifReceived);
     }
 
     public static void PostChatLog(string message)
@@ -322,5 +324,28 @@ public partial class NetworkingManager
         var success = SpawnUtils.SpawnItemAndPickUp(data.ItemID, targetPlayer, data.AmmoMultiplier, data.DoWield);
         
         Plugin.L.LogDebug($"{nameof(OnSpawnItemForPlayerReceived)}: Spawned Item for player {targetPlayer?.NickName} ({data.PlayerID}): {success}");
+    }
+
+    public static void SendLocalPlayerGearChanged(uint checksum, uint previousChecksum, InventorySlot slot)
+    {
+        var data = new pGearChangeNotif
+        {
+            gearChecksumPrevious = previousChecksum,
+            gearChecksum = checksum,
+            isGun = slot == InventorySlot.GearSpecial | slot == InventorySlot.GearStandard,
+            isTool = slot == InventorySlot.GearClass,
+        };
+        
+        SendEvent(data, SNet.Master, invokeLocal: true);
+    }
+    
+    private static void OnGearChangeNotifReceived(ulong sender, pGearChangeNotif data)
+    {
+        if (!SNet.IsMaster)
+            return;
+
+        GetPlayerInfo(sender, out var info);
+
+        OnPlayerChangedGear?.Invoke(info, data);
     }
 }

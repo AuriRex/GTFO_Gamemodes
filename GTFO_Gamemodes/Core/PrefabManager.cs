@@ -64,9 +64,13 @@ public static class PrefabManager
         _flashBlock = CloneBlock(ItemDataBlock.GetBlock(SpawnUtils.Consumables.GLOWSTICKS_GREEN));
 
         _flashBlock.publicName = "Flashbang";
-        _flashBlock.LocalizedName = new LocalizedText();
-        _flashBlock.LocalizedName.UntranslatedText = "Flashbang";
-        _flashBlock.LocalizedName.Id = 0;
+        
+        var fbText = new LocalizedText();
+        fbText.UntranslatedText = "Flashbang";
+        fbText.Id = 0;
+        fbText.OldId = 0;
+        
+        _flashBlock.LocalizedName = fbText;
         
         _flashBlock.ConsumableAmmoMax = 1;
         _flashBlock.ConsumableAmmoMin = 1;
@@ -84,9 +88,13 @@ public static class PrefabManager
         _specialLRF = CloneBlock(ItemDataBlock.GetBlock(SpawnUtils.Consumables.LONG_RANGE_FLASHLIGHT));
 
         _specialLRF.publicName = "Personal LRF";
-        _specialLRF.LocalizedName = new LocalizedText();
-        _specialLRF.LocalizedName.UntranslatedText = "Personal LRF";
-        _specialLRF.LocalizedName.Id = 0;
+        
+        var plrfText = new LocalizedText();
+        plrfText.UntranslatedText = "Personal LRF";
+        plrfText.Id = 0;
+        plrfText.OldId = 0;
+
+        _specialLRF.LocalizedName = plrfText;
         
         _specialLRF.EquipTransitionTime = 0.25f;
         

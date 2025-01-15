@@ -19,7 +19,7 @@ internal static class LobbyUI
     {
         Plugin.L.LogDebug("Setting up Gamemodes UI ...");
 
-        var timedButton = instance.m_guiLayer.AddRectComp(instance.m_readyButtonPrefab, GuiAnchor.TopCenter, new Vector2(500f, 0f), instance.m_readyButtonAlign).Cast<CM_TimedButton>();
+        var timedButton = instance.m_guiLayer.AddRectComp(instance.m_readyButtonPrefab, GuiAnchor.TopCenter, new Vector2(500f, 100f), instance.m_readyButtonAlign).Cast<CM_TimedButton>();
         var go = timedButton.gameObject;
 
         var texts = timedButton.GetTexts();

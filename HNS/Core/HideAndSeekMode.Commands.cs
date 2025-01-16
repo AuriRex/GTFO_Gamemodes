@@ -73,9 +73,7 @@ internal partial class HideAndSeekMode
         if (NetSessionManager.HasSession)
         {
             if (!IsLocalPlayerAllowedToPickTool)
-                return $"<i>Not allowed to change tool.</i> (CD: {(_pickToolCooldownEnd - DateTimeOffset.UtcNow).Seconds} seconds)";
-
-            _pickToolCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(TOOL_SELECT_COOLDOWN);
+                return $"<i><color=red>Not allowed to change tool.</color></i> (CD: {(_pickToolCooldownEnd - DateTimeOffset.UtcNow).Seconds} seconds)";
         }
         
         var info = NetworkingManager.GetLocalPlayerInfo();

@@ -17,7 +17,8 @@ public class CustomGearSelector
     private readonly InventorySlot _slot;
 
     public Func<bool> RefillGunsAndToolOnPick { get; set; } = () => true;
-    
+    public event Action<GearIDRange, InventorySlot> OnPickedGear;
+
     public CustomGearSelector(IEnumerable<GearIDRange> availableGear, InventorySlot slot, string title = "Gear Selector")
     {
         _gear = availableGear.ToArray();
@@ -78,6 +79,8 @@ public class CustomGearSelector
         item.CloseMenu = true;
         
         FocusStateManager.ExitMenu();
+        
+        OnPickedGear?.Invoke(gear, _slot);
     }
 
     public bool TryGetItemByIDFromAvailable(string id, out GearIDRange gear)

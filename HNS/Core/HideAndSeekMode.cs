@@ -267,6 +267,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         _gearHiderSelector = new (classGear.Where(g => !g.PublicGearName?.Contains("Sentry") ?? false), InventorySlot.GearClass);
         _gearHiderSelector.RefillGunsAndToolOnPick = DoRefillGunsAndToolOnPick;
+        _gearHiderSelector.OnPickedGear += OnPickedGear;
         
         var seekerStuffs = new string[]
         {
@@ -274,11 +275,24 @@ internal partial class HideAndSeekMode : GamemodeBase
             //"Stalwart Flow",
             "Optron"
         };
+
+        var seekerGear = classGear.Where(g =>
+            (g.PublicGearName.Contains("Sentry") && !g.PublicGearName.Contains("Sniper"))
+            || seekerStuffs.Any(s => g.PublicGearName.Contains(s)));
         
-        _gearSeekerSelector = new (classGear.Where(g => g.PublicGearName.Contains("Sentry") || seekerStuffs.Any(s => g.PublicGearName.Contains(s))), InventorySlot.GearClass);
+        _gearSeekerSelector = new (seekerGear, InventorySlot.GearClass);
         _gearSeekerSelector.RefillGunsAndToolOnPick = DoRefillGunsAndToolOnPick;
+        _gearSeekerSelector.OnPickedGear += OnPickedGear;
     }
 
+    private static void OnPickedGear(GearIDRange gear, InventorySlot slot)
+    {
+        if (NetSessionManager.HasSession)
+        {
+            _pickToolCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(TOOL_SELECT_COOLDOWN);
+        }
+    }
+    
     private static bool DoRefillGunsAndToolOnPick()
     {
         return !NetSessionManager.HasSession;

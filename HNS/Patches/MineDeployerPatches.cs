@@ -1,12 +1,15 @@
 using System;
 using System.Collections;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using Agents;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using FX_EffectSystem;
 using Gamemodes.Extensions;
 using Gamemodes.Net;
 using HarmonyLib;
 using HNS.Core;
+using Player;
 using UnityEngine;
 
 namespace HNS.Patches;
@@ -188,4 +191,57 @@ public static class MineDeployerDetection_Patch
         __instance.m_scanMask = SCAN_MASK;
         __instance.m_enemyMask = ENEMY_MASK;
     }
+}
+
+[HarmonyPatch(typeof(MineDeployerInstance_Detect_Laser), nameof(MineDeployerInstance_Detect_Laser.UpdateDetection))]
+public static class MineDeployerInstance_UpdateDetection_Patch
+{
+    public static event Action<MineDeployerInstance, Agent> OnAgentDetected;
+    
+    public static bool Prefix(MineDeployerInstance_Detect_Laser __instance)
+    {
+        CustomUpdateDetection(__instance);
+
+        return false;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void CustomUpdateDetection(MineDeployerInstance_Detect_Laser _this)
+    {
+        if (_this.m_core.Mode != eStickyMineMode.Explode && _this.m_core.Mode != eStickyMineMode.Alarm)
+        {
+            return;
+        }
+
+        float num = _this.DetectionRange;
+        if (_this.m_maxLineDistance > 0f)
+        {
+            if (Physics.SphereCast(_this.m_lineRendererAlign.position, 0.1f, _this.m_lineRendererAlign.forward, out RaycastHit raycastHit, _this.m_maxLineDistance, _this.m_scanMask))
+            {
+                num = raycastHit.distance;
+                var hitGo = raycastHit.collider.gameObject;
+                if (_this.m_enemyMask.IsInLayerMask(hitGo))
+                {
+                    var agent = hitGo.GetComponentInParents<Agent>();
+                    if (agent == null)
+                    {
+                        agent = hitGo.GetComponent<LocalPlayerAgent>();
+                    }
+                    //Plugin.L.LogWarning($"Mine detected agent: {agent?.name}");
+                    OnAgentDetected?.Invoke(_this.m_core.Cast<MineDeployerInstance>(), agent);
+                    return;
+                }
+            }
+            else
+            {
+                num = _this.m_maxLineDistance;
+            }
+        }
+        
+        if (num != _this.DetectionRange)
+        {
+            _this.UpdateDetectionRange(num);
+        }
+    }
+    
 }

@@ -119,13 +119,13 @@ public static class MineDeployerPatches
                 break;
         }
         
-        //var canSeeOwner = ownerInfo.CanBeSeenByLocalPlayer();
+        var canSeeOwner = ownerInfo.CanBeSeenByLocalPlayer();
         
         var localPlayerInfo = NetworkingManager.GetLocalPlayerInfo();
         var onSameTeamAsMineOwner = ownerInfo.IsOnSameTeamAs(localPlayerInfo);
-        //var isHider = (GMTeam)localPlayerInfo.Team == GMTeam.Hiders;
+        var localPlayerIsHider = (GMTeam)localPlayerInfo.Team == GMTeam.Hiders;
 
-        if (!onSameTeamAsMineOwner)
+        if (!onSameTeamAsMineOwner && (!canSeeOwner || localPlayerIsHider))
         {
             color *= BARELY_VISIBLE_MOD;
         }

@@ -634,8 +634,14 @@ internal partial class HideAndSeekMode : GamemodeBase
                 break;
         }
 
-        EndGameCheck();
+        if (EndGameCheck())
+            return;
 
+        foreach (var mine in ToolInstanceCaches.MineCache.All)
+        {
+            MineDeployerPatches.RefreshMineVisuals(mine);
+        }
+        
         // Defaults:
         // Range: 0.06
         // Intensity: 0.8
@@ -692,18 +698,19 @@ internal partial class HideAndSeekMode : GamemodeBase
         storage.hiderPalette = null;
     }
 
-    private static void EndGameCheck()
+    private static bool EndGameCheck()
     {
         if (!SNet.IsMaster)
-            return;
+            return false;
 
         if (!NetSessionManager.HasSession)
-            return;
+            return false;
 
         if (NetworkingManager.AllValidPlayers.Any(pl => pl.Team != (int)GMTeam.Seekers))
-            return;
+            return false;
 
         NetSessionManager.SendStopGamePacket();
+        return true;
     }
 
     public static void SetNearDeathAudioLimit(LocalPlayerAgent player, bool enable)

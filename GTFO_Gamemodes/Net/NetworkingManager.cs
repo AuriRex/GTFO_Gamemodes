@@ -134,6 +134,8 @@ public partial class NetworkingManager
 
     public static bool GetPlayerInfo(SNet_Player player, out PlayerWrapper playerInfo, bool forceReset = false)
     {
+        if (player == null)
+            throw new ArgumentException("player is null", nameof(player));
         return GetPlayerInfo(player.Lookup, out playerInfo, forceReset);
     }
 

@@ -245,3 +245,21 @@ public static class MineDeployerInstance_UpdateDetection_Patch
     }
     
 }
+
+[HarmonyPatch(typeof(GenericDamageComponent), nameof(GenericDamageComponent.BulletDamage))]
+//float dam, Agent sourceAgent, Vector3 position, Vector3 direction, Vector3 normal,
+//bool allowDirectionalBonus = false, float staggerMulti = 1f, float precisionMulti = 1f, uint gearCategoryId = 0
+public static class GenericDamageComponent_Patch
+{
+    public static bool Prefix(GenericDamageComponent __instance, float dam, Agent sourceAgent)
+    {
+        Plugin.L.LogInfo($"{nameof(GenericDamageComponent_Patch)} called. GO name:{__instance.name}");
+
+        var mine = __instance.gameObject.GetComponentInParent<MineDeployerInstance>();
+        
+        Plugin.L.LogWarning($"Attached to Tripmine: {mine?.name ?? "NULL"}");
+        
+        Plugin.L.LogInfo($"{nameof(GenericDamageComponent_Patch)} Dam: {dam}, sourceAgent: {sourceAgent?.name ?? "NULL"}");
+        return false;
+    }
+}

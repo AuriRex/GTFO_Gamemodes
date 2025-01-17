@@ -23,6 +23,7 @@ public class HideAndSeekGameManager
     private Blinds _blinds;
 
     private Coroutine _unblindPlayerCoroutine;
+    private Coroutine _ammoTickCoroutine;
 
     private bool _localPlayerIsSeeker;
     private bool _startedAsSeeker;
@@ -67,8 +68,9 @@ public class HideAndSeekGameManager
         GearUtils.EquipGear(bioTracker, InventorySlot.GearClass);
 
         SetPlayerAmmo();
-        
+
         _unblindPlayerCoroutine = CoroutineManager.StartCoroutine(GameStartSetupTimeCoroutine(blindDuration, blinds).WrapToIl2Cpp());
+        _ammoTickCoroutine = CoroutineManager.StartCoroutine(AmmoTickCoroutine().WrapToIl2Cpp());
         
         Utils.LocallyResetAllWeakDoors();
 
@@ -79,6 +81,28 @@ public class HideAndSeekGameManager
         }
     }
 
+    private IEnumerator AmmoTickCoroutine()
+    {
+        yield return new WaitForSeconds(5f);
+        
+        while (true)
+        {
+            var yielder = new WaitForSeconds(300f);
+            yield return yielder;
+
+            if (_localPlayerIsSeeker)
+            {
+                AddSniperBullet();
+                _gameTimerDisplay.StartCountdown(5, $"Received <b><color=orange>1</color></b> Sniper Bullet!", () => TimerHUD.TSO_GREEN_BLINKING);
+            }
+
+            if (_session == null || !_session.IsActive)
+            {
+                break;
+            }
+        }
+    }
+    
     private static void EquipSniper()
     {
         var gear = GearManager.GetAllPlayerGear().FirstOrDefault(g => g.PublicGearName.Contains("Köning"));
@@ -96,7 +120,13 @@ public class HideAndSeekGameManager
         GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Guns, action);
         GearUtils.LocalGunClipAction(action);
         
-        GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Tool, GearUtils.AmmoAction.Fill);
+        GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Tool, GearUtils.AmmoAction.SetToPercent, 0.125f);
+    }
+
+    private void AddSniperBullet()
+    {
+        GearUtils.LocalGunClipAction(InventorySlot.GearSpecial, GearUtils.AmmoAction.AddPercent, 0.5f);
+        //GearUtils.LocalGunClipAction(InventorySlot.GearSpecial, GearUtils.AmmoAction.ClampToMinMax);
     }
     
     public bool OnLocalPlayerCaught()
@@ -113,6 +143,9 @@ public class HideAndSeekGameManager
             Gamemodes.Plugin.PostLocalMessage(hiddenForMsg);
             EquipSniper();
             SetPlayerAmmo();
+            
+            AddSniperBullet();
+            
             DetonateAllLocalMineInstances();
         }
         else
@@ -180,6 +213,12 @@ public class HideAndSeekGameManager
         {
             CoroutineManager.StopCoroutine(_unblindPlayerCoroutine);
             _unblindPlayerCoroutine = null;
+        }
+
+        if (_ammoTickCoroutine != null)
+        {
+            CoroutineManager.StopCoroutine(_ammoTickCoroutine);
+            _ammoTickCoroutine = null;
         }
 
         _blinds?.Dispose();
@@ -263,6 +302,9 @@ public class HideAndSeekGameManager
         if (_blinds == blinds)
             _blinds = null;
 
+        if (_localPlayerIsSeeker)
+            AddSniperBullet();
+        
         _gameTimerDisplay.StartCountdown(10, "Seekers have been released!", StyleImportant);
     }
 }

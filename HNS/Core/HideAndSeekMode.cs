@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Agents;
 using AIGraph;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
@@ -172,7 +173,31 @@ internal partial class HideAndSeekMode : GamemodeBase
         
         ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Icon, out _icon);
         ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Banner, out _banner);
+        
+        MineDeployerInstance_UpdateDetection_Patch.OnAgentDetected += OnMineDetectAgent;
     }
+
+    private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)
+    {
+        Plugin.L.LogWarning($"Mine detected agent! Agent: {agent?.name}");
+        if (!SNet.IsMaster)
+            return;
+        
+        mine.m_detectionEnabled = false;
+
+        mine.StartCoroutine(ReactivateMineDetection(mine).WrapToIl2Cpp());
+    }
+
+    // TODO
+    private static float MineReactivationCooldown { get; set; } = 1f;
+
+    private IEnumerator ReactivateMineDetection(MineDeployerInstance mine)
+    {
+        var yielder = new WaitForSeconds(MineReactivationCooldown);
+        yield return yielder;
+        mine.m_detectionEnabled = true;
+    }
+
 
     private static void CreateSeekerPalette()
     {
@@ -430,6 +455,9 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         foreach (var mine in mines)
         {
+            if (mine == null || mine.Replicator == null || mine.Replicator.WasCollected)
+                continue;
+            
             ItemReplicationManager.DeSpawn(mine.Replicator);
             
             count++;

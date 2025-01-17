@@ -4,6 +4,7 @@ using Gamemodes.Net;
 using Gear;
 using Player;
 using SNetwork;
+using UnityEngine;
 
 namespace Gamemodes.Core;
 
@@ -24,7 +25,7 @@ public static class GearUtils
         NetworkingManager.SendLocalPlayerGearChanged(gear.m_checksum, previousChecksum, slot);
     }
 
-    public static void LocalReserveAmmoAction(AmmoType actUpon, AmmoAction action)
+    public static void LocalReserveAmmoAction(AmmoType actUpon, AmmoAction action, float? extraValue = null)
     {
         var localAmmo = PlayerBackpackManager.LocalBackpack.AmmoStorage;
         
@@ -34,25 +35,27 @@ public static class GearUtils
         bool modified = false;
         
         if (actUpon.HasFlag(AmmoType.Main))
-            modified |= LocalReserveAmmoAction(localAmmo.StandardAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.StandardAmmo, action, extraValue);
             
         if (actUpon.HasFlag(AmmoType.Special))
-            modified |= LocalReserveAmmoAction(localAmmo.SpecialAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.SpecialAmmo, action, extraValue);
         
         if (actUpon.HasFlag(AmmoType.Tool))
-            modified |= LocalReserveAmmoAction(localAmmo.ClassAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.ClassAmmo, action, extraValue);
         
         if (actUpon.HasFlag(AmmoType.Consumable))
-            modified |= LocalReserveAmmoAction(localAmmo.ConsumableAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.ConsumableAmmo, action, extraValue);
         
         if (actUpon.HasFlag(AmmoType.ResourcePack))
-            modified |= LocalReserveAmmoAction(localAmmo.ResourcePackAmmo, action);
+            modified |= LocalReserveAmmoAction(localAmmo.ResourcePackAmmo, action, extraValue);
 
         localAmmo.NeedsSync |= modified;
     }
 
-    private static bool LocalReserveAmmoAction(InventorySlotAmmo slot, AmmoAction action)
+    private static bool LocalReserveAmmoAction(InventorySlotAmmo slot, AmmoAction action, float? extraValue = null)
     {
+        float value = extraValue ?? 1f;
+        
         switch (action)
         {
             default:
@@ -69,18 +72,41 @@ public static class GearUtils
                     return false;
                 slot.AmmoInPack = slot.AmmoMaxCap;
                 break;
+            case AmmoAction.SetToPercent:
+                slot.AmmoInPack = slot.AmmoMaxCap * value;
+                break;
+            case AmmoAction.RemovePercent:
+                slot.AmmoInPack -= slot.AmmoMaxCap * value;
+                break;
+            case AmmoAction.AddPercent:
+                slot.AmmoInPack += slot.AmmoMaxCap * value;
+                break;
+            case AmmoAction.ClampToMinMax:
+                if (slot.AmmoInPack > slot.AmmoMaxCap)
+                {
+                    slot.AmmoInPack = slot.AmmoMaxCap;
+                    return true;
+                }
+                if (slot.AmmoInPack < 0)
+                {
+                    slot.AmmoInPack = 0;
+                    return true;
+                }
+                return false;
         }
         return true;
     }
 
-    public static void LocalGunClipAction(AmmoAction action)
+    public static void LocalGunClipAction(AmmoAction action, float? extraValue = null)
     {
-        LocalGunClipAction(InventorySlot.GearStandard, action);
-        LocalGunClipAction(InventorySlot.GearSpecial, action);
+        LocalGunClipAction(InventorySlot.GearStandard, action, extraValue);
+        LocalGunClipAction(InventorySlot.GearSpecial, action, extraValue);
     }
     
-    public static void LocalGunClipAction(InventorySlot slot, AmmoAction action)
+    public static void LocalGunClipAction(InventorySlot slot, AmmoAction action, float? extraValue = null)
     {
+        float value = extraValue ?? 1f;
+        
         var ammoStorage = PlayerBackpackManager.LocalBackpack.AmmoStorage;
         InventorySlotAmmo slotAmmo;
         switch (slot)
@@ -115,6 +141,21 @@ public static class GearUtils
             case AmmoAction.Empty:
                 bulletWeapon.m_clip = 0;
                 break;
+            case AmmoAction.AddPercent:
+                bulletWeapon.m_clip += (int) Mathf.Ceil(bulletWeapon.ClipSize * value);
+                break;
+            case AmmoAction.RemovePercent:
+                bulletWeapon.m_clip -= (int) Mathf.Ceil(bulletWeapon.ClipSize * value);
+                break;
+            case AmmoAction.SetToPercent:
+                bulletWeapon.m_clip = (int) Mathf.Ceil(bulletWeapon.ClipSize * value);
+                break;
+            case AmmoAction.ClampToMinMax:
+                if (bulletWeapon.m_clip < 0)
+                    bulletWeapon.m_clip = 0;
+                if (bulletWeapon.m_clip > bulletWeapon.ClipSize)
+                    bulletWeapon.m_clip = bulletWeapon.ClipSize;
+                break;
         }
 
         ammoStorage.UpdateSlotAmmoUI(slotAmmo, bulletWeapon.m_clip);
@@ -139,7 +180,11 @@ public static class GearUtils
         None,
         Keep,
         Fill,
-        Empty
+        Empty,
+        SetToPercent,
+        RemovePercent,
+        AddPercent,
+        ClampToMinMax
     }
 
     public static void CleanupMinesForPlayer(PlayerAgent player)

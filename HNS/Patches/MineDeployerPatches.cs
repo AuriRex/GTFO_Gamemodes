@@ -8,8 +8,10 @@ using FX_EffectSystem;
 using Gamemodes.Extensions;
 using Gamemodes.Net;
 using HarmonyLib;
+using HNS.Components;
 using HNS.Core;
 using Player;
+using SNetwork;
 using UnityEngine;
 
 namespace HNS.Patches;
@@ -21,129 +23,57 @@ public static class MineDeployerPatches
     public static void Postfix(MineDeployerInstance __instance)
     {
         __instance.Mode = eStickyMineMode.Alarm;
-        
-        var lightAnimator = __instance.GetComponentInChildren<FX_SimplePointLight>();
-        var light = lightAnimator.gameObject.GetComponent<EffectLight>();
-        lightAnimator.SafeDestroy();
-        light.enabled = true;
 
-        light.Intensity = 0.002f;
-        light.Color = Color.blue;
-        
-        var lr = __instance.m_detection.Cast<MineDeployerInstance_Detect_Laser>().m_lineRenderer;
-        lr.startColor = COLOR_BARELY_VISIBLE;
-        lr.endColor = COLOR_BARELY_VISIBLE;
-
-        __instance.transform.Children().FirstOrDefault(child => child.name == "Mine_Deployer_Direct_1")?.gameObject.SetActive(false);
-
-        __instance.StartCoroutine(LateMineSetup(__instance, light, lr).WrapToIl2Cpp());
+        __instance.gameObject.GetOrAddComponent<CustomMineController>();
     }
+}
 
-    //private static readonly float BARELY_VISIBLE = 0.002f;
-    private static readonly float BARELY_VISIBLE_MOD = 0.0118f;
 
-    private static MaterialPropertyBlock _MPB_HIDER;
-    private static MaterialPropertyBlock MPB_HIDER
+[HarmonyPatch(typeof(MineDeployerInstance), nameof(MineDeployerInstance.FixedUpdate))]
+public static class MineDeployerInstance_FixedUpdate_Patch
+{
+    // Allow clients to run mine detection code
+    // So we can manage detection of the local player client side
+    // to avoid network jank for whenever the mine detection is on or off
+    public static bool Prefix(MineDeployerInstance __instance)
     {
-        get
+        if (!__instance.Alive || !__instance.m_detectionEnabled)
         {
-            if (_MPB_HIDER == null)
-            {
-                _MPB_HIDER = new MaterialPropertyBlock();
-                _MPB_HIDER.SetColor("_EmissiveColor", new Color(0f, 0.5f, 1f, 0.2f));
-            }
-
-            return _MPB_HIDER;
-        }
-    }
-    private static readonly MaterialPropertyBlock MPB_SEEKER = new MaterialPropertyBlock();
-    private static MaterialPropertyBlock _MPB_OTHER;
-    private static MaterialPropertyBlock MPB_OTHER
-    {
-        get
-        {
-            if (_MPB_OTHER == null)
-            {
-                _MPB_OTHER = new MaterialPropertyBlock();
-                _MPB_OTHER.SetColor("_EmissiveColor", new Color(0.2f, 1f, 0.2f, 0.2f));
-            }
-
-            return _MPB_OTHER;
-        }
-    }
-    
-    private static IEnumerator LateMineSetup(MineDeployerInstance instance, EffectLight light, LineRenderer lineRenderer)
-    {
-        yield return null;
-
-        RefreshMineVisuals(instance, light, lineRenderer);
-    }
-
-    public static void RefreshMineVisuals(MineDeployerInstance instance, EffectLight light = null, LineRenderer lineRenderer = null)
-    {
-        if (instance == null)
-        {
-            return;
-        }
-        
-        if (light == null)
-        {
-            light = instance.GetComponentInChildren<EffectLight>();
+            return false;
         }
 
-        if (lineRenderer == null)
+        __instance.m_detection.UpdateDetection();
+
+        if (!SNet.IsMaster)
         {
-            lineRenderer = instance.m_detection.Cast<MineDeployerInstance_Detect_Laser>().m_lineRenderer;
+            return false;
         }
-        
-        //Plugin.L.LogWarning($"Owner: {instance.Owner?.name}");
 
-        NetworkingManager.GetPlayerInfo(instance.Owner?.Owner, out var ownerInfo);
-
-        Color color;
-        MaterialPropertyBlock block;
-        switch ((GMTeam)ownerInfo.Team)
+        if (__instance.m_detection.DetectionRange == __instance.m_lastDetectionRange)
         {
-            case GMTeam.Hiders:
-                color = Color.cyan;
-                block = MPB_HIDER;
-                break;
-            case GMTeam.Seekers:
-                color = Color.red;
-                block = MPB_SEEKER;
-                break;
-            default:
-            case GMTeam.PreGameAndOrSpectator:
-                color = Color.green;
-                block = MPB_OTHER;
-                break;
+            return false;
         }
-        
-        var canSeeOwner = ownerInfo.CanBeSeenByLocalPlayer();
-        
-        var localPlayerInfo = NetworkingManager.GetLocalPlayerInfo();
-        var onSameTeamAsMineOwner = ownerInfo.IsOnSameTeamAs(localPlayerInfo);
-        var localPlayerIsHider = (GMTeam)localPlayerInfo.Team == GMTeam.Hiders;
 
-        if (!onSameTeamAsMineOwner && (!canSeeOwner || localPlayerIsHider))
+        __instance.m_lastDetectionRange = __instance.m_detection.DetectionRange;
+        MineDeployerInstance.pTripLineUpdate data = new MineDeployerInstance.pTripLineUpdate
         {
-            color *= BARELY_VISIBLE_MOD;
-        }
-        
-        var modelGO = instance.transform.Find("TripMine_1(Clone)/Rot/Mine_Deployer_Direct_1").gameObject;
+            lineLength = __instance.m_detection.DetectionRange
+        };
+        __instance.m_initPacket.Send(data, SNet_ChannelType.GameNonCritical);
 
-        var modelRenderer = modelGO.GetComponent<Renderer>();
-        modelRenderer.SetPropertyBlock(block);
-        
-        light.Color = color;
-        lineRenderer.startColor = color;
-        lineRenderer.endColor = color;
+        return false;
     }
 }
 
 [HarmonyPatch(typeof(MineDeployerInstance_Detect_Laser), nameof(MineDeployerInstance_Detect_Laser.Setup))]
 public static class MineDeployerDetection_Patch
 {
+    public static void Postfix(MineDeployerInstance_Detect_Laser __instance)
+    {
+        __instance.m_scanMask = SCAN_MASK;
+        __instance.m_enemyMask = ENEMY_MASK;
+    }
+    
     private static int _SCAN_MASK;
     public static int SCAN_MASK
     {
@@ -185,12 +115,7 @@ public static class MineDeployerDetection_Patch
             return _ENEMY_MASK;
         }
     }
-    
-    public static void Postfix(MineDeployerInstance_Detect_Laser __instance)
-    {
-        __instance.m_scanMask = SCAN_MASK;
-        __instance.m_enemyMask = ENEMY_MASK;
-    }
+
 }
 
 [HarmonyPatch(typeof(MineDeployerInstance_Detect_Laser), nameof(MineDeployerInstance_Detect_Laser.UpdateDetection))]
@@ -247,8 +172,7 @@ public static class MineDeployerInstance_UpdateDetection_Patch
 }
 
 [HarmonyPatch(typeof(GenericDamageComponent), nameof(GenericDamageComponent.BulletDamage))]
-//float dam, Agent sourceAgent, Vector3 position, Vector3 direction, Vector3 normal,
-//bool allowDirectionalBonus = false, float staggerMulti = 1f, float precisionMulti = 1f, uint gearCategoryId = 0
+// Client side bullet damage detection on tripmines
 public static class GenericDamageComponent_Patch
 {
     public static bool Prefix(GenericDamageComponent __instance, float dam, Agent sourceAgent)

@@ -22,6 +22,7 @@ using AIGraph;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
 using Gamemodes.UI.Menu;
+using HNS.Extensions;
 using LevelGeneration;
 using UnityEngine;
 
@@ -128,6 +129,7 @@ internal partial class HideAndSeekMode : GamemodeBase
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {
             ClassInjector.RegisterTypeInIl2Cpp<PaletteStorage>();
+            ClassInjector.RegisterTypeInIl2Cpp<CustomMineController>();
         }
 
         DEFAULT_MASK_MELEE_ATTACK_TARGETS = LayerManager.MASK_MELEE_ATTACK_TARGETS;
@@ -180,15 +182,22 @@ internal partial class HideAndSeekMode : GamemodeBase
     private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)
     {
         Plugin.L.LogWarning($"Mine detected agent! Agent: {agent?.name}");
-        if (!SNet.IsMaster)
-            return;
-        
-        mine.m_detectionEnabled = false;
 
-        mine.StartCoroutine(ReactivateMineDetection(mine).WrapToIl2Cpp());
+        var localPlayer = agent!.TryCast<LocalPlayerAgent>();
+
+        if (localPlayer == null)
+            return;
+
+        mine.GetController().DetectedLocalPlayer();
+
+        //MineStateManager.DetectedLocalPlayer(mine);
+        
+        // TODO Remove
+        //mine.m_detectionEnabled = false;
+        //mine.StartCoroutine(ReactivateMineDetection(mine).WrapToIl2Cpp());
     }
 
-    // TODO
+    // TODO Remove
     private static float MineReactivationCooldown { get; set; } = 1f;
 
     private IEnumerator ReactivateMineDetection(MineDeployerInstance mine)
@@ -681,7 +690,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         foreach (var mine in ToolInstanceCaches.MineCache.All)
         {
-            MineDeployerPatches.RefreshMineVisuals(mine);
+            mine.GetController().RefreshVisuals();
         }
         
         // Defaults:

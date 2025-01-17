@@ -22,6 +22,7 @@ internal static class NetSessionManager
         events.RegisterEvent<pHNSGameStart>(OnGameStartReceived);
         events.RegisterEvent<pHNSGameStop>(OnGameStopReceived);
         events.RegisterEvent<pEpicTracer>(OnEpicTracerReceived);
+        events.RegisterEvent<pMineAction>(OnMineActionReceived);
     }
 
     public static void SendStartGamePacket(params ulong[] seekers)
@@ -149,5 +150,31 @@ internal static class NetSessionManager
     private static void OnEpicTracerReceived(ulong sender, pEpicTracer data)
     {
         CoroutineManager.StartCoroutine(EpicTracer.EpicTracerRoutine(data).WrapToIl2Cpp());
+    }
+
+    public static void SendMineAction(MineDeployerInstance mine, MineState state)
+    {
+        var data = new pMineAction
+        {
+            mineReplicatorKey = mine.Replicator.Key,
+            state = (byte) state,
+        };
+        
+        NetworkingManager.SendEventAndInvokeLocally(data);
+    }
+    
+    private static void OnMineActionReceived(ulong sender, pMineAction data)
+    {
+        if (!NetworkingManager.GetPlayerInfo(sender, out var info))
+            return;
+
+        var mine = ToolInstanceCaches.MineCache.All.FirstOrDefault(mine => mine?.Replicator?.Key == data.mineReplicatorKey);
+
+        if (mine == null)
+            return;
+
+        var action = (MineState) data.state;
+
+        MineStateManager.ProcessIncomingAction(info, mine, action);
     }
 }

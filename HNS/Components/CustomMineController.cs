@@ -14,7 +14,8 @@ namespace HNS.Components;
 
 public partial class CustomMineController : MonoBehaviour
 {
-    private Coroutine _coroutine;
+    private Coroutine _sequenceCoroutine;
+    private Coroutine _disableCoroutine;
 
     private MineState _currentState = MineState.Detecting;
 
@@ -26,6 +27,7 @@ public partial class CustomMineController : MonoBehaviour
 
     private GMTeam _owningTeam;
     private PlayerAgent Owner => _mine.Owner;
+    private CellSoundPlayer Sound => _mine.Sound;
     
     public static readonly Color COL_STATE_DISABLED = new Color(0.2f, 0.2f, 0.2f, 0.5f);
     public static readonly Color COL_STATE_HACKED = new Color(1f, 0.45f, 0.2f, 0.2f);
@@ -73,6 +75,24 @@ public partial class CustomMineController : MonoBehaviour
         RefreshVisuals();
     }
 
+    public void Update()
+    {
+        switch (_currentState)
+        {
+            default:
+                return;
+            case MineState.Alarm:
+            case MineState.Hacked:
+                break;
+        }
+        
+        var value = 1f + Mathf.Sin(Time.time * 20f) * 0.125f;
+
+        _light.Color *= value;
+        _lineRenderer.startColor = _light.Color;
+        _lineRenderer.endColor = _light.Color;
+    }
+    
     public void RefreshVisuals()
     {
         //Plugin.L.LogWarning($"Owner: {instance.Owner?.name}");
@@ -102,7 +122,7 @@ public partial class CustomMineController : MonoBehaviour
 
         switch (_currentState)
         {
-            default:
+            case MineState.Alarm:
                 break;
             case MineState.Disabled:
                 color = COL_STATE_DISABLED;
@@ -112,20 +132,21 @@ public partial class CustomMineController : MonoBehaviour
                 color = COL_STATE_HACKED;
                 block = MPB_HACKED;
                 break;
-        }
-
-        if (!ownerInfo.IsLocal)
-        {
-            var canSeeOwner = ownerInfo.CanBeSeenByLocalPlayer();
+            default:
+                if (!ownerInfo.IsLocal)
+                {
+                    var canSeeOwner = ownerInfo.CanBeSeenByLocalPlayer();
         
-            var localPlayerInfo = NetworkingManager.GetLocalPlayerInfo();
-            var onSameTeamAsMineOwner = ownerInfo.IsOnSameTeamAs(localPlayerInfo);
-            var localPlayerIsHider = (GMTeam)localPlayerInfo.Team == GMTeam.Hiders;
+                    var localPlayerInfo = NetworkingManager.GetLocalPlayerInfo();
+                    var onSameTeamAsMineOwner = ownerInfo.IsOnSameTeamAs(localPlayerInfo);
+                    var localPlayerIsHider = (GMTeam)localPlayerInfo.Team == GMTeam.Hiders;
 
-            if (!onSameTeamAsMineOwner && (!canSeeOwner || localPlayerIsHider))
-            {
-                color *= BARELY_VISIBLE_MOD;
-            }
+                    if (!onSameTeamAsMineOwner && (!canSeeOwner || localPlayerIsHider))
+                    {
+                        color *= BARELY_VISIBLE_MOD;
+                    }
+                }
+                break;
         }
 
         _modelRenderer.SetPropertyBlock(block);
@@ -136,67 +157,163 @@ public partial class CustomMineController : MonoBehaviour
     }
     
     [HideFromIl2Cpp]
-    private void StopCoroutine()
+    private void DisableMineForSeconds(float duration)
     {
-        if (_coroutine == null)
+        StopDisableRoutine();
+        
+        _disableCoroutine = StartCoroutine(DisableRoutine(duration).WrapToIl2Cpp());
+        return;
+
+        IEnumerator DisableRoutine(float disableDuration)
+        {
+            _currentState = MineState.Disabled;
+            _mine.m_detectionEnabled = false;
+            RefreshVisuals();
+            yield return new WaitForSeconds(disableDuration);
+            if (_mine == null || _mine.WasCollected)
+                yield break;
+            _mine.m_detectionEnabled = true;
+            _currentState = MineState.Detecting;
+            RefreshVisuals();
+            _disableCoroutine = null;
+        }
+    }
+
+    private void StopDisableRoutine()
+    {
+        if (_disableCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_disableCoroutine);
+        _disableCoroutine = null;
+    }
+    
+    [HideFromIl2Cpp]
+    private void StopSequenceCoroutine()
+    {
+        if (_sequenceCoroutine == null)
             return;
         
-        StopCoroutine(_coroutine);
-        _coroutine = null;
+        StopCoroutine(_sequenceCoroutine);
+        _sequenceCoroutine = null;
     }
 
     [HideFromIl2Cpp]
-    private void StartCoroutine(IEnumerator routine)
+    private void StartSequenceCoroutine(IEnumerator routine)
     {
-        StopCoroutine();
+        StopSequenceCoroutine();
         StartCoroutine(routine.WrapToIl2Cpp());
-    }
-
-    [HideFromIl2Cpp]
-    public void OnTeamUpdate(GMTeam team)
-    {
-        _owningTeam = team;
-        // TODO
     }
     
     [HideFromIl2Cpp]
     public void StateDetect()
     {
+        StopSequenceCoroutine();
+        StopDisableRoutine();
+        _currentState = MineState.Detecting;
         _mine.m_detectionEnabled = true;
+        RefreshVisuals();
     }
 
     [HideFromIl2Cpp]
     public void StateDisable()
     {
+        StopSequenceCoroutine();
+        StopDisableRoutine();
+        _currentState = MineState.Disabled;
         _mine.m_detectionEnabled = false;
+        RefreshVisuals();
     }
     
     [HideFromIl2Cpp]
     public void StartAlarmSequence(PlayerAgent target)
     {
-        StartCoroutine(AlarmSequence(target));
+        StartSequenceCoroutine(AlarmSequence(target));
     }
 
     [HideFromIl2Cpp]
     public void StartHackedSequence(PlayerAgent hacker)
     {
-        StartCoroutine(HackSequence(hacker));
+        StartSequenceCoroutine(HackSequence(hacker));
     }
     
     [HideFromIl2Cpp]
     public void DetectedLocalPlayer()
     {
+        if (NetworkingManager.GetLocalPlayerInfo().Team == (int)_owningTeam)
+            return;
+        
         NetSessionManager.SendMineAction(_mine, MineState.Alarm);
     }
+    
+    [HideFromIl2Cpp]
+    private IEnumerator PosHighlighter(Vector3 position, float displayDuration, float fadeoutDuration = 5f)
+    {
+        if (displayDuration == 0 && fadeoutDuration == 0)
+            yield break;
+        
+        var go = new GameObject("HNS_Temp_Highlight_GO");
+        go.transform.position = position;
+        
+        var marker = go.AddComponent<PlaceNavMarkerOnGO>();
+
+        marker.type = PlaceNavMarkerOnGO.eMarkerType.Waypoint;
+        marker.m_nameToShow = "<color=orange><b>Motion Detected!</b></color>";
+        
+        var color = Color.red;
+        if (_owningTeam == GMTeam.Seekers)
+            color = Color.cyan;
+        
+        marker.PlaceMarker();
+        marker.UpdatePlayerColor(color);
+        marker.SetMarkerVisible(true);
+        
+        if (displayDuration > 0)
+            yield return new WaitForSeconds(displayDuration);
+
+        if (fadeoutDuration > 0)
+        {
+            marker.m_marker.FadeOut(0f, fadeoutDuration);
+        
+            yield return new WaitForSeconds(fadeoutDuration + 0.1f);
+        }
+        
+        marker.SafeDestroyGameObject();
+    }
+    
     
     
     #region Sequences
     [HideFromIl2Cpp]
     private IEnumerator AlarmSequence(PlayerAgent target)
     {
+        float disableDuration = 3f;
+        if (_owningTeam == GMTeam.Hiders)
+            disableDuration = 30f;
+        
+        DisableMineForSeconds(disableDuration);
+        
+        _currentState = MineState.Alarm;
+        RefreshVisuals();
+
+        StartCoroutine(PosHighlighter(target.Position + Vector3.up, 3f).WrapToIl2Cpp());
+        
+        for (int i = 0; i < 3; i++)
+        {
+            Sound.Stop();
+            Sound.Post(AK.EVENTS.HACKING_PUZZLE_LOCK_ALARM, transform.position);
+            yield return new WaitForSeconds(0.75f);
+        }
+
+        //yield return new WaitForSeconds(0.75f);
+        
+        _currentState = MineState.Disabled;
+        RefreshVisuals();
         yield return null;
     }
-    
+
     [HideFromIl2Cpp]
     private IEnumerator HackSequence(PlayerAgent hacker)
     {

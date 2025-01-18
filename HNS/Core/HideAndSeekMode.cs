@@ -181,32 +181,16 @@ internal partial class HideAndSeekMode : GamemodeBase
 
     private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)
     {
-        Plugin.L.LogWarning($"Mine detected agent! Agent: {agent?.name}");
-
-        var localPlayer = agent!.TryCast<LocalPlayerAgent>();
+        var localPlayer = agent?.TryCast<LocalPlayerAgent>();
 
         if (localPlayer == null)
             return;
 
-        mine.GetController().DetectedLocalPlayer();
-
-        //MineStateManager.DetectedLocalPlayer(mine);
+        if (NetworkingManager.GetLocalPlayerInfo().Team == (int)GMTeam.PreGameAndOrSpectator)
+            return;
         
-        // TODO Remove
-        //mine.m_detectionEnabled = false;
-        //mine.StartCoroutine(ReactivateMineDetection(mine).WrapToIl2Cpp());
+        mine.GetController().DetectedLocalPlayer();
     }
-
-    // TODO Remove
-    private static float MineReactivationCooldown { get; set; } = 1f;
-
-    private IEnumerator ReactivateMineDetection(MineDeployerInstance mine)
-    {
-        var yielder = new WaitForSeconds(MineReactivationCooldown);
-        yield return yielder;
-        mine.m_detectionEnabled = true;
-    }
-
 
     private static void CreateSeekerPalette()
     {
@@ -690,7 +674,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         foreach (var mine in ToolInstanceCaches.MineCache.All)
         {
-            mine.GetController().RefreshVisuals();
+            mine.GetController()?.RefreshVisuals();
         }
         
         // Defaults:

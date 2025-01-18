@@ -165,8 +165,7 @@ internal static class NetSessionManager
     
     private static void OnMineActionReceived(ulong sender, pMineAction data)
     {
-        if (!NetworkingManager.GetPlayerInfo(sender, out var info))
-            return;
+        NetworkingManager.GetPlayerInfo(sender, out var info);
 
         var mine = ToolInstanceCaches.MineCache.All.FirstOrDefault(mine => mine?.Replicator?.Key == data.mineReplicatorKey);
 

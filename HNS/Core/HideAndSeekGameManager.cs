@@ -157,11 +157,13 @@ public class HideAndSeekGameManager
         {
             _localPlayerIsSeeker = true;
             _session.LocalPlayerCaught();
+            
             var hiddenForMsg = $"<color=orange>Time spent hiding: {_session.HidingTime.ToString(@"mm\:ss")}</color>";
             _gameTimerDisplay.StartCountdown(5, $"You've been caught!\n{hiddenForMsg}\nReviving in {TimerHUD.COUNTDOWN_TIMER_MARKER}", StyleRed);
             Gamemodes.Plugin.PostLocalMessage(hiddenForMsg);
             EquipSniper();
             SetPlayerAmmo();
+            HideAndSeekMode.SetToolAmmoForLocalPlayer();
             
             AddSniperBullet();
             

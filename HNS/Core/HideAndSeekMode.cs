@@ -309,8 +309,32 @@ internal partial class HideAndSeekMode : GamemodeBase
         {
             _pickToolCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(TOOL_SELECT_COOLDOWN);
         }
+
+        if (slot == InventorySlot.GearClass)
+        {
+            SetToolAmmoForLocalPlayer();
+        }
     }
-    
+
+    internal static void SetToolAmmoForLocalPlayer()
+    {
+        var value = 1f;
+        switch ((GMTeam)NetworkingManager.GetLocalPlayerInfo().Team)
+        {
+            default:
+            case GMTeam.PreGameAndOrSpectator:
+                break;
+            case GMTeam.Hiders:
+                value = 0.125f;
+                break;
+            case GMTeam.Seekers:
+                value = 0.125f * 3;
+                break;
+        }
+            
+        GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Tool, GearUtils.AmmoAction.SetToPercent, value);
+    }
+
     private static bool DoRefillGunsAndToolOnPick()
     {
         return !NetSessionManager.HasSession;

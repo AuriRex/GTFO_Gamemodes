@@ -187,7 +187,7 @@ public static class GenericDamageComponent_Patch
         //Plugin.L.LogInfo($"{nameof(GenericDamageComponent_Patch)} Dam: {dam}, sourceAgent: {sourceAgent?.name ?? "NULL"}");
 
         // TODO: Remove this
-        mine.GetController().ApplyHack();
+        //mine.GetController().ApplyHack();
         return false;
     }
 }

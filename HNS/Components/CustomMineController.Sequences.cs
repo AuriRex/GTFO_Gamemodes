@@ -51,7 +51,7 @@ public partial class CustomMineController
         _currentState = MineState.Hacked;
         RefreshVisuals();
 
-        var beepCount = 10;
+        var beepCount = 12;
         var waitTime = disableDuration / beepCount;
         
         for (int i = 0; i < beepCount; i++)
@@ -61,7 +61,8 @@ public partial class CustomMineController
             yield return new WaitForSeconds(waitTime);
         }
         
-        StartCoroutine(Coroutines.PlaceNavmarkerAtPos(_mine.transform.position, "<color=red><b>Device Hacked!</b></color>", Color.red, 3f).WrapToIl2Cpp());
+        if (_mine.LocallyPlaced)
+            StartCoroutine(Coroutines.PlaceNavmarkerAtPos(_mine.transform.position, "<color=red><b>Device Rebooted\nafter Hack!</b></color>", Color.red, 3f).WrapToIl2Cpp());
         
         _currentState = MineState.Detecting;
         RefreshVisuals();

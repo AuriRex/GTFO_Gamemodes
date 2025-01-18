@@ -10,6 +10,7 @@ using Gamemodes.Net;
 using HarmonyLib;
 using HNS.Components;
 using HNS.Core;
+using HNS.Extensions;
 using Player;
 using SNetwork;
 using UnityEngine;
@@ -177,13 +178,16 @@ public static class GenericDamageComponent_Patch
 {
     public static bool Prefix(GenericDamageComponent __instance, float dam, Agent sourceAgent)
     {
-        Plugin.L.LogInfo($"{nameof(GenericDamageComponent_Patch)} called. GO name:{__instance.name}");
+        //Plugin.L.LogInfo($"{nameof(GenericDamageComponent_Patch)} called. GO name:{__instance.name}");
 
         var mine = __instance.gameObject.GetComponentInParent<MineDeployerInstance>();
         
-        Plugin.L.LogWarning($"Attached to Tripmine: {mine?.name ?? "NULL"}");
+        //Plugin.L.LogWarning($"Attached to Tripmine: {mine?.name ?? "NULL"}");
         
-        Plugin.L.LogInfo($"{nameof(GenericDamageComponent_Patch)} Dam: {dam}, sourceAgent: {sourceAgent?.name ?? "NULL"}");
+        //Plugin.L.LogInfo($"{nameof(GenericDamageComponent_Patch)} Dam: {dam}, sourceAgent: {sourceAgent?.name ?? "NULL"}");
+
+        // TODO: Remove this
+        mine.GetController().ApplyHack();
         return false;
     }
 }

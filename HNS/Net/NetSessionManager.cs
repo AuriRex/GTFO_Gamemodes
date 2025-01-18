@@ -8,6 +8,7 @@ using System.Collections;
 using System.Linq;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Core;
+using HNS.Components;
 using UnityEngine;
 
 namespace HNS.Net;
@@ -174,6 +175,6 @@ internal static class NetSessionManager
 
         var action = (MineState) data.state;
 
-        MineStateManager.ProcessIncomingAction(info, mine, action);
+        CustomMineController.ProcessIncomingAction(info, mine, action);
     }
 }

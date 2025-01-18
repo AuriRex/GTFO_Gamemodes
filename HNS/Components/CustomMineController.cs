@@ -5,6 +5,7 @@ using FX_EffectSystem;
 using Gamemodes.Extensions;
 using Gamemodes.Net;
 using HNS.Core;
+using HNS.Extensions;
 using HNS.Net;
 using Il2CppInterop.Runtime.Attributes;
 using Player;
@@ -25,16 +26,16 @@ public partial class CustomMineController : MonoBehaviour
     private LineRenderer _lineRenderer;
     private Renderer _modelRenderer;
 
+    private Color _currentColor = Color.white;
     private GMTeam _owningTeam;
     private PlayerAgent Owner => _mine.Owner;
     private CellSoundPlayer Sound => _mine.Sound;
     
-    public static readonly Color COL_STATE_DISABLED = new Color(0.2f, 0.2f, 0.2f, 0.5f);
+    public static readonly Color COL_STATE_DISABLED = new Color(0.2f, 0.2f, 0.2f, 0.3f);
     public static readonly Color COL_STATE_HACKED = new Color(1f, 0.45f, 0.2f, 0.2f);
     
-    private static float BARELY_VISIBLE_MOD = 0.0118f;
+    private static readonly float BARELY_VISIBLE_MOD = 0.0118f;
 
-    
     public void Start()
     {
         _mine = GetComponent<MineDeployerInstance>();
@@ -77,26 +78,33 @@ public partial class CustomMineController : MonoBehaviour
 
     public void Update()
     {
+        float baseValue = 1f;
+        float blinkSpeedMulti = 1f;
+        float blinkAmplitude = 0.25f;
         switch (_currentState)
         {
             default:
                 return;
             case MineState.Alarm:
+                break;
             case MineState.Hacked:
+                baseValue = 0.3f;
+                blinkSpeedMulti = 0.25f;
+                blinkAmplitude = 0.45f;
                 break;
         }
         
-        var value = 1f + Mathf.Sin(Time.time * 20f) * 0.125f;
+        var value = baseValue + Mathf.Sin(Time.time * 20f * blinkSpeedMulti) * blinkAmplitude;
 
-        _light.Color *= value;
-        _lineRenderer.startColor = _light.Color;
-        _lineRenderer.endColor = _light.Color;
+        var col = _currentColor * value;
+
+        _light.Color = col;
+        _lineRenderer.startColor = col;
+        _lineRenderer.endColor = col;
     }
     
     public void RefreshVisuals()
     {
-        //Plugin.L.LogWarning($"Owner: {instance.Owner?.name}");
-
         NetworkingManager.GetPlayerInfo(Owner?.Owner, out var ownerInfo);
 
         _owningTeam = (GMTeam)ownerInfo.Team;
@@ -149,11 +157,40 @@ public partial class CustomMineController : MonoBehaviour
                 break;
         }
 
+        _currentColor = color;
+        
         _modelRenderer.SetPropertyBlock(block);
         
         _light.Color = color;
         _lineRenderer.startColor = color;
         _lineRenderer.endColor = color;
+    }
+    
+    [HideFromIl2Cpp]
+    public static void ProcessIncomingAction(PlayerWrapper sender, MineDeployerInstance mine, MineState mineState)
+    {
+        Plugin.L.LogDebug($"{nameof(CustomMineController)}.{nameof(ProcessIncomingAction)}: State:{mineState}, Sender:{sender.NickName}, Mine:{mine?.name}");
+
+        var controller = mine.GetController();
+        
+        switch (mineState)
+        {
+            default:
+            case MineState.DoNotChange:
+                break;
+            case MineState.Alarm:
+                controller.StartAlarmSequence(sender.PlayerAgent);
+                break;
+            case MineState.Detecting:
+                controller.SetStateDetecting();
+                break;
+            case MineState.Disabled:
+                controller.SetStateDisabled();
+                break;
+            case MineState.Hacked:
+                controller.StartHackedSequence(sender.PlayerAgent);
+                break;
+        }
     }
     
     [HideFromIl2Cpp]
@@ -204,11 +241,11 @@ public partial class CustomMineController : MonoBehaviour
     private void StartSequenceCoroutine(IEnumerator routine)
     {
         StopSequenceCoroutine();
-        StartCoroutine(routine.WrapToIl2Cpp());
+        _sequenceCoroutine = StartCoroutine(routine.WrapToIl2Cpp());
     }
     
     [HideFromIl2Cpp]
-    public void StateDetect()
+    private void SetStateDetecting()
     {
         StopSequenceCoroutine();
         StopDisableRoutine();
@@ -218,7 +255,7 @@ public partial class CustomMineController : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    public void StateDisable()
+    private void SetStateDisabled()
     {
         StopSequenceCoroutine();
         StopDisableRoutine();
@@ -228,15 +265,29 @@ public partial class CustomMineController : MonoBehaviour
     }
     
     [HideFromIl2Cpp]
-    public void StartAlarmSequence(PlayerAgent target)
+    private void StartAlarmSequence(PlayerAgent target)
     {
+        StopDisableRoutine();
         StartSequenceCoroutine(AlarmSequence(target));
     }
 
     [HideFromIl2Cpp]
-    public void StartHackedSequence(PlayerAgent hacker)
+    private void StartHackedSequence(PlayerAgent hacker)
     {
+        StopDisableRoutine();
         StartSequenceCoroutine(HackSequence(hacker));
+    }
+
+    [HideFromIl2Cpp]
+    public void SetDetecting()
+    {
+        NetSessionManager.SendMineAction(_mine, MineState.Detecting);
+    }
+    
+    [HideFromIl2Cpp]
+    public void SetDisabled()
+    {
+        NetSessionManager.SendMineAction(_mine, MineState.Disabled);
     }
     
     [HideFromIl2Cpp]
@@ -249,75 +300,8 @@ public partial class CustomMineController : MonoBehaviour
     }
     
     [HideFromIl2Cpp]
-    private IEnumerator PosHighlighter(Vector3 position, float displayDuration, float fadeoutDuration = 5f)
+    public void ApplyHack()
     {
-        if (displayDuration == 0 && fadeoutDuration == 0)
-            yield break;
-        
-        var go = new GameObject("HNS_Temp_Highlight_GO");
-        go.transform.position = position;
-        
-        var marker = go.AddComponent<PlaceNavMarkerOnGO>();
-
-        marker.type = PlaceNavMarkerOnGO.eMarkerType.Waypoint;
-        marker.m_nameToShow = "<color=orange><b>Motion Detected!</b></color>";
-        
-        var color = Color.red;
-        if (_owningTeam == GMTeam.Seekers)
-            color = Color.cyan;
-        
-        marker.PlaceMarker();
-        marker.UpdatePlayerColor(color);
-        marker.SetMarkerVisible(true);
-        
-        if (displayDuration > 0)
-            yield return new WaitForSeconds(displayDuration);
-
-        if (fadeoutDuration > 0)
-        {
-            marker.m_marker.FadeOut(0f, fadeoutDuration);
-        
-            yield return new WaitForSeconds(fadeoutDuration + 0.1f);
-        }
-        
-        marker.SafeDestroyGameObject();
+        NetSessionManager.SendMineAction(_mine, MineState.Hacked);
     }
-    
-    
-    
-    #region Sequences
-    [HideFromIl2Cpp]
-    private IEnumerator AlarmSequence(PlayerAgent target)
-    {
-        float disableDuration = 3f;
-        if (_owningTeam == GMTeam.Hiders)
-            disableDuration = 30f;
-        
-        DisableMineForSeconds(disableDuration);
-        
-        _currentState = MineState.Alarm;
-        RefreshVisuals();
-
-        StartCoroutine(PosHighlighter(target.Position + Vector3.up, 3f).WrapToIl2Cpp());
-        
-        for (int i = 0; i < 3; i++)
-        {
-            Sound.Stop();
-            Sound.Post(AK.EVENTS.HACKING_PUZZLE_LOCK_ALARM, transform.position);
-            yield return new WaitForSeconds(0.75f);
-        }
-
-        //yield return new WaitForSeconds(0.75f);
-        
-        _currentState = MineState.Disabled;
-        RefreshVisuals();
-        yield return null;
-    }
-
-    [HideFromIl2Cpp]
-    private IEnumerator HackSequence(PlayerAgent hacker)
-    {
-        yield return null;
-    }
-    #endregion
 }

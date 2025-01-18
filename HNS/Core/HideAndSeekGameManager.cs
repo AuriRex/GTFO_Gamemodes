@@ -34,6 +34,9 @@ public class HideAndSeekGameManager
 
     private const string GAMESTART_COUNTDOWN_FORMATTEXT = $"{TimerHUD.COUNTDOWN_TIMER_MARKER} until seekers are released.";
     
+    private static readonly float AmmoTickInterval = 300f;
+    private static readonly int AmmoTickInfiniteAmmoAtTick = 5;
+    
     public void SetTimerHud(TimerHUD timer)
     {
         _gameTimerDisplay = timer;
@@ -80,25 +83,41 @@ public class HideAndSeekGameManager
             HideAndSeekMode.DespawnOldStuffs();
         }
     }
-
+    
     private IEnumerator AmmoTickCoroutine()
     {
         yield return new WaitForSeconds(5f);
+
+        var tick = 0;
         
         while (true)
         {
-            var yielder = new WaitForSeconds(300f);
+            var yielder = new WaitForSeconds(AmmoTickInterval);
             yield return yielder;
 
+            tick++;
+            
+            if (_session == null || !_session.IsActive)
+            {
+                break;
+            }
+
+            if (tick >= AmmoTickInfiniteAmmoAtTick)
+            {
+                _gameTimerDisplay.StartCountdown(10, $"All Seekers have received <b><color=purple>Infinite Reserve Ammo</color></b> for the remainder of the round!", () => TimerHUD.TSO_RED_WARNING_BLINKING);
+
+                if (_localPlayerIsSeeker)
+                {
+                    GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Guns, GearUtils.AmmoAction.Fill);
+                    GearUtils.LocalGunClipAction(GearUtils.AmmoAction.Fill);
+                }
+                yield break;
+            }
+            
             if (_localPlayerIsSeeker)
             {
                 AddSniperBullet();
                 _gameTimerDisplay.StartCountdown(5, $"Received <b><color=orange>1</color></b> Sniper Bullet!", () => TimerHUD.TSO_GREEN_BLINKING);
-            }
-
-            if (_session == null || !_session.IsActive)
-            {
-                break;
             }
         }
     }

@@ -23,7 +23,7 @@ public static class MineDeployerPatches
     private static readonly Color COLOR_BARELY_VISIBLE = new Color(0.0118f, 0, 0, 1);
     public static void Postfix(MineDeployerInstance __instance)
     {
-        __instance.Mode = eStickyMineMode.Alarm;
+        __instance.Mode = eStickyMineMode.Disabled;
 
         __instance.gameObject.GetOrAddComponent<CustomMineController>();
     }

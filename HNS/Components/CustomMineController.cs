@@ -40,6 +40,8 @@ public partial class CustomMineController : MonoBehaviour
     {
         _mine = GetComponent<MineDeployerInstance>();
 
+        _mine.m_detectionEnabled = false;
+        
         if (_mine == null)
         {
             Plugin.L.LogError("HELP: MineDeployerInstance is null, this should never happen!");
@@ -72,8 +74,13 @@ public partial class CustomMineController : MonoBehaviour
     private IEnumerator DelayedSetup()
     {
         yield return null;
+
+        SetStateDisabled();
+
+        yield return new WaitForSeconds(2f);
         
-        RefreshVisuals();
+        _mine.Mode = eStickyMineMode.Alarm;
+        SetStateDetecting();
     }
 
     public void Update()
@@ -293,9 +300,11 @@ public partial class CustomMineController : MonoBehaviour
     [HideFromIl2Cpp]
     public void DetectedLocalPlayer()
     {
+        Plugin.L.LogWarning($"DetectedLocalPlayer Invoked!");
         if (NetworkingManager.GetLocalPlayerInfo().Team == (int)_owningTeam)
             return;
         
+        Plugin.L.LogWarning($"Sending MineAction ...");
         NetSessionManager.SendMineAction(_mine, MineState.Alarm);
     }
     

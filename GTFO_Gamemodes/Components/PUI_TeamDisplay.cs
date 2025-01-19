@@ -102,9 +102,9 @@ public partial class PUI_TeamDisplay : MonoBehaviour
         {
             _titleGameObject = Instantiate(_gameObjectives.m_headerHolder, transform);
 
-            _titleTMP = _titleGameObject.GetComponentInChildren<TextMeshPro>();
+            _titleTMP = _titleGameObject.GetComponentInChildren<TextMeshPro>(includeInactive: true);
 
-            var background = _titleGameObject.GetComponentInChildren<SpriteRenderer>();
+            var background = _titleGameObject.GetComponentInChildren<SpriteRenderer>(includeInactive: true);
 
             background.color = COLOR_MISC;
 

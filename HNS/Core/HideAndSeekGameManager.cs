@@ -25,6 +25,9 @@ public class HideAndSeekGameManager
     private Coroutine _unblindPlayerCoroutine;
     private Coroutine _ammoTickCoroutine;
 
+    private int _elapsedAmmoTicks;
+    private bool ShouldSeekersHaveInfiniteAmmo => _elapsedAmmoTicks >= AmmoTickInfiniteAmmoAtTick;
+
     private bool _localPlayerIsSeeker;
     private bool _startedAsSeeker;
 
@@ -88,21 +91,21 @@ public class HideAndSeekGameManager
     {
         yield return new WaitForSeconds(5f);
 
-        var tick = 0;
+        _elapsedAmmoTicks = 0;
         
         while (true)
         {
             var yielder = new WaitForSeconds(AmmoTickInterval);
             yield return yielder;
 
-            tick++;
+            _elapsedAmmoTicks++;
             
             if (_session == null || !_session.IsActive)
             {
                 break;
             }
-
-            if (tick >= AmmoTickInfiniteAmmoAtTick)
+            
+            if (ShouldSeekersHaveInfiniteAmmo)
             {
                 _gameTimerDisplay.StartCountdown(10, $"All Seekers have received <b><color=purple>Infinite Reserve Ammo</color></b> for the remainder of the round!", () => TimerHUD.TSO_RED_WARNING_BLINKING);
 
@@ -130,10 +133,10 @@ public class HideAndSeekGameManager
 
     private void SetPlayerAmmo()
     {
-        GearUtils.AmmoAction action = GearUtils.AmmoAction.Empty;
-        if (!_localPlayerIsSeeker)
+        var action = GearUtils.AmmoAction.Fill;
+        if (_localPlayerIsSeeker && !ShouldSeekersHaveInfiniteAmmo)
         {
-            action = GearUtils.AmmoAction.Fill;
+            action = GearUtils.AmmoAction.Empty;
         }
         
         GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Guns, action);

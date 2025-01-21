@@ -297,7 +297,7 @@ internal partial class HideAndSeekMode : GamemodeBase
         };
 
         var seekerGear = classGear.Where(g =>
-            (g.PublicGearName.Contains("Sentry") && !g.PublicGearName.Contains("Sniper"))
+            (g.PublicGearName.Contains("Sentry") /*&& !g.PublicGearName.Contains("Sniper")*/)
             || seekerStuffs.Any(s => g.PublicGearName.Contains(s)));
         
         _gearSeekerSelector = new (seekerGear, InventorySlot.GearClass);

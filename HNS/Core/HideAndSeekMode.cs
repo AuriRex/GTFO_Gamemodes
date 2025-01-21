@@ -122,9 +122,9 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         CreateSeekerPalette();
 
-        TeamVisibility.Team((int)GMTeam.Seekers).CanSeeSelf();
+        TeamVisibility.Team(GMTeam.Seekers).CanSeeSelf();
 
-        TeamVisibility.Team((int)GMTeam.PreGameAndOrSpectator).CanSeeSelf().And((int)GMTeam.Seekers, (int)GMTeam.Hiders);
+        TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders);
         
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {

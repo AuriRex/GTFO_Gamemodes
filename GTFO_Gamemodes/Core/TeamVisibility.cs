@@ -1,6 +1,9 @@
-﻿using Gamemodes.Net;
+﻿using System;
+using Gamemodes.Net;
 using SNetwork;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace Gamemodes.Core;
 
@@ -47,6 +50,11 @@ public class TeamVisibility
         return new TeamVisContract(this, team);
     }
 
+    public TeamVisContract Team<T>(T team) where T : struct, IConvertible
+    {
+        return Team(team.ToInt32(CultureInfo.InvariantCulture));
+    }
+
     public bool CanLocalPlayerSee(int otherTeam)
     {
         var localInfo = NetworkingManager.GetLocalPlayerInfo();
@@ -54,12 +62,22 @@ public class TeamVisibility
         return CanTeamSee(localInfo.Team, otherTeam);
     }
 
+    public bool CanLocalPlayerSee<T>(T otherTeam) where T : struct, IConvertible
+    {
+        return CanLocalPlayerSee(otherTeam.ToInt32(CultureInfo.InvariantCulture));
+    }
+    
     public bool CanTeamSee(int team, int otherTeam)
     {
         if (!_visibility.TryGetValue(team, out var set))
             return false;
 
         return set.Contains(otherTeam);
+    }
+
+    public bool CanTeamSee<T>(T team, T otherTeam) where T : struct, IConvertible
+    {
+        return CanTeamSee(team.ToInt32(CultureInfo.InvariantCulture), otherTeam.ToInt32(CultureInfo.InvariantCulture));
     }
 }
 
@@ -85,6 +103,11 @@ public class TeamVisContract
         return new TeamVisContractExtended(this);
     }
 
+    public TeamVisContractExtended CanSee<T>(T y) where T : struct, IConvertible
+    {
+        return CanSee(y.ToInt32(CultureInfo.InvariantCulture));
+    }
+
     public TeamVisContractExtended CanSee(params int[] y)
     {
         vis.Get(_team, out var set);
@@ -95,6 +118,11 @@ public class TeamVisContract
         }
 
         return new TeamVisContractExtended(this);
+    }
+
+    public TeamVisContractExtended CanSee<T>(params T[] y) where T : struct, IConvertible
+    {
+        return CanSee(y.Select(x => x.ToInt32(CultureInfo.InvariantCulture)).ToArray());
     }
 }
 
@@ -113,8 +141,18 @@ public class TeamVisContractExtended
         return _contract.vis;
     }
 
+    public TeamVisibility And<T>(params T[] y) where T : struct, IConvertible
+    {
+        return And(y.Select(x => x.ToInt32(CultureInfo.InvariantCulture)).ToArray());
+    }
+
     public TeamVisContract Team(int team)
     {
         return new TeamVisContract(_contract.vis, team);
+    }
+
+    public TeamVisContract Team<T>(T team) where T : struct, IConvertible
+    {
+        return Team(team.ToInt32(CultureInfo.InvariantCulture));
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Gamemodes.Extensions;
 using UnityEngine;
@@ -34,5 +35,17 @@ public static class Coroutines
         }
         
         marker.SafeDestroyGameObject();
+    }
+
+    public static IEnumerator DoAfter(float seconds, Action action)
+    {
+        yield return new WaitForSeconds(seconds);
+        action?.Invoke();
+    }
+
+    public static IEnumerator NextFrame(Action action)
+    {
+        yield return null;
+        action?.Invoke();
     }
 }

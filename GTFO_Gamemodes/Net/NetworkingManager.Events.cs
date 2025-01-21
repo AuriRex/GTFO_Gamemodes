@@ -336,7 +336,7 @@ public partial class NetworkingManager
             isTool = slot == InventorySlot.GearClass,
         };
         
-        SendEvent(data, SNet.Master, invokeLocal: true);
+        SendEvent(data, invokeLocal: true);
     }
     
     private static void OnGearChangeNotifReceived(ulong sender, pGearChangeNotif data)

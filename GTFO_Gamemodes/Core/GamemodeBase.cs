@@ -5,6 +5,7 @@ using System.Linq;
 using Gamemodes.Net.Packets;
 using Gamemodes.Patches.Required;
 using Gear;
+using SNetwork;
 using UnityEngine;
 
 namespace Gamemodes.Core;
@@ -53,6 +54,9 @@ public abstract class GamemodeBase
     
     public virtual void OnPlayerChangedGear(PlayerWrapper player, pGearChangeNotif data)
     {
+        if (!SNet.IsMaster)
+            return;
+        
         if (!data.isTool)
             return;
 

@@ -60,7 +60,7 @@ public abstract class GamemodeBase
         if (!data.isTool)
             return;
 
-        var previousTool = GearManager.GetAllPlayerGear().FirstOrDefault(gear => gear.m_checksum == data.gearChecksumPrevious);
+        var previousTool = GearManager.GetAllPlayerGear().FirstOrDefault(gear => gear.GetCustomChecksum() == data.gearChecksumPrevious);
 
         if (previousTool == null)
             return;

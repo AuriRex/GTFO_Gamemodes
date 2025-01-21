@@ -14,15 +14,37 @@ public static class GearUtils
     {
         if (gear == null)
             return;
-        
-        var previousChecksum = PlayerBackpackManager.GetLocalItem(slot)?.GearIDRange?.m_checksum ?? 0;
+
+        var previousChecksum = CalculateCustomChecksum(PlayerBackpackManager.GetLocalItem(slot)?.GearIDRange);
         
         if (refillGunsAndToolAmmo)
             LocalReserveAmmoAction(AmmoType.Guns | AmmoType.Tool, AmmoAction.Fill);
         PlayerBackpackManager.EquipLocalGear(gear);
         GearManager.RegisterGearInSlotAsEquipped(gear.PlayfabItemInstanceId, slot);
 
-        NetworkingManager.SendLocalPlayerGearChanged(gear.m_checksum, previousChecksum, slot);
+        NetworkingManager.SendLocalPlayerGearChanged(gear.GetCustomChecksum(), previousChecksum, slot);
+    }
+
+    public static uint GetCustomChecksum(this GearIDRange gear)
+    {
+        return CalculateCustomChecksum(gear);
+    }
+    
+    public static uint CalculateCustomChecksum(GearIDRange gear)
+    {
+        if (gear == null)
+            return 0;
+        
+        var checksumGenerator = new ChecksumGenerator_32();
+        
+        foreach (var comp in gear.m_comps)
+        {
+            checksumGenerator.Insert(comp);
+        }
+        
+        checksumGenerator.Insert("PlayfabItemName", gear.PlayfabItemName);
+        
+        return checksumGenerator.Checksum;
     }
 
     public static void LocalReserveAmmoAction(AmmoType actUpon, AmmoAction action, float? extraValue = null)

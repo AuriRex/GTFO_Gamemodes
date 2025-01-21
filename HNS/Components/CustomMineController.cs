@@ -109,10 +109,20 @@ public partial class CustomMineController : MonoBehaviour
         _lineRenderer.startColor = col;
         _lineRenderer.endColor = col;
     }
-    
+
     public void RefreshVisuals()
     {
-        NetworkingManager.GetPlayerInfo(Owner?.Owner, out var ownerInfo);
+        var owner = Owner?.Owner;
+
+        if (owner == null)
+        {
+            // No owner Mines usually happen due to players disconnecting
+            _currentState = MineState.Disabled;
+            _mine.m_detectionEnabled = false;
+            return;
+        }
+        
+        NetworkingManager.GetPlayerInfo(owner, out var ownerInfo);
 
         _owningTeam = (GMTeam)ownerInfo.Team;
         
@@ -300,11 +310,9 @@ public partial class CustomMineController : MonoBehaviour
     [HideFromIl2Cpp]
     public void DetectedLocalPlayer()
     {
-        Plugin.L.LogWarning($"DetectedLocalPlayer Invoked!");
         if (NetworkingManager.GetLocalPlayerInfo().Team == (int)_owningTeam)
             return;
         
-        Plugin.L.LogWarning($"Sending MineAction ...");
         NetSessionManager.SendMineAction(_mine, MineState.Alarm);
     }
     

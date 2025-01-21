@@ -24,6 +24,7 @@ internal static class NetSessionManager
         events.RegisterEvent<pHNSGameStop>(OnGameStopReceived);
         events.RegisterEvent<pEpicTracer>(OnEpicTracerReceived);
         events.RegisterEvent<pMineAction>(OnMineActionReceived);
+        events.RegisterEvent<pHiIHasArrived>(OnIHasArrivedReceived);
     }
 
     public static void SendStartGamePacket(params ulong[] seekers)
@@ -176,5 +177,25 @@ internal static class NetSessionManager
         var action = (MineState) data.state;
 
         CustomMineController.ProcessIncomingAction(info, mine, action);
+    }
+
+    public static void SendIHasArrived()
+    {
+        var data = new pHiIHasArrived
+        {
+            hi = 1,
+        };
+        
+        NetworkingManager.SendEvent(data, SNet.Master, invokeLocal: true);
+    }
+    
+    private static void OnIHasArrivedReceived(ulong sender, pHiIHasArrived _)
+    {
+        if (!SNet.Master)
+            return;
+        
+        NetworkingManager.GetPlayerInfo(sender, out var info);
+        
+        HideAndSeekMode.OnRemotePlayerEnteredLevel(info);
     }
 }

@@ -8,6 +8,21 @@ namespace HNS.Core;
 
 internal partial class HideAndSeekMode
 {
+    private static string SendHelpMessage(string[] arg)
+    {
+        PostLocalChatMessage(" ");
+        PostLocalChatMessage("<align=center><color=orange><b><size=120%>Welcome to Hide and Seek!</align></color></b></size>");
+        PostLocalChatMessage("---------------------------------------------------------------");
+        PostLocalChatMessage("Use the <u>chat-commands</u> '<#f00>/seeker</color>' and '<#0ff>/hider</color>'");
+        PostLocalChatMessage("to assign yourself to the two teams.");
+        PostLocalChatMessage("---------------------------------------------------------------");
+        PostLocalChatMessage("<#f00>Host only:</color>");
+        PostLocalChatMessage("Use the command '<color=orange>/hnsstart</color>' to start the game.");
+        PostLocalChatMessage("<#888>You can use '<color=orange>/hnsstop</color>' to end an active game at any time.</color>");
+        PostLocalChatMessage("---------------------------------------------------------------");
+        return string.Empty;
+    }
+    
     private static string StartGame(string[] args)
     {
         if (!SNet.IsMaster)

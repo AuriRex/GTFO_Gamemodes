@@ -112,7 +112,9 @@ internal partial class HideAndSeekMode : GamemodeBase
         _harmonyInstance = new Harmony(Plugin.GUID);
         NetSessionManager.Init(Net);
 
-        ChatCommands.Add("hnsstart", StartGame)
+        ChatCommands
+            .Add("hnshelp", SendHelpMessage)
+            .Add("hnsstart", StartGame)
             .Add("hnsstop", StopGame)
             .Add("seeker", SwitchToSeeker)
             .Add("hider", SwitchToHider)
@@ -398,24 +400,29 @@ internal partial class HideAndSeekMode : GamemodeBase
         {
             case eGameStateName.InLevel:
             {
-                NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
-
-                var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
-                teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
-                teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
-
-                WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
-        
-                var localPlayer = PlayerManager.GetLocalPlayerAgent();
-
-                if (localPlayer != null && localPlayer.Sound != null)
+                // Delay a single frame to prevent issues when late joining.
+                CoroutineManager.StartCoroutine(Coroutines.NextFrame(() =>
                 {
-                    localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
-                    localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
-                }
+                    var team = NetSessionManager.HasSession ? GMTeam.Seekers : GMTeam.PreGameAndOrSpectator;
+                    Plugin.L.LogDebug($"Assigning to team {team}");
+                    NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)team);
 
-                HideResourcePacksAndSpawnFlashbangs();
+                    var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
+
+                    WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
+        
+                    var localPlayer = PlayerManager.GetLocalPlayerAgent();
+
+                    if (localPlayer != null && localPlayer.Sound != null)
+                    {
+                        localPlayer.Sound.Post(AK.EVENTS.ALARM_AMBIENT_STOP, Vector3.zero);
+                        localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
+                    }
+
+                    HideResourcePacksAndSpawnFlashbangs();
                 
                 if (SNet.IsMaster)
                 {
@@ -432,6 +439,15 @@ internal partial class HideAndSeekMode : GamemodeBase
                 PostLocalChatMessage("Use the command '<color=orange>/hnsstart</color>' to start the game.");
                 PostLocalChatMessage("<#888>You can use '<color=orange>/hnsstop</color>' to end an active game at any time.</color>");
                 PostLocalChatMessage("---------------------------------------------------------------");
+                    if (SNet.IsMaster)
+                    {
+                        //TODO: Fix late join thingies
+                        CoroutineManager.StartCoroutine(LightBringer().WrapToIl2Cpp());
+                    }
+                
+
+                    SendHelpMessage(Array.Empty<string>());
+                }).WrapToIl2Cpp());
                 break;
             }
             case eGameStateName.Lobby:

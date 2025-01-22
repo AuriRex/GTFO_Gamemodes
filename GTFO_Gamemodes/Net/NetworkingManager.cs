@@ -180,6 +180,9 @@ public partial class NetworkingManager
         if (!invokeLocal)
             return;
 
+        if (targetPlayer?.IsLocal ?? false)
+            return;
+        
         if (!TryGetEvent<T>(out var eventAction))
             return;
 

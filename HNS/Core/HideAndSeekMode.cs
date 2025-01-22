@@ -30,9 +30,11 @@ namespace HNS.Core;
 
 internal partial class HideAndSeekMode : GamemodeBase
 {
+    public const string MODE_ID = "hideandseek";
+    
     public static HideAndSeekGameManager GameManager { get; private set; }
 
-    public override string ID => "hideandseek";
+    public override string ID => MODE_ID;
 
     public override string DisplayName => "Hide and Seek";
 
@@ -127,12 +129,16 @@ internal partial class HideAndSeekMode : GamemodeBase
         TeamVisibility.Team(GMTeam.Seekers).CanSeeSelf();
 
         TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders);
-        
+
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {
             ClassInjector.RegisterTypeInIl2Cpp<PaletteStorage>();
             ClassInjector.RegisterTypeInIl2Cpp<CustomMineController>();
+            ClassInjector.RegisterTypeInIl2Cpp<PlayerTrackerController>();
+            ClassInjector.RegisterTypeInIl2Cpp<XRayInstance>();
         }
+        
+        XRayManager.Init();
 
         DEFAULT_MASK_MELEE_ATTACK_TARGETS = LayerManager.MASK_MELEE_ATTACK_TARGETS;
         MODIFIED_MASK_MELEE_ATTACK_TARGETS = LayerManager.Current.GetMask(new string[]
@@ -433,6 +439,9 @@ internal partial class HideAndSeekMode : GamemodeBase
                     NetSessionManager.SendIHasArrived();
 
                     SendHelpMessage(Array.Empty<string>());
+                    
+                    // Fix late joiners being unable to move until they switch to their melee weapon once
+                    PlayerManager.GetLocalPlayerAgent().EnemyCollision.m_moveSpeedModifier = 1f;
                 }).WrapToIl2Cpp());
                 break;
             }

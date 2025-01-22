@@ -27,6 +27,7 @@ public class GamemodeManager
 
     public static bool CurrentAllowsForcedTP => _currentMode?.Settings?.AllowForcedTeleportation ?? false;
 
+    public static string CurrentModeId => _currentMode?.ID;
     internal static GamemodeBase CurrentMode => _currentMode;
     internal static ModeSettings CurrentSettings => _currentMode?.Settings;
 

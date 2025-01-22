@@ -25,6 +25,7 @@ internal static class NetSessionManager
         events.RegisterEvent<pEpicTracer>(OnEpicTracerReceived);
         events.RegisterEvent<pMineAction>(OnMineActionReceived);
         events.RegisterEvent<pHiIHasArrived>(OnIHasArrivedReceived);
+        events.RegisterEvent<pXRayAction>(OnXRayActionReceived);
     }
 
     public static void SendStartGamePacket(params ulong[] seekers)
@@ -197,5 +198,21 @@ internal static class NetSessionManager
         NetworkingManager.GetPlayerInfo(sender, out var info);
         
         HideAndSeekMode.OnRemotePlayerEnteredLevel(info);
+    }
+
+    public static void SendXRayAction(Vector3 origin, Vector3 direction)
+    {
+        var data = new pXRayAction
+        {
+            Position = origin,
+            Direction = direction,
+        };
+        
+        NetworkingManager.SendEvent(data, invokeLocal: true);
+    }
+    
+    private static void OnXRayActionReceived(ulong sender, pXRayAction data)
+    {
+        XRayManager.OnXRayDataReceived(data);
     }
 }

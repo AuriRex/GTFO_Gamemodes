@@ -25,6 +25,9 @@ public class BulletWeaponFirePatch
         if (info.Team != (int)GMTeam.Seekers)
             return;
 
+        if (__instance.AmmoType != AmmoType.Special)
+            return;
+        
         var camera = info.PlayerAgent.FPSCamera;
 
         var origin = camera.Position;
@@ -39,3 +42,25 @@ public class BulletWeaponFirePatch
         NetSessionManager.SendEpicTracer(origin, hitPoint);
     }
 }
+
+// This works on pretty much any weapon (including sentry guns)
+// For HNS we decided to only use tracers for the sniper
+// So this code here is just here in case it's needed at some point :)
+//
+/*[HarmonyPatch(typeof(BulletWeapon), nameof(BulletWeapon.BulletHit))]
+public class BulletWeapon__BulletHit__Patch
+{
+    public static void Postfix(Weapon.WeaponHitData weaponRayData)
+    {
+        if (!weaponRayData.owner.IsLocallyOwned)
+            return;
+
+        var fireDir = weaponRayData.fireDir;
+        var distance = weaponRayData.rayHit.distance;
+        var hitPoint = weaponRayData.rayHit.point;
+        
+        var origin = hitPoint + fireDir * -1 * distance;
+        
+        NetSessionManager.SendEpicTracer(origin, hitPoint);
+    }
+}*/

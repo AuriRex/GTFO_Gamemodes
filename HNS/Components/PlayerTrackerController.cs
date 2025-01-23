@@ -16,7 +16,11 @@ public class PlayerTrackerController : MonoBehaviour
     private State _currentState;
 
     private const float SCAN_DURATION = 0.5f;
+#if DEBUG
+    public static float CooldownDuration = 10f;
+#else
     public static float CooldownDuration = 180f;
+#endif
 
     private float _scanStartTime;
     private float _scanDuration;
@@ -65,7 +69,7 @@ public class PlayerTrackerController : MonoBehaviour
                     return;
                 }
 
-                _scanner.Sound.Post(EVENTS.HUD_INFO_TEXT_GENERIC_APPEAR, true);
+                //_scanner.Sound.Post(EVENTS.HUD_INFO_TEXT_GENERIC_APPEAR, true);
                 
                 StartScan(SCAN_DURATION, CooldownDuration);
                 

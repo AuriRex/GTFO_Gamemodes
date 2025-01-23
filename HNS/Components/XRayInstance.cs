@@ -1,4 +1,5 @@
 using System.Collections;
+using AK;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Core;
 using HNS.Core;
@@ -14,6 +15,7 @@ public class XRayInstance : MonoBehaviour
     
     private XRays _xrays;
     private XRayRenderer _xrayRenderer;
+    private CellSoundPlayer _sound;
     
     private readonly int _raysPerSecond = 10_000;
     private readonly float _castDuration = 0.5f;
@@ -33,7 +35,7 @@ public class XRayInstance : MonoBehaviour
         set => _xrays.enemyColor = value;
     }
     
-    private XRayRenderMode _renderMode = XRayRenderMode.Blocking;
+    private XRayRenderMode _renderMode = XRayRenderMode.Behind;
 
     private XRayState _currentState;
     
@@ -46,13 +48,21 @@ public class XRayInstance : MonoBehaviour
         _xrays.m_renderer = _xrayRenderer;
         _xrayRenderer.material = XRayManager.XRayMaterial;
 
-        ColorDefault = Color.cyan;
+        _sound = new CellSoundPlayer();
+        
+        ColorDefault = Color.cyan * 0.8f;
         ColorEnemy = Color.red;
         _xrays.enemySize = 2f;
         _xrays.defaultSize = 1f;
         //_xrays.interactionSize = 0.2f;
         
         SetXRaysActive(false);
+    }
+
+    public void OnDestroy()
+    {
+        _sound.Recycle();
+        _sound = null;
     }
 
     public void Update()
@@ -73,6 +83,8 @@ public class XRayInstance : MonoBehaviour
     {
         gameObject.transform.position = origin;
         gameObject.transform.rotation = Quaternion.LookRotation(direction);
+        _sound.UpdatePosition(origin);
+        _sound.Post(EVENTS.HUD_INFO_TEXT_GENERIC_APPEAR, isGlobal: false);
         SetState(XRayState.Casting);
     }
     
@@ -156,7 +168,7 @@ public class XRayInstance : MonoBehaviour
     
     public enum XRayRenderMode
     {
-        Blocking = 0,
-        Seethrough = 1,
+        InFront = 0,
+        Behind = 1,
     }
 }

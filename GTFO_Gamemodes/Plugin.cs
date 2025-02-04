@@ -21,8 +21,11 @@ namespace Gamemodes;
 
 [BepInPlugin(GUID, NAME, VERSION)]
 [BepInDependency("dev.gtfomodding.gtfo-api", BepInDependency.DependencyFlags.HardDependency)]
+[BepInDependency(GUID_DIMENSIONMAPS, BepInDependency.DependencyFlags.SoftDependency)]
 public class Plugin : BasePlugin
 {
+    public const string GUID_DIMENSIONMAPS = "dev.aurirex.gtfo.dimensionmaps";
+    
     public const string GUID = "dev.aurirex.gtfo.gamemodes";
     public const string NAME = "Gamemodes";
     public const string VERSION = "0.0.1";
@@ -31,6 +34,8 @@ public class Plugin : BasePlugin
 
     internal static PrimitiveVersion Version { get; private set; }
 
+    internal static MethodInfo MI_dimensionMaps_revealMapTexture;
+    
     public override void Load()
     {
         L = Log;
@@ -51,6 +56,22 @@ public class Plugin : BasePlugin
         GameEvents.OnGameDataInit += PrefabManager.Init;
         GameEvents.PreItemPrefabsSetup += PrefabManager.PreItemLoading;
         GameEvents.OnItemPrefabsSetup += PrefabManager.OnAssetLoaded;
+
+        if (IL2CPPChainloader.Instance.Plugins.TryGetValue(GUID_DIMENSIONMAPS, out var pluginInfo))
+        {
+            MI_dimensionMaps_revealMapTexture = pluginInfo.Instance.GetType().Assembly.GetType("DimensionMaps.Core.CMapDetails")
+                ?.GetProperty("RevealMapTexture")
+                ?.GetSetMethod();
+            
+            if (MI_dimensionMaps_revealMapTexture != null)
+            {
+                Log.LogInfo($"Found 'CMapDetails.RevealMapTexture' SetMethod MethodInfo!");
+            }
+            else
+            {
+                Log.LogWarning($"Did NOT find 'CMapDetails.RevealMapTexture' SetMethod MethodInfo!");
+            }
+        }
     }
 
     public static void SendChatMessage(string msg)

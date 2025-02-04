@@ -210,6 +210,9 @@ public class GamemodeManager
 
         PushForcePatch.PushForceMultiplier = settings.InitialPushForceMultiplier;
         PushForcePatch.SlidePushForceMultiplier = settings.InitialSlidePushForceMultiplier;
+        
+        // DimensionMaps compatibility
+        Plugin.MI_dimensionMaps_revealMapTexture?.Invoke(null, new object[] { settings.RevealEntireMap });
     }
 
     private static void CleanupSpecialRequirements(ModeSettings settings)
@@ -236,7 +239,7 @@ public class GamemodeManager
             Utils.DisableAllWorldEventTriggers();
             Utils.StopWardenObjectiveManager();
         }
-
+        
         if (CurrentSettings.RevealEntireMap)
         {
             Utils.RevealMap();

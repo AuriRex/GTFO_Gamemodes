@@ -147,7 +147,7 @@ public static class Utils
             }
         }
 
-        if ((thingsToReveal & MapIconTypes.WeakDoors) != 0)
+        if ((thingsToReveal & MapIconTypes.Ladders) != 0)
         {
             var ladders = UnityEngine.Object.FindObjectsOfType<LG_Ladder>().Where(ladder => ladder.m_enemyClimbingOnly == false);
 
@@ -157,11 +157,14 @@ public static class Utils
             }
         }
 
-        foreach (var zone in CM_PageMap.Current.m_zoneGUI)
+        if (CM_PageMap.Current.m_zoneGUI != null)
         {
-            foreach (var area in zone.m_areaGUIs)
+            foreach (var zone in CM_PageMap.Current.m_zoneGUI)
             {
-                ProcessMapIconsArea(area, thingsToReveal);
+                foreach (var area in zone.m_areaGUIs)
+                {
+                    ProcessMapIconsArea(area, thingsToReveal);
+                }
             }
         }
     }

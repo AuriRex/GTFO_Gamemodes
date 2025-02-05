@@ -7,6 +7,7 @@ using Gamemodes.Core;
 using Gamemodes.Extensions;
 using Gamemodes.Net;
 using Gamemodes.Net.Packets;
+using Il2CppInterop.Runtime.Injection;
 using Player;
 using SNetwork;
 using UnityEngine;
@@ -18,6 +19,7 @@ public class GGMode : GamemodeBase
     public const string MODE_ID = "geo_guesser_thing";
     
     private static NetBoxManager _boxManager;
+    private static RayManager _rayManager;
     
     public override string ID => MODE_ID;
     public override string DisplayName => "Geo Guesser + Secret Room";
@@ -52,13 +54,34 @@ public class GGMode : GamemodeBase
 
         ChatCommands
             .Add("box", CreateBox)
+            .Add("ray", CastRayThing)
             .Add("start", StartGame)
             .Add("stop", StopGame);
 
         TeamVisibility.Team(GGTeams.HiddenOne).CanSeeSelf().And(GGTeams.Seekers);
         //TeamVisibility.Team(GGTeams.Seekers).CanSeeSelf();
+
+        if (!ClassInjector.IsTypeRegisteredInIl2Cpp<GGUpdaterComp>())
+        {
+            ClassInjector.RegisterTypeInIl2Cpp<GGUpdaterComp>();
+        }
     }
-    
+
+    private static string CastRayThing(string[] args)
+    {
+        if (!SNet.IsMaster)
+            return "Host only!";
+        
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return "Error :c";
+
+        var cam = localPlayer.FPSCamera;
+        
+        NetworkingManager.SendRayCastInstructions(0, cam.Position, cam.Forward);
+
+        return "Casting ray.";
+    }
+
     public static bool IsGameActive { get; internal set; } = false;
     
     private static string StartGame(string[] args)
@@ -96,6 +119,9 @@ public class GGMode : GamemodeBase
             
             NetworkingManager.AssignTeam(player.Owner, (int) GGTeams.HiddenOne);
         }
+
+        //_rayManager.Reset();
+        NetworkingManager.SendRayCastInstructions(1, Vector3.zero, Vector3.up);
         
         IsGameActive = false;
         
@@ -134,17 +160,23 @@ public class GGMode : GamemodeBase
     {
         NetworkingManager.OnRayCastInstructionsReceived += OnRayCastInstructionsReceived;
         GameEvents.OnGameStateChanged += OnGameStateChanged;
+        
+        _rayManager = new();
     }
     
     public override void Disable()
     {
         NetworkingManager.OnRayCastInstructionsReceived -= OnRayCastInstructionsReceived;
         GameEvents.OnGameStateChanged -= OnGameStateChanged;
+        
+        _rayManager.Dispose();
+        _rayManager = null;
     }
 
     public override void OnRemotePlayerEnteredLevel(PlayerWrapper player)
     {
         _boxManager.MasterHandleLateJoiner(player);
+        _rayManager.MasterHandleLateJoiner(player);
         
         if (!IsGameActive)
             NetworkingManager.AssignTeam(player, (int) GGTeams.HiddenOne);

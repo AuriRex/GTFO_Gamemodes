@@ -53,11 +53,14 @@ public class GGMode : GamemodeBase
         if (!SNet.IsMaster)
             return "Host only.";
 
-        var boxAction = NetBoxManager.BoxAction.CreateOrReposition;
+        /*var boxAction = NetBoxManager.BoxAction.CreateOrReposition;
         
         if (args.FirstOrDefault(arg => arg == "invis") != null)
             boxAction = NetBoxManager.BoxAction.CreateOrRepositionButInvisible;
+            */
 
+        var invis = args.FirstOrDefault(arg => arg == "invis") != null;
+        
         var boxType = NetBoxManager.BoxType.Floor1X1;
         
         if (args.FirstOrDefault(arg => arg == "wall") != null)
@@ -68,7 +71,7 @@ public class GGMode : GamemodeBase
         
         var localPlayer = PlayerManager.GetLocalPlayerAgent();
         
-        _boxManager.CreateBox(localPlayer.Position, boxType);
+        _boxManager.CreateBox(localPlayer.Position, boxType, invis);
 
         return "Box created?";
     }
@@ -84,7 +87,12 @@ public class GGMode : GamemodeBase
         NetworkingManager.OnRayCastInstructionsReceived -= OnRayCastInstructionsReceived;
         GameEvents.OnGameStateChanged -= OnGameStateChanged;
     }
-    
+
+    public override void OnRemotePlayerEnteredLevel(PlayerWrapper player)
+    {
+        _boxManager.MasterHandleLateJoiner(player);
+    }
+
     private void OnGameStateChanged(eGameStateName state)
     {
         switch (state)

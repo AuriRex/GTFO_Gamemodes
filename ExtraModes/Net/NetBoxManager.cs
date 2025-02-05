@@ -39,7 +39,7 @@ public class NetBoxManager
         });
     }
     
-    public void CreateBox(Vector3 position, BoxType boxType)
+    public void CreateBox(Vector3 position, BoxType boxType, bool invisible = false)
     {
         if (!SNet.IsMaster)
             return;
@@ -63,7 +63,7 @@ public class NetBoxManager
                 break;
         }
         
-        CreateBoxCustom(position, rotation, scale);
+        CreateBoxCustom(position, rotation, scale, invisible);
     }
 
     public enum BoxType

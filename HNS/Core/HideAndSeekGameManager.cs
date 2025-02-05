@@ -170,6 +170,8 @@ public class HideAndSeekGameManager
             SetPlayerAmmo();
             HideAndSeekMode.SetToolAmmoForLocalPlayer();
             
+            Utils.SetLocalPlayerInfection(0f);
+            
             AddSniperBullet();
             
             DetonateAllLocalMineInstances();
@@ -250,6 +252,8 @@ public class HideAndSeekGameManager
         _blinds?.Dispose();
         _blinds = null;
 
+        Utils.SetLocalPlayerInfection(0f);
+        
         var message = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
         Gamemodes.Plugin.PostLocalMessage("<#0f0>-= Game Over! =-</color>");
         Gamemodes.Plugin.PostLocalMessage($"<color=white>Total Game Time: {session.FinalTime.ToString(@"mm\:ss")}</color>");

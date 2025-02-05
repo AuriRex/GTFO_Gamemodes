@@ -122,7 +122,8 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("hider", SwitchToHider)
             .Add("lobby", SwitchToLobby)
             .Add("melee", SelectMelee)
-            .Add("tool", SelectTool);
+            .Add("tool", SelectTool)
+            .Add("disinfect", Disinfect);
 
         CreateSeekerPalette();
 

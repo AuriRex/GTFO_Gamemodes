@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Gamemodes.Core;
 using Gamemodes.Net;
 using HNS.Net;
 using SNetwork;
@@ -100,6 +101,16 @@ internal partial class HideAndSeekMode
         }
         
         _gearHiderSelector.Show();
+        return string.Empty;
+    }
+
+    private static string Disinfect(string[] args)
+    {
+        if (NetSessionManager.HasSession)
+            return "Can't use this command while a round is active!";
+        
+        Utils.SetLocalPlayerInfection(0f);
+        
         return string.Empty;
     }
 }

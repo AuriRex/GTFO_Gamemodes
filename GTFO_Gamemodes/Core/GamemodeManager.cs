@@ -252,7 +252,15 @@ public class GamemodeManager
 
             if (CurrentSettings.MapIconsToReveal != Utils.MapIconTypes.None)
             {
-                Utils.RevealMapIcons(CurrentSettings.MapIconsToReveal);
+                try
+                {
+                    Utils.RevealMapIcons(CurrentSettings.MapIconsToReveal);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.L.LogError($"{ex.GetType().FullName}: {ex.Message}");
+                    Plugin.L.LogWarning($"StackTrace:\n{ex.StackTrace}");
+                }
             }
         }
 

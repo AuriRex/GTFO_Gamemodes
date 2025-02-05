@@ -61,7 +61,9 @@ public class HideAndSeekGameManager
         _localPlayerIsSeeker = localPlayerIsSeeker;
         _startedAsSeeker = localPlayerIsSeeker;
 
-        HideAndSeekMode.InstantReviveLocalPlayer();
+        GamemodeBase.InstantReviveLocalPlayer();
+
+        Utils.SetLocalPlayerInfection(0f);
 
         Blinds blinds = null;
         if (localPlayerIsSeeker)

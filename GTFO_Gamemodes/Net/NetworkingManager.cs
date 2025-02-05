@@ -72,6 +72,9 @@ public partial class NetworkingManager
             return;
 
         SendJoinInfo();
+
+        if (!SNet.IsInLobby)
+            return;
         
         var lobbyID = new CSteamID(SNet.Lobby.Identifier.ID);
         var modeString = SteamMatchmaking.GetLobbyData(lobbyID, GamemodeManager.STEAM_CUSTOM_GAMEMODE_PCH_KEY);

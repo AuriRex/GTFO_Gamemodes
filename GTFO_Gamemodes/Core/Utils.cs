@@ -3,6 +3,7 @@ using LevelGeneration;
 using System;
 using System.Collections;
 using System.Linq;
+using Player;
 using SNetwork;
 using UnityEngine;
 
@@ -175,6 +176,8 @@ public static class Utils
         {
             foreach (var item in area.m_signGUIs)
             {
+                if (item == null)
+                    continue;
                 item.ForceVisible();
                 item.SetTextVisible(item.m_locatorTxt, true);
                 item.SetTextVisible(item.m_additionalTxt, true);
@@ -185,6 +188,8 @@ public static class Utils
         {
             foreach (var item in area.m_computerTerminalGUIs)
             {
+                if (item == null)
+                    continue;
                 item.ForceVisible();
             }
         }
@@ -193,6 +198,8 @@ public static class Utils
         {
             foreach (var item in area.m_bulkheadDoorControllerGUIs)
             {
+                if (item == null)
+                    continue;
                 item.ForceVisible();
             }
         }
@@ -201,6 +208,8 @@ public static class Utils
         {
             foreach (var item in area.m_disinfectionStationGUIs)
             {
+                if (item == null)
+                    continue;
                 item.ForceVisible();
             }
         }
@@ -209,6 +218,8 @@ public static class Utils
         {
             foreach (var item in area.m_powerGeneratorGUIs)
             {
+                if (item == null)
+                    continue;
                 item.ForceVisible();
             }
         }
@@ -217,10 +228,14 @@ public static class Utils
         {
             foreach (var item in area.m_resourceLockerGUIs)
             {
+                if (item == null)
+                    continue;
                 item.ForceVisible();
             }
             foreach (var item in area.m_resourceBoxGUIs)
             {
+                if (item == null)
+                    continue;
                 item.ForceVisible();
             }
         }
@@ -307,5 +322,15 @@ public static class Utils
         };
 
         door.m_sync.Cast<LG_Door_Sync>().m_stateReplicator.OnStateChangeReceive_Recall(state);
+    }
+
+    public static void SetLocalPlayerInfection(float amountRel)
+    {
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return;
+
+        localPlayer.Damage.Infection = amountRel;
+        
+        GuiManager.PlayerLayer?.m_playerStatus?.UpdateInfection(amountRel, 0f);
     }
 }

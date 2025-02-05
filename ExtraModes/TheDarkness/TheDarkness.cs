@@ -1,8 +1,9 @@
 using System.Collections;
-using System.Linq;
 using System.Runtime.InteropServices;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
+using Gamemodes;
 using Gamemodes.Components;
+using Gamemodes.Core;
 using Gamemodes.Extensions;
 using Gamemodes.Net;
 using Il2CppInterop.Runtime.Injection;
@@ -10,7 +11,7 @@ using Player;
 using SNetwork;
 using UnityEngine;
 
-namespace Gamemodes.Core.BuiltIn;
+namespace ExtraModes.TheDarkness;
 
 public partial class TheDarkness : GamemodeBase
 {

@@ -1,4 +1,4 @@
-namespace Gamemodes.Core.BuiltIn;
+namespace ExtraModes.TheDarkness;
 
 public class TheDarknessLevelThree : TheDarknessLevelTwo
 {

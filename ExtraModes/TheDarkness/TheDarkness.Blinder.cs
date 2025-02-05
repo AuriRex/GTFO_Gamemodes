@@ -2,7 +2,7 @@ using Player;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 
-namespace Gamemodes.Core.BuiltIn;
+namespace ExtraModes.TheDarkness;
 
 public partial class TheDarkness
 {

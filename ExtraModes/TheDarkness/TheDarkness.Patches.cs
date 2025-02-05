@@ -3,7 +3,7 @@ using HarmonyLib;
 using Player;
 using SNetwork;
 
-namespace Gamemodes.Core.BuiltIn;
+namespace ExtraModes.TheDarkness;
 
 public partial class TheDarkness
 {

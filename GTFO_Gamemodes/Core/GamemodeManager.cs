@@ -5,7 +5,6 @@ using Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Gamemodes.Core.BuiltIn;
 using Gamemodes.Core.TestModes;
 using Gamemodes.Extensions;
 using Gamemodes.Net.Packets;
@@ -52,10 +51,6 @@ public class GamemodeManager
         NetworkingManager.OnPlayerChangedGear += OnPlayerChangedGear;
 
         _modeGTFO = RegisterMode<ModeGTFO>();
-
-        RegisterMode<TheDarkness>();
-        RegisterMode<TheDarknessLevelTwo>();
-        RegisterMode<TheDarknessLevelThree>();
         
 #if DEBUG
         RegisterMode<ModeTesting>();

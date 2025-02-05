@@ -4,6 +4,7 @@ using SNetwork;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Steamworks;
 
 namespace Gamemodes.Net;
 
@@ -56,12 +57,34 @@ public partial class NetworkingManager
     {
         switch (state)
         {
+            case eGameStateName.Lobby:
+                OnGameStateLobby();
+                break;
             case eGameStateName.InLevel:
                 SendIHasArrived();
                 break;
         }
     }
+    
+    private static void OnGameStateLobby()
+    {
+        if (SNet.IsMaster)
+            return;
 
+        SendJoinInfo();
+        
+        var lobbyID = new CSteamID(SNet.Lobby.Identifier.ID);
+        var modeString = SteamMatchmaking.GetLobbyData(lobbyID, GamemodeManager.STEAM_CUSTOM_GAMEMODE_PCH_KEY);
+
+        if (string.IsNullOrWhiteSpace(modeString))
+        {
+            Plugin.L.LogWarning("No mode string found in steam lobby settings.");
+            return;
+        }
+        
+        DoSwitchModeReceived?.Invoke(modeString);
+    }
+    
     private static void OnPlayerJoined()
     {
         SNet_Player newPlayer = null;
@@ -168,12 +191,12 @@ public partial class NetworkingManager
         return LocalPlayerId == senderId;
     }
 
-    public static void SendEventAndInvokeLocally<T>(T data, SNet_Player targetPlayer = null) where T : struct
+    public static void SendEventAndInvokeLocally<T>(T data, SNet_Player targetPlayer = null, SNet_ChannelType channelType = SNet_ChannelType.GameOrderCritical) where T : struct
     {
-        SendEvent(data, targetPlayer, invokeLocal: true);
+        SendEvent(data, targetPlayer, invokeLocal: true, channelType);
     }
 
-    public static void SendEvent<T>(T data, SNet_Player targetPlayer = null, bool invokeLocal = false) where T : struct
+    public static void SendEvent<T>(T data, SNet_Player targetPlayer = null, bool invokeLocal = false, SNet_ChannelType channelType = SNet_ChannelType.GameOrderCritical) where T : struct
     {
         var eventName = GetEventName<T>();
 
@@ -182,11 +205,11 @@ public partial class NetworkingManager
 
         if (targetPlayer == null)
         {
-            NetworkAPI.InvokeEvent(eventName, data);
+            NetworkAPI.InvokeEvent(eventName, data, channelType);
         }
         else
         {
-            NetworkAPI.InvokeEvent(eventName, data, targetPlayer);
+            NetworkAPI.InvokeEvent(eventName, data, targetPlayer, channelType);
         }
 
         if (!invokeLocal)

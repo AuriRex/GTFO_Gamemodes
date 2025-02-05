@@ -1,11 +1,8 @@
-﻿using BepInEx.Unity.IL2CPP.Utils;
-using BepInEx.Unity.IL2CPP.Utils.Collections;
-using Gamemodes.Core;
+﻿using Gamemodes.Core;
 using Gamemodes.Net.Packets;
 using Player;
 using SNetwork;
 using System;
-using System.Collections;
 using AIGraph;
 using UnityEngine;
 using static Player.PlayerAgent;
@@ -172,7 +169,7 @@ public partial class NetworkingManager
 
     internal static void SendWelcome(SNet_Player target)
     {
-        SendEvent(new pWelcome(), target);
+        SendEvent(new pWelcome(), target, channelType: SNet_ChannelType.SessionOrderCritical);
     }
 
     private static void OnWelcomeReceived(ulong senderId, pWelcome _)
@@ -194,14 +191,14 @@ public partial class NetworkingManager
             Major = Plugin.Version.Major,
             Minor = Plugin.Version.Minor,
             Patch = Plugin.Version.Patch,
-        });
+        }, channelType: SNet_ChannelType.SessionOrderCritical);
 
         foreach (var modeId in GamemodeManager.LoadedModeIds)
         {
             SendEventAndInvokeLocally(new pInstalledMode
             {
                 GamemodeID = modeId,
-            });
+            }, channelType: SNet_ChannelType.SessionOrderCritical);
         }
     }
 

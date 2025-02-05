@@ -122,6 +122,10 @@
 			<HintPath>$(LatestGeneratedGameAssembliesPath)UnityEngine.ImageConversionModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+		<Reference Include="SteamWorks_ASM">
+			<HintPath>$(LatestGeneratedGameAssembliesPath)SteamWorks_ASM.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>

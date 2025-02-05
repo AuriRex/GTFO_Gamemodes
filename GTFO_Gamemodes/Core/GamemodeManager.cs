@@ -8,6 +8,8 @@ using System.Linq;
 using Gamemodes.Core.TestModes;
 using Gamemodes.Extensions;
 using Gamemodes.Net.Packets;
+using SNetwork;
+using Steamworks;
 using UnityEngine;
 using static Gamemodes.PatchManager;
 using Object = UnityEngine.Object;
@@ -16,6 +18,8 @@ namespace Gamemodes.Core;
 
 public class GamemodeManager
 {
+    public const string STEAM_CUSTOM_GAMEMODE_PCH_KEY = "c_mode";
+    
     private static readonly HashSet<ModeInfo> _gamemodes = new();
     private static readonly HashSet<string> _gamemodeIds = new();
 
@@ -168,6 +172,13 @@ public class GamemodeManager
         catch(Exception ex)
         {
             Plugin.LogException(ex, $"{nameof(OnGamemodeChanged)} event");
+        }
+
+        if (SNet.IsMaster)
+        {
+            var lobbyID = new CSteamID(SNet.Lobby.Identifier.ID);
+            
+            SteamMatchmaking.SetLobbyData(lobbyID, STEAM_CUSTOM_GAMEMODE_PCH_KEY, CurrentModeId);
         }
 
         return true;

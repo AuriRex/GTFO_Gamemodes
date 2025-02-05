@@ -39,6 +39,7 @@ public partial class NetworkingManager
     internal static void Init()
     {
         GameEvents.OnGameDataInit += OnGameDataInit;
+        GameEvents.OnGameStateChanged += OnGameStateChanged;
     }
 
     private static void OnGameDataInit()
@@ -49,6 +50,16 @@ public partial class NetworkingManager
         SNet_Events.OnPlayerEvent += (Action<SNet_Player, SNet_PlayerEvent, SNet_PlayerEventReason>)OnPlayerEvent;
         SNet_Events.OnPlayerJoin += (Action)OnPlayerJoined;
         SNet_Events.OnPlayerLeave += (Action)OnPlayerCountChangedImpl;
+    }
+    
+    private static void OnGameStateChanged(eGameStateName state)
+    {
+        switch (state)
+        {
+            case eGameStateName.InLevel:
+                SendIHasArrived();
+                break;
+        }
     }
 
     private static void OnPlayerJoined()
@@ -80,6 +91,7 @@ public partial class NetworkingManager
         Plugin.L.LogDebug($"OnPlayerCountChanged");
         CleanupPlayers();
         OnPlayerCountChanged?.Invoke();
+        GamemodeManager.OnPlayerCountChanged();
     }
 
     private static void OnPlayerEvent(SNet_Player player, SNet_PlayerEvent playerEvent, SNet_PlayerEventReason reason)

@@ -34,6 +34,7 @@ public partial class NetworkingManager
         RegisterEventInternal<pSpawnItemForPlayer>(OnSpawnItemForPlayerReceived);
         RegisterEventInternal<pGearChangeNotif>(OnGearChangeNotifReceived);
         RegisterEventInternal<pRayCast>(OnRayCastPacketReceived);
+        RegisterEventInternal<pHiIHasArrived>(OnIHasArrivedReceived);
     }
 
     public static void PostChatLog(string message)
@@ -374,5 +375,25 @@ public partial class NetworkingManager
             return;
 
         OnRayCastInstructionsReceived?.Invoke(data);
+    }
+    
+    internal static void SendIHasArrived()
+    {
+        var data = new pHiIHasArrived
+        {
+            hi = 1,
+        };
+        
+        SendEvent(data, SNet.Master, invokeLocal: true);
+    }
+    
+    private static void OnIHasArrivedReceived(ulong sender, pHiIHasArrived _)
+    {
+        if (!SNet.Master)
+            return;
+        
+        GetPlayerInfo(sender, out var info);
+        
+        GamemodeManager.OnRemotePlayerEnteredLevel(info);
     }
 }

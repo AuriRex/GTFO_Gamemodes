@@ -51,6 +51,11 @@ public abstract class GamemodeBase
     {
 
     }
+
+    public virtual void OnRemotePlayerEnteredLevel(PlayerWrapper player)
+    {
+        
+    }
     
     public virtual void OnPlayerChangedGear(PlayerWrapper player, pGearChangeNotif data)
     {

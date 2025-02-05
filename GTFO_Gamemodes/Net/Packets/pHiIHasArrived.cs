@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace HNS.Net.Packets;
+namespace Gamemodes.Net.Packets;
 
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 public struct pHiIHasArrived

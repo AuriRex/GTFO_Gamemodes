@@ -304,4 +304,14 @@ public class GamemodeManager
         mode = _gamemodes.FirstOrDefault(gm => gm.ID == gamemodeID);
         return mode != null;
     }
+
+    public static void OnRemotePlayerEnteredLevel(PlayerWrapper playerInfo)
+    {
+        CurrentMode?.OnRemotePlayerEnteredLevel(playerInfo);
+    }
+
+    public static void OnPlayerCountChanged()
+    {
+        CurrentMode?.OnPlayerCountChanged();
+    }
 }

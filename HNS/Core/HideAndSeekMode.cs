@@ -435,8 +435,6 @@ internal partial class HideAndSeekMode : GamemodeBase
                         //TODO: Fix late join thingies
                         //CoroutineManager.StartCoroutine(LightBringer().WrapToIl2Cpp());
                     }
-                
-                    NetSessionManager.SendIHasArrived();
 
                     SendHelpMessage(Array.Empty<string>());
                     
@@ -459,7 +457,7 @@ internal partial class HideAndSeekMode : GamemodeBase
         }
     }
     
-    public static void OnRemotePlayerEnteredLevel(PlayerWrapper player)
+    public override void OnRemotePlayerEnteredLevel(PlayerWrapper player)
     {
         if (!SNet.IsMaster)
             return;

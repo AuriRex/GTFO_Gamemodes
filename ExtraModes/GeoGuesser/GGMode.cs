@@ -40,6 +40,7 @@ public class GGMode : GamemodeBase
         PreventDefaultFailState = true,
         PreventExpeditionEnemiesSpawning = true,
         PreventRespawnRoomsRespawning = true,
+        MapIconsToReveal = Utils.EVERYTHING_EXCEPT_LOCKERS,
     };
     
     // Raycast -> collider
@@ -144,6 +145,9 @@ public class GGMode : GamemodeBase
     public override void OnRemotePlayerEnteredLevel(PlayerWrapper player)
     {
         _boxManager.MasterHandleLateJoiner(player);
+        
+        if (!IsGameActive)
+            NetworkingManager.AssignTeam(player, (int) GGTeams.HiddenOne);
     }
 
     private void OnGameStateChanged(eGameStateName state)

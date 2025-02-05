@@ -14,6 +14,7 @@ namespace Gamemodes.Net;
 
 public partial class NetworkingManager
 {
+    public static event Action<pRayCast> OnRayCastInstructionsReceived;
     public static event Action<PlayerWrapper, pGearChangeNotif> OnPlayerChangedGear;
     public static event Action<PlayerWrapper, int> OnPlayerChangedTeams;
     public static event Action<string> DoSwitchModeReceived;
@@ -32,6 +33,7 @@ public partial class NetworkingManager
         RegisterEventInternal<pSpawnItemInLevel>(OnSpawnItemInLevelReceived);
         RegisterEventInternal<pSpawnItemForPlayer>(OnSpawnItemForPlayerReceived);
         RegisterEventInternal<pGearChangeNotif>(OnGearChangeNotifReceived);
+        RegisterEventInternal<pRayCast>(OnRayCastPacketReceived);
     }
 
     public static void PostChatLog(string message)
@@ -347,5 +349,30 @@ public partial class NetworkingManager
         GetPlayerInfo(sender, out var info);
 
         OnPlayerChangedGear?.Invoke(info, data);
+    }
+
+    public static void SendRayCastInstructions(byte type, Vector3 origin, Vector3 direction, SNet_Player targetPlayer = null)
+    {
+        if (!SNet.IsMaster)
+            return;
+        
+        var data = new pRayCast
+        {
+            Type = type,
+            Origin = origin,
+            Direction = direction,
+        };
+        
+        SendEvent(data, targetPlayer, invokeLocal: true);
+    }
+    
+    private static void OnRayCastPacketReceived(ulong sender, pRayCast data)
+    {
+        GetPlayerInfo(sender, out var info);
+
+        if (!info.IsMaster)
+            return;
+
+        OnRayCastInstructionsReceived?.Invoke(data);
     }
 }

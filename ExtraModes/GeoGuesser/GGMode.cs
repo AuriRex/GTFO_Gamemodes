@@ -4,6 +4,7 @@ using ExtraModes.Net;
 using ExtraModes.Net.Packets;
 using Gamemodes;
 using Gamemodes.Core;
+using Gamemodes.Extensions;
 using Gamemodes.Net;
 using Gamemodes.Net.Packets;
 using Player;
@@ -14,8 +15,11 @@ namespace ExtraModes.GeoGuesser;
 
 public class GGMode : GamemodeBase
 {
+    public const string MODE_ID = "geo_guesser_thing";
+    
     private static NetBoxManager _boxManager;
-    public override string ID => "geo_guesser_thing";
+    
+    public override string ID => MODE_ID;
     public override string DisplayName => "Geo Guesser + Secret Room";
     public override string Description => "TODO";
 
@@ -45,13 +49,62 @@ public class GGMode : GamemodeBase
     {
         _boxManager = new NetBoxManager(Net);
 
-        ChatCommands.Add("box", CreateBox);
+        ChatCommands
+            .Add("box", CreateBox)
+            .Add("start", StartGame)
+            .Add("stop", StopGame);
+
+        TeamVisibility.Team(GGTeams.HiddenOne).CanSeeSelf().And(GGTeams.Seekers);
+        //TeamVisibility.Team(GGTeams.Seekers).CanSeeSelf();
+    }
+    
+    public static bool IsGameActive { get; internal set; } = false;
+    
+    private static string StartGame(string[] args)
+    {
+        if (!SNet.IsMaster)
+            return "Host only!";
+        
+        foreach (var player in PlayerManager.PlayerAgentsInLevel)
+        {
+            if (player.IsLocallyOwned)
+            {
+                player.gameObject.GetOrAddComponent<GGUpdaterComp>();
+                continue;
+            }
+            
+            NetworkingManager.AssignTeam(player.Owner, (int) GGTeams.Seekers);
+        }
+
+        IsGameActive = true;
+        
+        return "Round started!";
+    }
+    
+    private static string StopGame(string[] args)
+    {
+        if (!SNet.IsMaster)
+            return "Host only!";
+        
+        foreach (var player in PlayerManager.PlayerAgentsInLevel)
+        {
+            if (player.IsLocallyOwned)
+            {
+                player.gameObject.GetComponent<GGUpdaterComp>().SafeDestroy();
+            }
+            
+            NetworkingManager.AssignTeam(player.Owner, (int) GGTeams.HiddenOne);
+        }
+        
+        IsGameActive = false;
+        
+        return "Round stopped!";
     }
 
     private static string CreateBox(string[] args)
     {
         if (!SNet.IsMaster)
-            return "Host only.";
+            return "Host only!";
 
         /*var boxAction = NetBoxManager.BoxAction.CreateOrReposition;
         

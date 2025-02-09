@@ -26,7 +26,7 @@ public partial class CustomMineController
         if (_owningTeam == GMTeam.Seekers)
             color = Color.cyan;
         
-        StartCoroutine(Coroutines.PlaceNavmarkerAtPos(target.Position + Vector3.up, "<color=orange><b>Motion Detected!</b></color>", color, 3f).WrapToIl2Cpp());
+        CoroutineManager.StartCoroutine(Coroutines.PlaceNavmarkerAtPos(target.Position + Vector3.up, "<color=orange><b>Motion Detected!</b></color>", color, 3f).WrapToIl2Cpp());
         
         for (int i = 0; i < 3; i++)
         {
@@ -62,7 +62,7 @@ public partial class CustomMineController
         }
         
         if (_mine.LocallyPlaced)
-            StartCoroutine(Coroutines.PlaceNavmarkerAtPos(_mine.transform.position, "<color=red><b>Device Rebooted\nafter Hack!</b></color>", Color.red, 3f).WrapToIl2Cpp());
+            CoroutineManager.StartCoroutine(Coroutines.PlaceNavmarkerAtPos(_mine.transform.position, "<color=red><b>Device Rebooted\nafter Hack!</b></color>", Color.red, 3f).WrapToIl2Cpp());
         
         _currentState = MineState.Detecting;
         RefreshVisuals();

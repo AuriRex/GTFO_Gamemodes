@@ -5,6 +5,7 @@ using Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Gamemodes.Components;
 using Gamemodes.Core.TestModes;
 using Gamemodes.Extensions;
 using Gamemodes.Net.Packets;
@@ -13,6 +14,7 @@ using Steamworks;
 using UnityEngine;
 using static Gamemodes.PatchManager;
 using Object = UnityEngine.Object;
+using PlayerVoiceManager = Gamemodes.Core.Voice.PlayerVoiceManager;
 
 namespace Gamemodes.Core;
 
@@ -213,7 +215,19 @@ public class GamemodeManager
         ApplyPatchGroup(PatchGroups.NO_PLAYER_REVIVE, settings.PreventPlayerRevives);
         ApplyPatchGroup(PatchGroups.INF_SENTRY_AMMO, settings.InfiniteSentryAmmo);
         ApplyPatchGroup(PatchGroups.INF_PLAYER_AMMO, settings.InfiniteBackpackAmmo);
+        ApplyPatchGroup(PatchGroups.PROXIMITY_VOICE, settings.UseProximityVoiceChat);
 
+        foreach (var agent in Utils.AllPlayerAgentsInLobby)
+        {
+            if (agent == null)
+                continue;
+            
+            if (settings.UseProximityVoiceChat)
+            {
+                agent.gameObject.GetOrAddComponent<ProximityVoice>();
+            }
+        }
+        
         PushForcePatch.PushForceMultiplier = settings.InitialPushForceMultiplier;
         PushForcePatch.SlidePushForceMultiplier = settings.InitialSlidePushForceMultiplier;
         
@@ -226,16 +240,26 @@ public class GamemodeManager
         if (settings == null)
             return;
         
-        if (settings.PreventPlayerRevives)
+        foreach (var agent in Utils.AllPlayerAgentsInLobby)
         {
-            foreach (var agent in Object.FindObjectsOfType<PlayerAgent>())
-            {
-                if (agent == null || agent.ReviveInteraction == null)
-                    continue;
+            if (agent == null)
+                continue;
                 
-                agent.ReviveInteraction.gameObject.SetActive(true);
+            if (settings.PreventPlayerRevives)
+            {
+                if (agent.ReviveInteraction != null)
+                {
+                    agent.ReviveInteraction.gameObject.SetActive(true);
+                }
+            }
+
+            if (settings.UseProximityVoiceChat)
+            {
+                agent.gameObject.GetComponent<ProximityVoice>().SafeDestroy();
             }
         }
+        
+        PlayerVoiceManager.ResetModulatorStack();
     }
 
     private static void HandleSpecialRequirementsOnInLevel()
@@ -292,16 +316,16 @@ public class GamemodeManager
     {
         var impl = Activator.CreateInstance<T>();
 
-        impl.gameObject = new GameObject($"{typeof(T).Name}_Manager");
-        impl.gameObject.DontDestroyAndSetHideFlags();
-        impl.gameObject.SetActive(false);
-        
         var id = impl.ID;
         var displayName = impl.DisplayName;
 
         if (_gamemodeIds.Contains(id))
             throw new ArgumentException($"Gamemode \"{id}\" can't be registered twice!", nameof(id));
-
+        
+        impl.gameObject = new GameObject($"{typeof(T).Name}_Manager");
+        impl.gameObject.DontDestroyAndSetHideFlags();
+        impl.gameObject.SetActive(false);
+ 
         var info = new ModeInfo(id, displayName, impl);
 
         if (_isGamedataReady)

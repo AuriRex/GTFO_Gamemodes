@@ -21,10 +21,13 @@ using Agents;
 using AIGraph;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
+using Gamemodes.Core.Voice;
+using Gamemodes.Core.Voice.Modulators;
 using Gamemodes.UI.Menu;
 using HNS.Extensions;
 using LevelGeneration;
 using UnityEngine;
+using PlayerVoiceManager = Gamemodes.Core.Voice.PlayerVoiceManager;
 
 namespace HNS.Core;
 
@@ -72,6 +75,7 @@ internal partial class HideAndSeekMode : GamemodeBase
         InfiniteSentryAmmo = true,
         InitialPushForceMultiplier = PUSH_FORCE_MULTI_DEFAULT,
         InitialSlidePushForceMultiplier = PUSH_FORCE_MULTI_DEFAULT,
+        UseProximityVoiceChat = true,
     };
 
     private Harmony _harmonyInstance;
@@ -100,6 +104,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
     private Sprite _icon;
     private Sprite _banner;
+    private VolumeModulatorStack _vvmStack;
     private static List<PackInfo> _originalResourcePackLocations = new();
 
     private static CustomGearSelector _gearMeleeSelector;
@@ -186,6 +191,8 @@ internal partial class HideAndSeekMode : GamemodeBase
         ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Banner, out _banner);
         
         MineDeployerInstance_UpdateDetection_Patch.OnAgentDetected += OnMineDetectAgent;
+
+        _vvmStack = new VolumeModulatorStack(new LobbySetMaxModulator(), new PlayerDeadModulator());
     }
 
     private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)
@@ -195,7 +202,7 @@ internal partial class HideAndSeekMode : GamemodeBase
         if (localPlayer == null)
             return;
 
-        if (NetworkingManager.GetLocalPlayerInfo().Team == (int)GMTeam.PreGameAndOrSpectator)
+        if (NetworkingManager.LocalPlayerTeam == (int)GMTeam.PreGameAndOrSpectator)
             return;
         
         mine.GetController().DetectedLocalPlayer();
@@ -276,6 +283,8 @@ internal partial class HideAndSeekMode : GamemodeBase
         AddAngySentries();
 
         SetupGearSelectors();
+
+        PlayerVoiceManager.SetModulatorStack(_vvmStack);
     }
 
     private static void SetupGearSelectors()

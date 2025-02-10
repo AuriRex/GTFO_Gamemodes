@@ -74,6 +74,11 @@ public partial class NetworkingManager
 
         Plugin.L.LogDebug($"Player {target.NickName} ({target.ID}) switched teams to {data.Team}.");
 
+        if (target.IsLocal)
+        {
+            LocalPlayerTeam = data.Team;
+        }
+        
         if (InLevel && GamemodeManager.CurrentSettings.UseTeamVisibility)
         {
             RefreshPlayerGhostsAndMarkers();

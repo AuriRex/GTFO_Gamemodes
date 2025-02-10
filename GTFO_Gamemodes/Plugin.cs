@@ -11,6 +11,7 @@ using Il2CppInterop.Runtime.Injection;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Gamemodes.Components.L2;
+using Gamemodes.Core.Voice;
 
 [assembly: AssemblyVersion(Gamemodes.Plugin.VERSION)]
 [assembly: AssemblyFileVersion(Gamemodes.Plugin.VERSION)]
@@ -45,6 +46,7 @@ public class Plugin : BasePlugin
         ClassInjector.RegisterTypeInIl2Cpp<PlayerToken>();
         ClassInjector.RegisterTypeInIl2Cpp<TimerHUD>();
         ClassInjector.RegisterTypeInIl2Cpp<PUI_TeamDisplay>();
+        ClassInjector.RegisterTypeInIl2Cpp<ProximityVoice>();
         
         ClassInjector.RegisterTypeInIl2Cpp<FlashBlinder>();
         ClassInjector.RegisterTypeInIl2Cpp<FlashGrenadeInstance>();
@@ -52,6 +54,7 @@ public class Plugin : BasePlugin
         PatchManager.Init();
         NetworkingManager.Init();
         GamemodeManager.Init();
+        PlayerVoiceManager.Init();
 
         GameEvents.OnGameDataInit += PrefabManager.Init;
         GameEvents.PreItemPrefabsSetup += PrefabManager.PreItemLoading;

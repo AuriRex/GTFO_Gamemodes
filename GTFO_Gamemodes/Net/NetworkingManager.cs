@@ -24,6 +24,7 @@ public partial class NetworkingManager
     public static IEnumerable<PlayerWrapper> Spectators => SyncedPlayers.Where(p => p.IsSpectator);
 
     public static ulong LocalPlayerId => SNet.LocalPlayer?.Lookup ?? 0;
+    public static int LocalPlayerTeam { get; private set; }
 
     public static bool AllPlayersVersionMatches => SyncedPlayers.All(pi => pi.VersionMatches);
 

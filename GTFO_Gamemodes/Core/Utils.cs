@@ -2,6 +2,7 @@
 using LevelGeneration;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Player;
 using SNetwork;
@@ -11,6 +12,20 @@ namespace Gamemodes.Core;
 
 public static class Utils
 {
+    public static IEnumerable<PlayerAgent> AllPlayerAgentsInLobby
+    {
+        get
+        {
+            foreach (var lobbyPlayer in SNet.LobbyPlayers)
+            {
+                var agent = lobbyPlayer?.PlayerAgent?.TryCast<PlayerAgent>();
+
+                if (agent != null)
+                    yield return agent;
+            }
+        }
+    }
+    
     internal static void StopWardenObjectiveManager()
     {
         var WOM = WardenObjectiveManager.Current;

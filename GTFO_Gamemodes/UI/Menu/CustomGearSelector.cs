@@ -41,11 +41,15 @@ public class CustomGearSelector
 
         foreach (var gear in _gear)
         {
+            GearIconRendering.TryGetGearIconSprite(gear.GetChecksum(), out var icon);
+            
             header.AddItem(new SelectionPopupItem()
             {   
                 ID = gear.PlayfabItemId,
                 DisplayName = gear.PublicGearName,
                 SubTitle = gear.PlayfabItemId,
+                SpriteSmall = icon,
+                SpriteLarge = icon,
                 Description = "TODO: Item description here",
                 clickedAction = OnItemClicked,
             });

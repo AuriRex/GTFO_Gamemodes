@@ -77,9 +77,10 @@ public static class PlayerVoiceManager
     [Flags]
     public enum ApplyVoiceStates
     {
-        Lobby,
-        InLevel,
-        Downed
+        All = 0,
+        Lobby = 1,
+        InLevel = 2,
+        Downed = 4,
     }
 
     public static void SetVolume(PlayerAgent player, float volume)
@@ -88,14 +89,19 @@ public static class PlayerVoiceManager
         {
             if (mod == null)
                 continue;
-            
+
+            bool checkPassed = mod.ApplyToStates.HasFlag(ApplyVoiceStates.All);
+
             if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.Downed) && !player.Alive)
-                continue;
+                checkPassed = true;
 
-            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.InLevel) && _currentState != eGameStateName.InLevel)
-                continue;
+            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.InLevel) && _currentState == eGameStateName.InLevel)
+                checkPassed = true;
 
-            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.Lobby) && _currentState != eGameStateName.Lobby)
+            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.Lobby) && _currentState == eGameStateName.Lobby)
+                checkPassed = true;
+
+            if (!checkPassed)
                 continue;
             
             mod.Modify(player, ref volume);

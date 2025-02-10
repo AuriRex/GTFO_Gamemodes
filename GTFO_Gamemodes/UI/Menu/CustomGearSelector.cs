@@ -13,6 +13,7 @@ namespace Gamemodes.UI.Menu;
 public class CustomGearSelector
 {
     private readonly SelectionPopupMenu _menu;
+    private readonly SelectionPopupHeader _header;
     private readonly GearIDRange[] _gear;
     private readonly InventorySlot _slot;
 
@@ -26,9 +27,12 @@ public class CustomGearSelector
         
         _menu = new SelectionPopupMenu();
 
-        var header = new SelectionPopupHeader(title);
+        _header = new SelectionPopupHeader(title);
 
-        header.PreDraw = self =>
+        _header.IsActiveText = "<color=orange>Equipped</color>";
+        _header.SetActiveConfirmText = "<color=orange>Click again to equip.</color>";
+        
+        _header.PreDraw = self =>
         {
             if (!TryGetItemFromBP(SNet.LocalPlayer, out var item))
             {
@@ -36,26 +40,30 @@ public class CustomGearSelector
             }
 
             self.ActiveItemID = item.GearIDRange.PlayfabItemId;
-            self.LastSelectedItemID = item.GearIDRange.PlayfabItemId;
+
+            if (!self.IsUpdating)
+            {
+                self.LastSelectedItemID = item.GearIDRange.PlayfabItemId;
+            }
         };
 
         foreach (var gear in _gear)
         {
             GearIconRendering.TryGetGearIconSprite(gear.GetChecksum(), out var icon);
-            
-            header.AddItem(new SelectionPopupItem()
+
+            _header.AddItem(new SelectionPopupItem()
             {   
                 ID = gear.PlayfabItemId,
                 DisplayName = gear.PublicGearName,
                 SubTitle = gear.PlayfabItemId,
                 SpriteSmall = icon,
                 SpriteLarge = icon,
-                Description = "TODO: Item description here",
+                Description = "<alpha=#01>Hello cutie, this is where the description would usually go but, you see, I cba to actually look up this items description, so you're getting this lovely text instead! uwu\n\nMaybe someone will implement this little feature in the future tho!",
                 clickedAction = OnItemClicked,
             });
         }
         
-        _menu.AddHeader(header);
+        _menu.AddHeader(_header);
     }
 
     public void Show()
@@ -70,6 +78,18 @@ public class CustomGearSelector
     
     private void OnItemClicked(ISelectionPopupItem item)
     {
+        if (!item.WasDoubleClick)
+        {
+            return;
+        }
+
+        if (item.IsSelected && item.IsActive)
+        {
+            item.CloseMenu = true;
+            FocusStateManager.ExitMenu();
+            return;
+        }
+        
         if (!TryGetItemByIDFromAvailable(item.ID, out var gear))
         {
             return;

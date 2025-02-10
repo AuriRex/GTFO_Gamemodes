@@ -9,6 +9,7 @@ using HNS.Extensions;
 using HNS.Net;
 using Il2CppInterop.Runtime.Attributes;
 using Player;
+using SNetwork;
 using UnityEngine;
 
 namespace HNS.Components;
@@ -28,6 +29,7 @@ public partial class CustomMineController : MonoBehaviour
 
     private Color _currentColor = Color.white;
     private GMTeam _owningTeam;
+    private bool _isConsumable;
     private PlayerAgent Owner => _mine.Owner;
     private CellSoundPlayer Sound => _mine.Sound;
     
@@ -38,6 +40,8 @@ public partial class CustomMineController : MonoBehaviour
 
     public void Start()
     {
+        _isConsumable = gameObject.name.StartsWith("Consumable_");
+        
         _mine = GetComponent<MineDeployerInstance>();
 
         _mine.m_detectionEnabled = false;
@@ -45,6 +49,16 @@ public partial class CustomMineController : MonoBehaviour
         if (_mine == null)
         {
             Plugin.L.LogError("HELP: MineDeployerInstance is null, this should never happen!");
+        }
+
+        if (_isConsumable)
+        {
+            _mine.GetComponentInChildren<Light>().SafeDestroy();
+            if (SNet.IsMaster)
+            {
+                StartCoroutine(EvilSequence().WrapToIl2Cpp());
+            }
+            return;
         }
         
         var lightAnimator = _mine.GetComponentInChildren<FX_SimplePointLight>();
@@ -63,9 +77,9 @@ public partial class CustomMineController : MonoBehaviour
 
         // Duplicated tripmine model
         transform.Children().FirstOrDefault(child => child.name == "Mine_Deployer_Direct_1")?.gameObject.SetActive(false);
-
-        var modelGo = transform.Find("TripMine_1(Clone)/Rot/Mine_Deployer_Direct_1").gameObject;
-        _modelRenderer = modelGo.GetComponent<Renderer>();
+        
+        var modelGo = transform.Find("TripMine_1(Clone)/Rot/Mine_Deployer_Direct_1")?.gameObject;
+        _modelRenderer = modelGo?.GetComponent<Renderer>();
         
         StartCoroutine(DelayedSetup().WrapToIl2Cpp());
     }

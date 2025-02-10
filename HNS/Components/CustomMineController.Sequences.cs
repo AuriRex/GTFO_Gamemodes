@@ -67,4 +67,12 @@ public partial class CustomMineController
         _currentState = MineState.Detecting;
         RefreshVisuals();
     }
+
+    [HideFromIl2Cpp]
+    private IEnumerator EvilSequence()
+    {
+        yield return new WaitForSeconds(5f);
+        
+        _mine.WantItemAction(null, SyncedItemAction_New.Trigger);
+    }
 }

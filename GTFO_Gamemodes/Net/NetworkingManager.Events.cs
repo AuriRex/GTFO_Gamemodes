@@ -174,7 +174,7 @@ public partial class NetworkingManager
 
     internal static void SendWelcome(SNet_Player target)
     {
-        SendEvent(new pWelcome(), target, channelType: SNet_ChannelType.SessionOrderCritical);
+        SendEvent(new pWelcome(), target);
     }
 
     private static void OnWelcomeReceived(ulong senderId, pWelcome _)
@@ -196,14 +196,14 @@ public partial class NetworkingManager
             Major = Plugin.Version.Major,
             Minor = Plugin.Version.Minor,
             Patch = Plugin.Version.Patch,
-        }, channelType: SNet_ChannelType.SessionOrderCritical);
+        });
 
         foreach (var modeId in GamemodeManager.LoadedModeIds)
         {
             SendEventAndInvokeLocally(new pInstalledMode
             {
                 GamemodeID = modeId,
-            }, channelType: SNet_ChannelType.SessionOrderCritical);
+            });
         }
     }
 

@@ -7,6 +7,7 @@ namespace Gamemodes.Components;
 public class ProximityVoice : MonoBehaviour
 {
     private const float UPDATE_INTERVAL = 0.1f;
+    private const int SLOW_UPDATE_INTERVAL = (int)(1f / UPDATE_INTERVAL);
 
     public static float NoLOSMultiplier = 0.75f;
     public static float HasLOSMultiplier = 1f;
@@ -21,7 +22,8 @@ public class ProximityVoice : MonoBehaviour
     
     private float _targetVolume = 1f;
     private float _currentVolume = 1f;
-    
+
+    private int _slowUpdateCounter;
     private bool _changed;
     private float _nodeDistanceMultiplier = 1f;
     private float _rayMultiplier = 1f;
@@ -43,8 +45,8 @@ public class ProximityVoice : MonoBehaviour
 #endif
 
         _localPlayer = PlayerManager.GetLocalPlayerAgent().TryCast<LocalPlayerAgent>();
-        
-        _nextUpdate = Time.realtimeSinceStartup + Random.Range(0f, 1f);
+
+        _nextUpdate = Time.realtimeSinceStartup + System.Random.Shared.NextSingle();
     }
 
     public void Update()
@@ -56,6 +58,15 @@ public class ProximityVoice : MonoBehaviour
             _nextUpdate = time + UPDATE_INTERVAL;
 
             DoUpdate();
+            
+            _slowUpdateCounter++;
+
+            if (_slowUpdateCounter >= SLOW_UPDATE_INTERVAL)
+            {
+                _slowUpdateCounter = 0;
+
+                _changed = true;
+            }
         }
 
         if (Mathf.Abs(_targetVolume - _currentVolume) > 0.001f)
@@ -91,6 +102,8 @@ public class ProximityVoice : MonoBehaviour
 
     private void DoUpdate()
     {
+        _localPlayer ??= PlayerManager.GetLocalPlayerAgent().TryCast<LocalPlayerAgent>();
+        
         if (_localPlayer == null)
             return;
         
@@ -107,7 +120,18 @@ public class ProximityVoice : MonoBehaviour
         SetRayMulti(distance);
         
         _targetVolume *= _nodeDistanceMultiplier * _rayMultiplier;
+
+        _targetVolume = EaseInOutSine(_targetVolume);
     }
+    
+    private static float EaseOutQuart(float x) {
+        return 1f - Mathf.Pow(1f - x, 4);
+    }
+    
+    private static float EaseInOutSine(float x) {
+        return -(Mathf.Cos(Mathf.PI * x) - 1) / 2;
+    }
+
 
     private void SetNodeDistanceMulti()
     {

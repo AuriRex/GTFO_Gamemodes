@@ -13,8 +13,6 @@ public class LocalPlayerAgent__Setup__Patch
     
     public static void Postfix(LocalPlayerAgent __instance)
     {
-        var nodeDistance = __instance.gameObject.GetOrAddComponent<NodeDistance>();
-
-        nodeDistance.enabled = false;
+        __instance.gameObject.GetOrAddComponent<NodeDistance>().enabled = true;
     }
 }

@@ -77,14 +77,21 @@ public static class PlayerVoiceManager
     [Flags]
     public enum ApplyVoiceStates
     {
-        All = 0,
-        Lobby = 1,
-        InLevel = 2,
-        Downed = 4,
+        None = 0,
+        All = 1,
+        Lobby = 2,
+        InLevel = 4,
+        Downed = 8,
     }
 
+    public static Dictionary<string, float> debugValues = new();
+    
     public static void SetVolume(PlayerAgent player, float volume)
     {
+        debugValues.Clear();
+        
+        debugValues["entry>>"] = volume;
+        
         foreach (var mod in _modulatorStack.Modulators)
         {
             if (mod == null)
@@ -92,7 +99,7 @@ public static class PlayerVoiceManager
 
             bool checkPassed = mod.ApplyToStates.HasFlag(ApplyVoiceStates.All);
 
-            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.Downed) && !player.Alive)
+            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.Downed) && player.Locomotion.m_currentStateEnum == PlayerLocomotion.PLOC_State.Downed)
                 checkPassed = true;
 
             if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.InLevel) && _currentState == eGameStateName.InLevel)
@@ -103,12 +110,18 @@ public static class PlayerVoiceManager
 
             if (!checkPassed)
                 continue;
+
+            debugValues[mod.GetType().Name] = volume;
             
             mod.Modify(player, ref volume);
         }
         
+        debugValues["pre-prefs>>"] = volume;
+        
         // Player preferences last
         PlayerPrefs.Modify(player, ref volume);
+        
+        debugValues["final>>"] = volume;
         
         var settings = GetSettings(player.Owner);
         

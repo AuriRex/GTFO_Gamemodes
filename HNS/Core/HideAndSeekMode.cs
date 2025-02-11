@@ -192,7 +192,7 @@ internal partial class HideAndSeekMode : GamemodeBase
         
         MineDeployerInstance_UpdateDetection_Patch.OnAgentDetected += OnMineDetectAgent;
 
-        _vvmStack = new VolumeModulatorStack(new LobbySetMaxModulator(), new PlayerDeadModulator());
+        _vvmStack = new VolumeModulatorStack(new LobbySetMaxModulator(), new SpectatorVolumeMax(), new PlayerDeadModulator());
     }
 
     private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)

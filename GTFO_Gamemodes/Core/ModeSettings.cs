@@ -24,4 +24,5 @@ public class ModeSettings
     public float InitialPushForceMultiplier = 1f;
     public float InitialSlidePushForceMultiplier = 1f;
     public bool UseProximityVoiceChat = false;
+    public bool UseNodeDistance = false;
 }

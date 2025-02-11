@@ -217,6 +217,9 @@ public class GamemodeManager
         ApplyPatchGroup(PatchGroups.INF_PLAYER_AMMO, settings.InfiniteBackpackAmmo);
         ApplyPatchGroup(PatchGroups.PROXIMITY_VOICE, settings.UseProximityVoiceChat);
 
+        NodeDistance.Instance.enabled = settings.UseNodeDistance || settings.UseProximityVoiceChat;
+        NodeDistance.Instance.Reset();
+        
         foreach (var agent in Utils.AllPlayerAgentsInLobby)
         {
             if (agent == null)
@@ -239,6 +242,8 @@ public class GamemodeManager
     {
         if (settings == null)
             return;
+
+        NodeDistance.Instance.enabled = false;
         
         foreach (var agent in Utils.AllPlayerAgentsInLobby)
         {

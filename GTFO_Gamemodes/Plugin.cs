@@ -47,6 +47,7 @@ public class Plugin : BasePlugin
         ClassInjector.RegisterTypeInIl2Cpp<TimerHUD>();
         ClassInjector.RegisterTypeInIl2Cpp<PUI_TeamDisplay>();
         ClassInjector.RegisterTypeInIl2Cpp<ProximityVoice>();
+        ClassInjector.RegisterTypeInIl2Cpp<NodeDistance>();
         
         ClassInjector.RegisterTypeInIl2Cpp<FlashBlinder>();
         ClassInjector.RegisterTypeInIl2Cpp<FlashGrenadeInstance>();

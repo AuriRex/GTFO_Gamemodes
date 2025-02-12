@@ -118,6 +118,11 @@ public class XRayInstance : MonoBehaviour
     {
         _xrays.enabled = false;
         _xrayRenderer.enabled = active;
+        
+        if (_xrayRenderer.m_emissionData == null)
+        {
+            _xrayRenderer.m_emissionData = new Il2CppSystem.Collections.Generic.List<XRayRenderer.DataStruct>(capacity: 0);
+        }
     }
     
     private void UpdateXRayCasts()

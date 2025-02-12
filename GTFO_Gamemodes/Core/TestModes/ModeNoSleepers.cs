@@ -1,4 +1,6 @@
-﻿namespace Gamemodes.Core.TestModes;
+﻿using UnityEngine;
+
+namespace Gamemodes.Core.TestModes;
 
 #if DEBUG
 internal class ModeNoSleepers : GamemodeBase
@@ -18,5 +20,7 @@ internal class ModeNoSleepers : GamemodeBase
         PreventRespawnRoomsRespawning = true,
         AllowForcedTeleportation = true
     };
+    
+    public override Color? GetElevatorColor() => new Color(0.2f, 0.2f, 1f, 1f) * 0.6f;
 }
 #endif

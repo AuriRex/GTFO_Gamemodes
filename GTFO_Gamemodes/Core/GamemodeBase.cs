@@ -47,6 +47,11 @@ public abstract class GamemodeBase
 
     }
 
+    public virtual Color? GetElevatorColor()
+    {
+        return null;
+    }
+    
     public virtual void OnPlayerCountChanged()
     {
 

@@ -195,6 +195,8 @@ internal partial class HideAndSeekMode : GamemodeBase
         _vvmStack = new VolumeModulatorStack(new LobbySetMaxModulator(), new SpectatorVolumeMax(), new PlayerDeadModulator());
     }
 
+    public override Color? GetElevatorColor() => new Color(1f, 0.5f, 0f, 1f) * 0.5f;
+
     private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)
     {
         var localPlayer = agent?.TryCast<LocalPlayerAgent>();

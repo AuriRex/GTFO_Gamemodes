@@ -1,4 +1,6 @@
-﻿namespace Gamemodes.Core.TestModes;
+﻿using UnityEngine;
+
+namespace Gamemodes.Core.TestModes;
 
 #if DEBUG
 internal class ModeTesting : GamemodeBase
@@ -17,5 +19,7 @@ internal class ModeTesting : GamemodeBase
         PreventDefaultFailState = true,
         AllowForcedTeleportation = true,
     };
+    
+    public override Color? GetElevatorColor() => new Color(0.2f, 0.9f, 0.4f, 1f) * 0.25f;
 }
 #endif

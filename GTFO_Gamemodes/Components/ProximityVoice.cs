@@ -118,8 +118,16 @@ public class ProximityVoice : MonoBehaviour
         SetNodeDistanceMulti();
 
         SetRayMulti(distance);
-        
-        _targetVolume *= _nodeDistanceMultiplier * _rayMultiplier;
+
+        _targetVolume *= _rayMultiplier;
+
+        // Prevent open doors from majorly affecting voice falloff
+        // mostly for open room dividers
+        // if we have LOS -> don't reduce volume because of node distance
+        if (_rayMultiplier < 1f)
+        {
+            _targetVolume *= _nodeDistanceMultiplier;
+        }
 
         _targetVolume = EaseInOutSine(_targetVolume);
     }

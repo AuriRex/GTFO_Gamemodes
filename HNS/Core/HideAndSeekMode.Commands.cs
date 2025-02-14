@@ -3,6 +3,8 @@ using System.Linq;
 using Gamemodes.Core;
 using Gamemodes.Net;
 using HNS.Net;
+using LevelGeneration;
+using Player;
 using SNetwork;
 
 namespace HNS.Core;
@@ -112,5 +114,74 @@ internal partial class HideAndSeekMode
         Utils.SetLocalPlayerInfection(0f);
         
         return string.Empty;
+    }
+
+    private static string JumpDimension(string[] args)
+    {
+        if (!SNet.IsMaster)
+            return "Master only.";
+        
+        if (NetSessionManager.HasSession)
+            return "Can't use this command while a round is active!";
+
+        var dimension = eDimensionIndex.Reality;
+        if (args.Length >= 1)
+        {
+            var dimArg = args[0];
+
+            if (!int.TryParse(dimArg, out var dimInt))
+                return "Couldn't parse dimension.";
+            
+            dimension = (eDimensionIndex) dimInt;
+        }
+        
+        if (dimension < eDimensionIndex.Reality || dimension >= eDimensionIndex.Dimension_17)
+            return "Invalid dimension.";
+        
+        var localPlayer = PlayerManager.GetLocalPlayerAgent();
+
+        var allDims = LG_LevelBuilder.Current.m_currentFloor.m_dimensions;
+
+        var dim = allDims.ToArray().FirstOrDefault(dim => dim.DimensionIndex == dimension);
+
+        if (dim == null)
+            return "Dimension wasn't found. :c";
+        
+        var targetPos = dim.GetStartCourseNode().GetRandomPositionInside();
+        
+        foreach (var player in NetworkingManager.AllValidPlayers)
+        {
+            if (!player.HasAgent)
+                continue;
+
+            if (player.PlayerAgent.DimensionIndex == dimension)
+                continue;
+
+            NetworkingManager.SendForceTeleport(player, targetPos, localPlayer.FPSCamera.Forward, dimension, PlayerAgent.WarpOptions.PlaySounds | PlayerAgent.WarpOptions.ShowScreenEffectForLocal | PlayerAgent.WarpOptions.WithoutBots);
+        }
+        
+        return string.Empty;
+    }
+
+    private static string Unstuck(string[] args)
+    {
+        if (args.Length < 1 || args[0] != "confirm")
+        {
+            Gamemodes.Plugin.PostLocalMessage("<color=orange>This command will teleport you to your last GoodPos, ...</color>");
+            return "<color=red><b>but also down you, confirm using </color><color=orange>/unstuck confirm</color></b>";
+        }
+
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return "No local player.";
+
+        if (localPlayer.TryWarpTo(localPlayer.DimensionIndex, localPlayer.GoodPosition, localPlayer.FPSCamera.Forward,
+                PlayerAgent.WarpOptions.ShowScreenEffectForLocal | PlayerAgent.WarpOptions.PlaySounds |
+                PlayerAgent.WarpOptions.WithoutBots))
+        {
+            localPlayer.Locomotion.DisableFallDamageTemporarily = false;
+            localPlayer.Damage.FallDamage(999f);
+        }
+
+        return "Tried to unstuck.";
     }
 }

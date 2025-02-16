@@ -7,6 +7,7 @@ using Gamemodes.UI.Menu;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using Object = UnityEngine.Object;
 
 namespace Gamemodes.UI;
 
@@ -14,6 +15,9 @@ internal static class LobbyUI
 {
     private static CM_Item _changeGameModeButton;
     private static TextMeshPro _subText;
+#if DEBUG
+    private static TextMeshPro _debugBuildText;
+#endif
 
     internal static void Setup(CM_PageLoadout instance)
     {
@@ -51,6 +55,15 @@ internal static class LobbyUI
 
         _subText = transform.FindChild("PressAndHold").GetComponent<TextMeshPro>();
 
+#if DEBUG
+        _debugBuildText = Object.Instantiate(_subText.gameObject).GetComponent<TextMeshPro>();
+        _debugBuildText.gameObject.SetActive(true);
+        _debugBuildText.transform.SetParent(instance.m_readyButtonAlign);
+        _debugBuildText.transform.localPosition = new Vector3(-600, 1000, 0);
+        _debugBuildText.transform.localScale = new Vector3(5, 5, 5);
+        _debugBuildText.SetText("THIS IS A <color=orange>DEBUG BUILD</color>; <i>IF YOU RELEASE THIS AURI, THEN U DUMM</i> xd");
+#endif
+        
         SetSubText(GamemodeManager.CurrentMode.DisplayName);
 
         GamemodeManager.OnGamemodeChanged += OnModeChange;

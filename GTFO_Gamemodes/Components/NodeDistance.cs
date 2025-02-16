@@ -65,7 +65,7 @@ public class NodeDistance : MonoBehaviour
         var localNode = _localPLayer.CourseNode;
 
         _agentsInLevel = PlayerManager.PlayerAgentsInLevel.ToArray()
-            .Where(p => p.DimensionIndex == _localPLayer.DimensionIndex
+            .Where(p => p?.Owner != null && p.Owner.IsInSlot && p.DimensionIndex == _localPLayer.DimensionIndex
             && !p.IsLocallyOwned).ToArray();
         
         _visitedAreas.Clear();

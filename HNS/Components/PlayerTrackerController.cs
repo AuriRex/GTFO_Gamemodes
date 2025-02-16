@@ -1,3 +1,4 @@
+using System;
 using AK;
 using Gamemodes.Core;
 using Gamemodes.Extensions;
@@ -16,12 +17,15 @@ public class PlayerTrackerController : MonoBehaviour
     private State _currentState;
 
     private const float SCAN_DURATION = 0.5f;
+    public const float DEFAULT_COOLDOWN_DURATION = 180f;
 #if DEBUG
     public static float CooldownDuration = 10f;
 #else
-    public static float CooldownDuration = 180f;
+    public static float CooldownDuration = DEFAULT_COOLDOWN_DURATION;
 #endif
 
+    public static Func<float> GetCooldownDuration = () => CooldownDuration;
+    
     private float _scanStartTime;
     private float _scanDuration;
     private float _cooldownStartTime;
@@ -124,7 +128,7 @@ public class PlayerTrackerController : MonoBehaviour
         _scanStartTime = time;
         _scanDuration = scanDuration;
         _cooldownStartTime = time + scanDuration;
-        _cooldownDuration = cooldownDuration;
+        _cooldownDuration = GetCooldownDuration?.Invoke() ?? CooldownDuration;
         
         SetState(State.Scanning);
     }

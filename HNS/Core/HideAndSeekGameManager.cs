@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
@@ -6,6 +7,7 @@ using Gamemodes.Core;
 using Gamemodes.Net;
 using Gamemodes.UI;
 using Gear;
+using HNS.Components;
 using HNS.Net;
 using Player;
 using SNetwork;
@@ -53,6 +55,8 @@ public class HideAndSeekGameManager
             StopGame(_session);
         }
 
+        PlayerTrackerController.GetCooldownDuration = GetCooldownDuration;
+        
         _session = session;
         _gameTimerDisplay.ResetGameTimer();
         _gameTimerDisplay.StartGameTimer();
@@ -88,7 +92,21 @@ public class HideAndSeekGameManager
             HideAndSeekMode.DespawnOldStuffs();
         }
     }
-    
+
+    private float GetCooldownDuration()
+    {
+        if (_session == null || !_session.IsActive)
+        {
+            return PlayerTrackerController.CooldownDuration;
+        }
+        
+        var progress = Math.Min(0f, Math.Max(_elapsedAmmoTicks, 5f));
+
+        var cooldownLoss = PlayerTrackerController.CooldownDuration / 6f;
+
+        return PlayerTrackerController.CooldownDuration - cooldownLoss * progress;
+    }
+
     private IEnumerator AmmoTickCoroutine()
     {
         yield return new WaitForSeconds(5f);

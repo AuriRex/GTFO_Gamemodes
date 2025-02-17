@@ -104,7 +104,7 @@ public class HideAndSeekGameManager
 
         var cooldownLoss = PlayerTrackerController.CooldownDuration / 6f;
 
-        return PlayerTrackerController.CooldownDuration - cooldownLoss * progress;
+        return Math.Max(15f, PlayerTrackerController.CooldownDuration - cooldownLoss * progress);
     }
 
     private IEnumerator AmmoTickCoroutine()

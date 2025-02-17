@@ -23,6 +23,7 @@ public partial class PUI_TeamDisplay : MonoBehaviour
 
     private bool _isSetup;
 
+    [HideFromIl2Cpp]
     private Dictionary<int, TeamDisplayData> TeamDisplay { get; } = new();
 
     public static PUI_TeamDisplay InstantiateOrGetInstanceOnWardenObjectives()

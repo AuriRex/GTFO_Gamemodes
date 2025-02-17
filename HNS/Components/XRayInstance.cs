@@ -3,6 +3,7 @@ using AK;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Core;
 using HNS.Core;
+using Il2CppInterop.Runtime.Attributes;
 using UnityEngine;
 
 namespace HNS.Components;
@@ -134,6 +135,7 @@ public class XRayInstance : MonoBehaviour
         _xrayRenderer.mode = (int) _renderMode;
     }
     
+    [HideFromIl2Cpp]
     private IEnumerator FadeXRays()
     {
         var props = _xrayRenderer.m_properties;

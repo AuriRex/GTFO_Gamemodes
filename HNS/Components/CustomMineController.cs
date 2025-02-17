@@ -232,6 +232,7 @@ public partial class CustomMineController : MonoBehaviour
         _disableCoroutine = StartCoroutine(DisableRoutine(duration).WrapToIl2Cpp());
         return;
 
+        [HideFromIl2Cpp]
         IEnumerator DisableRoutine(float disableDuration)
         {
             _currentState = MineState.Disabled;

@@ -5,6 +5,7 @@ using Gamemodes.Extensions;
 using Gamemodes.Net;
 using Gear;
 using HNS.Core;
+using Il2CppInterop.Runtime.Attributes;
 using UnityEngine;
 
 namespace HNS.Components;
@@ -103,6 +104,7 @@ public class PlayerTrackerController : MonoBehaviour
         }
     }
     
+    [HideFromIl2Cpp]
     private void OnTeamChange(PlayerWrapper player, int teamInt)
     {
         if (!player.IsLocal)

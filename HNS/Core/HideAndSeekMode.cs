@@ -204,10 +204,15 @@ internal partial class HideAndSeekMode : GamemodeBase
     {
         if (!player.IsLocallyOwned)
             return;
-        
-        if (NetSessionManager.HasSession)
+
+        if (!NetSessionManager.HasSession)
+            return;
+
+        var newCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(cooldown);
+
+        if (_pickToolCooldownEnd < newCooldownEnd)
         {
-            _pickToolCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(cooldown);
+            _pickToolCooldownEnd = newCooldownEnd;
         }
     }
 

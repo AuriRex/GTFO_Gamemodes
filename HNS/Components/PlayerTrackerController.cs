@@ -6,12 +6,16 @@ using Gamemodes.Net;
 using Gear;
 using HNS.Core;
 using Il2CppInterop.Runtime.Attributes;
+using Player;
+using SNetwork;
 using UnityEngine;
 
 namespace HNS.Components;
 
 public class PlayerTrackerController : MonoBehaviour
 {
+    public static event Action<PlayerAgent, float> OnStartedScanning;
+    
     private EnemyScanner _scanner;
     private EnemyScannerScreen _screen;
     private ProgressBarMeshPanels _progressBar;
@@ -130,9 +134,11 @@ public class PlayerTrackerController : MonoBehaviour
         _scanStartTime = time;
         _scanDuration = scanDuration;
         _cooldownStartTime = time + scanDuration;
-        _cooldownDuration = GetCooldownDuration?.Invoke() ?? CooldownDuration;
+        _cooldownDuration = GetCooldownDuration?.Invoke() ?? cooldownDuration;
         
         SetState(State.Scanning);
+
+        OnStartedScanning?.Invoke(_scanner.Owner, _cooldownDuration);
     }
     
     private void SetState(State state)

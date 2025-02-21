@@ -196,6 +196,19 @@ internal partial class HideAndSeekMode : GamemodeBase
         MineDeployerInstance_UpdateDetection_Patch.OnAgentDetected += OnMineDetectAgent;
 
         _vvmStack = new VolumeModulatorStack(new LobbySetMaxModulator(), new SpectatorVolumeMax(), new PlayerDeadModulator());
+        
+        PlayerTrackerController.OnStartedScanning +=PlayerTrackerControllerOnOnStartedScanning;
+    }
+
+    private void PlayerTrackerControllerOnOnStartedScanning(PlayerAgent player, float cooldown)
+    {
+        if (!player.IsLocallyOwned)
+            return;
+        
+        if (NetSessionManager.HasSession)
+        {
+            _pickToolCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(cooldown);
+        }
     }
 
     public override Color? GetElevatorColor() => new Color(1f, 0.5f, 0f, 1f) * 0.5f;

@@ -130,7 +130,8 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("tool", SelectTool)
             .Add("disinfect", Disinfect)
             .Add("dimension", JumpDimension)
-            .Add("unstuck", Unstuck);
+            .Add("unstuck", Unstuck)
+            .LogAnyErrors(Plugin.L.LogError, Plugin.L.LogWarning);
 
         CreateSeekerPalette();
 

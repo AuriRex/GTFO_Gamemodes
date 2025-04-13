@@ -2,6 +2,7 @@ using System.Collections;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using HarmonyLib;
 using Player;
+using SNetwork;
 using UnityEngine;
 
 namespace HNS.Patches;
@@ -9,7 +10,7 @@ namespace HNS.Patches;
 [HarmonyPatch(typeof(PlayerSync), nameof(PlayerSync.WantsToSetFlashlightEnabled))]
 public class PlayerSync__WantsToSetFlashlightEnabled__Patch
 {
-    private const float ATTEMPTED_FLASHLIGHT_SYNC_TIME = 5f;
+    private const float ATTEMPTED_FLASHLIGHT_SYNC_TIME = 3f;
     
     private static Coroutine _flashSyncRoutine;
     
@@ -48,7 +49,16 @@ public class PlayerSync__WantsToSetFlashlightEnabled__Patch
         
         Plugin.L.LogDebug("Attempting to sync flashlight state ...");
         // Should network the current flashlight state again
-        sync.SyncInventory(syncBackPack: false);
+        //sync.SyncInventory(syncBackPack: false);
+        
+        var data = new pInventoryStatus
+        {
+            wieldedSlot = sync.m_agent.Inventory.WieldedSlot,
+            toolEnabled = sync.m_agent.Inventory.WantsFlashlightEnabled
+        };
+        sync.LastWantedSlot = data.wieldedSlot;
+        sync.m_inventoryStatusPacket.Send(data, SNet_ChannelType.GameReceiveCritical);
+        //sync.SyncInventoryStatus(data);
 
         _flashSyncRoutine = null;
     }

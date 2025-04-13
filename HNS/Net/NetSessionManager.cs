@@ -74,6 +74,9 @@ internal static class NetSessionManager
                 if (player.Team == (int)GMTeam.Seekers)
                     continue;
 
+                if (player.Team == (int)GMTeam.Camera)
+                    continue;
+                
                 if (data.Seekers.Contains(player.ID))
                 {
                     NetworkingManager.AssignTeam(player.NetPlayer, (int)GMTeam.Seekers);

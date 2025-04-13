@@ -77,6 +77,15 @@ internal partial class HideAndSeekMode
         NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Seekers);
         return string.Empty;
     }
+    
+    private string SwitchToSpectator(string[] arg)
+    {
+        if (NetSessionManager.HasSession)
+            return "Can't switch teams mid session.";
+
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Camera);
+        return string.Empty;
+    }
 
     private static string SelectMelee(string[] arg)
     {

@@ -126,6 +126,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("seeker", SwitchToSeeker)
             .Add("hider", SwitchToHider)
             .Add("lobby", SwitchToLobby)
+            .Add("camera", SwitchToSpectator)
             .Add("melee", SelectMelee)
             .Add("tool", SelectTool)
             .Add("disinfect", Disinfect)
@@ -137,7 +138,8 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         TeamVisibility.Team(GMTeam.Seekers).CanSeeSelf();
 
-        TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders);
+        TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders, GMTeam.Camera);
+        TeamVisibility.Team(GMTeam.Camera).CanSeeSelf().And(GMTeam.PreGameAndOrSpectator, GMTeam.Seekers, GMTeam.Hiders);
 
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {
@@ -449,6 +451,7 @@ internal partial class HideAndSeekMode : GamemodeBase
                     var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
                     teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
                     teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new('C', PUI_TeamDisplay.COLOR_MISC, SeekersExtraInfoUpdater));
                     teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
 
                     WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
@@ -818,7 +821,9 @@ internal partial class HideAndSeekMode : GamemodeBase
         if (!NetSessionManager.HasSession)
             return false;
 
-        if (NetworkingManager.AllValidPlayers.Any(pl => pl.Team != (int)GMTeam.Seekers))
+        if (NetworkingManager.AllValidPlayers
+            .Where(pl => pl.Team != (int) GMTeam.Camera)
+            .Any(pl => pl.Team != (int)GMTeam.Seekers))
             return false;
 
         NetSessionManager.SendStopGamePacket();

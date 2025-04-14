@@ -11,7 +11,7 @@ internal static class PLOC_Run__CommonUpdate__Patch
     {
         NetworkingManager.GetPlayerInfo(__instance.m_owner.Owner, out var info);
 
-        Plugin.L.LogDebug($"{nameof(PLOC_Run__CommonUpdate__Patch)}: {info.NickName}: {(GMTeam) info.Team}");
+        //Plugin.L.LogDebug($"{nameof(PLOC_Run__CommonUpdate__Patch)}: {info.NickName}: {(GMTeam) info.Team}");
         
         if (info.Team == (int)GMTeam.Camera)
             return false;
@@ -28,7 +28,7 @@ internal static class PLOC_Land__CommonExit__Patch
     {
         NetworkingManager.GetPlayerInfo(__instance.m_owner.Owner, out var info);
 
-        Plugin.L.LogDebug($"{nameof(PLOC_Land__CommonExit__Patch)}: {info.NickName}: {(GMTeam) info.Team}");
+        //Plugin.L.LogDebug($"{nameof(PLOC_Land__CommonExit__Patch)}: {info.NickName}: {(GMTeam) info.Team}");
         
         if (info.Team == (int)GMTeam.Camera)
             return false;
@@ -44,7 +44,7 @@ internal static class PLOC_Jump__CommonEnter__Patch
     {
         NetworkingManager.GetPlayerInfo(__instance.m_owner.Owner, out var info);
 
-        Plugin.L.LogDebug($"{nameof(PLOC_Jump__CommonEnter__Patch)}: {info.NickName}: {(GMTeam) info.Team}");
+        //Plugin.L.LogDebug($"{nameof(PLOC_Jump__CommonEnter__Patch)}: {info.NickName}: {(GMTeam) info.Team}");
         
         if (info.Team == (int)GMTeam.Camera)
             return false;

@@ -78,7 +78,7 @@ internal partial class HideAndSeekMode
         return string.Empty;
     }
     
-    private string SwitchToSpectator(string[] arg)
+    private static string SwitchToSpectator(string[] arg)
     {
         if (NetSessionManager.HasSession)
             return "Can't switch teams mid session.";

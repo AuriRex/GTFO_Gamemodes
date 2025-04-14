@@ -138,7 +138,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         TeamVisibility.Team(GMTeam.Seekers).CanSeeSelf();
 
-        TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders, GMTeam.Camera);
+        TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders);
         TeamVisibility.Team(GMTeam.Camera).CanSeeSelf().And(GMTeam.PreGameAndOrSpectator, GMTeam.Seekers, GMTeam.Hiders);
 
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
@@ -680,6 +680,10 @@ internal partial class HideAndSeekMode : GamemodeBase
         {
             SetPushForceMultiplierForLocalPlayer(PUSH_FORCE_MULTI_DEFAULT, PUSH_FORCE_MULTI_DEFAULT);
         }
+        else if (!playerInfo.PlayerAgent.PlayerSyncModel.gameObject.activeSelf)
+        {
+            playerInfo.PlayerAgent.PlayerSyncModel.gameObject.SetActive(true);
+        }
         
         switch (team)
         {
@@ -729,6 +733,24 @@ internal partial class HideAndSeekMode : GamemodeBase
                     SetLocalPlayerStatusUIElementsActive(isSeeker: false);
                     SetNearDeathAudioLimit(playerInfo.PlayerAgent.Cast<LocalPlayerAgent>(), true);
                 }
+                break;
+            case GMTeam.Camera:
+                if (playerInfo.IsLocal)
+                {
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS = DEFAULT_MASK_MELEE_ATTACK_TARGETS;
+                    LayerManager.MASK_MELEE_ATTACK_TARGETS_WITH_STATIC = DEFAULT_MASK_MELEE_ATTACK_TARGETS_WITH_STATIC;
+
+                    LayerManager.MASK_BULLETWEAPON_RAY = MODIFIED_MASK_BULLETWEAPON_RAY;
+                    LayerManager.MASK_BULLETWEAPON_PIERCING_PASS = MODIFIED_MASK_BULLETWEAPON_PIERCING_PASS;
+
+                    InstantReviveLocalPlayer();
+
+                    SetLocalPlayerStatusUIElementsActive(isSeeker: false);
+                    SetNearDeathAudioLimit(playerInfo.PlayerAgent.Cast<LocalPlayerAgent>(), true);
+                    break;
+                }
+                
+                playerInfo.PlayerAgent.PlayerSyncModel.gameObject.SetActive(false);
                 break;
             case GMTeam.Hiders:
                 RevertToOriginalPalette(playerInfo, storage);

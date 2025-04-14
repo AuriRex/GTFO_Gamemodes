@@ -14,15 +14,29 @@ public class PlayerSync__WantsToSetFlashlightEnabled__Patch
     
     private static Coroutine _flashSyncRoutine;
     
-    public static void Postfix(PlayerSync __instance, bool enable)
+    public static bool Prefix(PlayerSync __instance, bool enable, bool broadcastOnly)
     {
-        if (!__instance.m_agent.IsLocallyOwned)
-            return;
+        /*if (!__instance.m_agent.IsLocallyOwned)
+            return;*/
 
-        TryStopRoutine(__instance);
-
-        _flashSyncRoutine = __instance.StartCoroutine(FlashlightSyncRoutine(__instance).WrapToIl2Cpp());
+        var data = new pInventoryStatus
+        {
+            wieldedSlot = __instance.m_agent.Inventory.WieldedSlot,
+            toolEnabled = enable
+        };
         
+        __instance.m_inventoryStatusPacket.Send(data, SNet_ChannelType.GameOrderCritical);
+        if (!broadcastOnly)
+        {
+            __instance.SyncInventoryStatus(data);
+        }
+
+        return false;
+
+        // TryStopRoutine(__instance);
+        //
+        // _flashSyncRoutine = __instance.StartCoroutine(FlashlightSyncRoutine(__instance).WrapToIl2Cpp());
+
         //Plugin.L.LogWarning($"{nameof(PlayerSync__WantsToSetFlashlightEnabled__Patch)} POSTFIX: enable:{enable}");
     }
 

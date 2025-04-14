@@ -4,4 +4,4 @@ using UnityEngine;
 
 namespace Gamemodes.UI;
 
-public record TeamDisplayData(char Identifier, Color Color, Func<PlayerWrapper, string> UpdateExtraInfo = null);
+public record TeamDisplayData(char Identifier, Color Color, Func<PlayerWrapper, string> UpdateExtraInfo = null, bool Hide = false);

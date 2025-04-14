@@ -451,7 +451,7 @@ internal partial class HideAndSeekMode : GamemodeBase
                     var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
                     teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
                     teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new('C', PUI_TeamDisplay.COLOR_MISC, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new('C', PUI_TeamDisplay.COLOR_MISC, SeekersExtraInfoUpdater, Hide: true));
                     teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
 
                     WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");

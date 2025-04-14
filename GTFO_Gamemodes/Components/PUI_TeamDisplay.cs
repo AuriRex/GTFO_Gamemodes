@@ -158,6 +158,10 @@ public partial class PUI_TeamDisplay : MonoBehaviour
         if (!player.HasAgent)
             return null;
 
+        var teamDisplayData = TeamDisplay.GetValueOrDefault(player.Team, TDD_DEFAULT) ?? TDD_DEFAULT;
+        if (teamDisplayData.Hide)
+            return null;
+        
         var entry = PlayerEntry.Create(player, _entries.Count + 2, this);
         _entries.Add(entry);
         return entry;

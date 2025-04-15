@@ -113,6 +113,8 @@ internal partial class HideAndSeekMode : GamemodeBase
     
     private static DateTimeOffset _pickToolCooldownEnd = DateTimeOffset.UtcNow;
     private static bool IsLocalPlayerAllowedToPickTool => DateTimeOffset.UtcNow > _pickToolCooldownEnd;
+
+    private static readonly TimeKeeper _timeKeeper = new();
     
     public override void Init()
     {
@@ -123,6 +125,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("hnshelp", SendHelpMessage)
             .Add("hnsstart", StartGame)
             .Add("hnsstop", StopGame)
+            .Add("hnsabort", AbortGame)
             .Add("seeker", SwitchToSeeker)
             .Add("hider", SwitchToHider)
             .Add("lobby", SwitchToLobby)
@@ -131,6 +134,8 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("tool", SelectTool)
             .Add("disinfect", Disinfect)
             .Add("dimension", JumpDimension)
+            .Add("time", PrintTimes)
+            .Add("total", PrintTimes)
             .Add("unstuck", Unstuck)
             .LogAnyErrors(Plugin.L.LogError, Plugin.L.LogWarning);
 
@@ -190,7 +195,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             //"PlayerSynced" // <-- Removed
         });
 
-        GameManager = new HideAndSeekGameManager(gameObject.AddComponent<TimerHUD>());
+        GameManager = new HideAndSeekGameManager(gameObject.AddComponent<TimerHUD>(), _timeKeeper);
         
         ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Icon, out _icon);
         ImageLoader.LoadNewImageSprite(Resources.Data.HNS_Banner, out _banner);
@@ -310,6 +315,8 @@ internal partial class HideAndSeekMode : GamemodeBase
         SetupGearSelectors();
 
         PlayerVoiceManager.SetModulatorStack(_vvmStack);
+        
+        _timeKeeper?.ClearSessions();
     }
 
     private static void SetupGearSelectors()

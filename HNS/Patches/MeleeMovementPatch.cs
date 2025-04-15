@@ -30,6 +30,9 @@ public class MeleePatch_Wield
                 speedMulti = SpeedMultiplierKnife;
             }
         }
+
+        if (info.Team == (int)GMTeam.Camera)
+            speedMulti = 1.25f;
         
         __instance.Owner.EnemyCollision.m_moveSpeedModifier = speedMulti;
     }

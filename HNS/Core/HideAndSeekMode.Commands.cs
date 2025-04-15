@@ -50,6 +50,16 @@ internal partial class HideAndSeekMode
 
         return string.Empty;
     }
+    
+    private static string AbortGame(string[] args)
+    {
+        if (!SNet.IsMaster)
+            return "Only the Master can abort.";
+
+        NetSessionManager.SendStopGamePacket(abortGame: true);
+
+        return string.Empty;
+    }
 
     private static string SwitchToLobby(string[] arg)
     {
@@ -192,5 +202,11 @@ internal partial class HideAndSeekMode
         }
 
         return "Tried to unstuck.";
+    }
+
+    private static string PrintTimes(string[] arg)
+    {
+        _timeKeeper.PrintTotalTime();
+        return string.Empty;
     }
 }

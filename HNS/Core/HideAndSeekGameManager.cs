@@ -17,9 +17,10 @@ namespace HNS.Core;
 
 public class HideAndSeekGameManager
 {
-    public HideAndSeekGameManager(TimerHUD timer)
+    public HideAndSeekGameManager(TimerHUD timer, TimeKeeper timeKeeper = null)
     {
         SetTimerHud(timer);
+        SetTimeKeeper(timeKeeper);
     }
 
     private Blinds _blinds;
@@ -36,6 +37,7 @@ public class HideAndSeekGameManager
     private Session _session;
 
     private TimerHUD _gameTimerDisplay;
+    private TimeKeeper _timeKeeper;
 
     private const string GAMESTART_COUNTDOWN_FORMATTEXT = $"{TimerHUD.COUNTDOWN_TIMER_MARKER} until seekers are released.";
     
@@ -45,6 +47,11 @@ public class HideAndSeekGameManager
     public void SetTimerHud(TimerHUD timer)
     {
         _gameTimerDisplay = timer;
+    }
+
+    public void SetTimeKeeper(TimeKeeper timeKeeper)
+    {
+        _timeKeeper = timeKeeper;
     }
     
     public void StartGame(bool localPlayerIsSeeker, byte blindDuration, Session session)
@@ -238,7 +245,7 @@ public class HideAndSeekGameManager
         if (!NetworkingManager.InLevel)
             yield break;
 
-        HideAndSeekMode.InstantReviveLocalPlayer();
+        GamemodeBase.InstantReviveLocalPlayer();
 
         if (_session != null && _session.IsActive && showSeekerMessage)
         {
@@ -272,23 +279,31 @@ public class HideAndSeekGameManager
 
         Utils.SetLocalPlayerInfection(0f);
         
+        GearUtils.LocalGunClipAction(GearUtils.AmmoAction.Fill);
+        GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Guns, GearUtils.AmmoAction.Fill);
+        
         var message = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
         Gamemodes.Plugin.PostLocalMessage("<#0f0>-= Game Over! =-</color>");
         Gamemodes.Plugin.PostLocalMessage($"<color=white>Total Game Time: {session.FinalTime.ToString(@"mm\:ss")}</color>");
-
+        Plugin.L.LogInfo($"Total Game Time: {session.FinalTime.ToString(@"mm\:ss")}");
+        
         if (!_startedAsSeeker)
         {
             var hid = $"<color=orange>You hid for: {session.HidingTime.ToString(@"mm\:ss")}</color>";
             message = $"{message}\n{hid}";
             Gamemodes.Plugin.PostLocalMessage(hid);
+            Plugin.L.LogInfo($"You hid for: {session.HidingTime.ToString(@"mm\:ss")}");
         }
 
         if (aborted)
         {
+            Plugin.L.LogWarning($"Game was aborted!");
             Gamemodes.Plugin.PostLocalMessage("<color=red>Game aborted!</color>");
             return;
         }
 
+        _timeKeeper?.PushSession(session);
+        
         _gameTimerDisplay.StartCountdown(10, message, StyleImportant);
 
         if (SNet.IsMaster)
@@ -310,8 +325,11 @@ public class HideAndSeekGameManager
         if (session != _session)
             yield break;
 
-        foreach(var player in SNet.LobbyPlayers)
+        foreach(var player in NetworkingManager.AllValidPlayers)
         {
+            if (player.Team == (int)GMTeam.Camera)
+                continue;
+            
             NetworkingManager.AssignTeam(player, (int)GMTeam.PreGameAndOrSpectator);
         }
     }

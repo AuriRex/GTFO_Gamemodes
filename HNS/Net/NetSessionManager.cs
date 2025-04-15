@@ -13,6 +13,13 @@ namespace HNS.Net;
 
 internal static class NetSessionManager
 {
+    
+#if DEBUG
+    private const int SETUP_TIME_SECONDS = 5;
+#else
+    private const int SETUP_TIME_SECONDS = 60;
+#endif
+    
     public static bool HasSession => CurrentSession != null && CurrentSession.IsActive;
     public static Session CurrentSession { get; private set; }
 
@@ -47,7 +54,7 @@ internal static class NetSessionManager
         {
             SeekerCount = (byte)seekers.Length,
             Seekers = seekersA,
-            SetupTimeSeconds = 60,
+            SetupTimeSeconds = SETUP_TIME_SECONDS,
         };
 
         NetworkingManager.SendEvent(data, invokeLocal: true);
@@ -108,7 +115,7 @@ internal static class NetSessionManager
         // switch timer to countup after setup
     }
 
-    internal static void SendStopGamePacket()
+    internal static void SendStopGamePacket(bool abortGame = false)
     {
         if (!HasSession)
             return;
@@ -120,7 +127,8 @@ internal static class NetSessionManager
 
         var data = new pHNSGameStop
         {
-            Time = CurrentSession.EndTime.ToUnixTimeSeconds()
+            Time = CurrentSession.EndTime.ToUnixTimeSeconds(),
+            Aborted = abortGame
         };
 
         NetworkingManager.SendEvent(data, invokeLocal: true);
@@ -134,7 +142,7 @@ internal static class NetSessionManager
 
         CurrentSession.EndSession(DateTimeOffset.FromUnixTimeSeconds(data.Time));
 
-        HideAndSeekMode.GameManager.StopGame(CurrentSession);
+        HideAndSeekMode.GameManager.StopGame(CurrentSession, data.Aborted);
 
         Plugin.L.LogDebug($"Session has ended. {CurrentSession.FinalTime}");
     }

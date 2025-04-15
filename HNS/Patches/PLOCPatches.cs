@@ -24,7 +24,7 @@ internal static class PLOC_Downed_Patch
         if (!NetSessionManager.HasSession)
             return true;
 
-        if (_info.Team == (int)GMTeam.Seekers)
+        if (_info.Team == (int)GMTeam.Seekers || _info.Team == (int)GMTeam.Camera)
         {
             __instance.m_owner.Locomotion.ChangeState(__instance.m_owner.Locomotion.m_lastStateEnum);
             return false;

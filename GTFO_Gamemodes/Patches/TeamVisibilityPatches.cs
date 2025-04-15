@@ -1,7 +1,9 @@
-﻿using CellMenu;
+﻿using System.Linq;
+using CellMenu;
 using Gamemodes.Components;
 using Gamemodes.Extensions;
 using Gamemodes.Core;
+using Gamemodes.Net;
 using HarmonyLib;
 using Player;
 using SNetwork;
@@ -60,25 +62,32 @@ internal static class PUI_Compass_AfterCameraUpdate_Patch
     {
         for (int i = 0; i < __instance.m_playerNameMarkersVisible.Length; i++)
         {
-            if (__instance.m_playerNameMarkersVisible[i] || __instance.m_playerPingMarkersActive[i])
+            if (!__instance.m_playerNameMarkersVisible[i] && !__instance.m_playerPingMarkersActive[i])
             {
-                PlayerAgent player = PlayerManager.Current.GetPlayerAgentInSlot(i);
-
-                if (player == null || player.Owner == null)
-                    continue;
-
-                var visible = TeamVisibility.LocalPlayerCanSee(player.Owner);
-
-                if (visible)
-                {
-                    continue;
-                }
-
-                __instance.m_playerNameMarkers[i].SetVisible(false);
-                __instance.m_playerPingMarkers[i].SetVisible(false);
-                __instance.m_playerNameMarkersVisible[i] = false;
-                __instance.m_playerPingMarkersActive[i] = false;
+                continue;
             }
+
+            PlayerAgent player = PlayerManager.Current.GetPlayerAgentInSlot(i);
+
+            if (player == null || player.Owner == null)
+                continue;
+
+            if (player.IsLocallyOwned && !TeamVisibility.LocalPlayerHideIcons())
+            {
+                continue;
+            }
+            
+            var visible = TeamVisibility.LocalPlayerCanSee(player.Owner);
+
+            if (visible)
+            {
+                continue;
+            }
+
+            __instance.m_playerNameMarkers[i].SetVisible(false);
+            __instance.m_playerPingMarkers[i].SetVisible(false);
+            __instance.m_playerNameMarkersVisible[i] = false;
+            __instance.m_playerPingMarkersActive[i] = false;
         }
     }
 }
@@ -148,5 +157,42 @@ internal static class MapSyncPlayerGuiItem_PlayerTokenSetter_Patch
         var id = __instance.gameObject.GetOrAddComponent<PlayerToken>();
 
         id.player = player;
+    }
+}
+
+//public void OnStateChange(pNavMarkerState oldState, pNavMarkerState newState, bool isDropinState)
+[HarmonyPatch(typeof(SyncedNavMarkerWrapper), nameof(SyncedNavMarkerWrapper.OnStateChange))]
+internal static class SyncedNavMarkerWrapper__OnStateChange__Patch
+{
+    public static readonly string PatchGroup = PatchGroups.USE_TEAM_VISIBILITY;
+    
+    public static bool Prefix(SyncedNavMarkerWrapper __instance, pNavMarkerState newState)
+    {
+        var playerInfo = NetworkingManager.AllValidPlayers.FirstOrDefault(pw =>
+            pw.NetPlayer.PlayerSlotIndex() == __instance.m_playerIndex);
+
+        if (playerInfo == null)
+            return true;
+
+        if (newState.status == eNavMarkerStatus.Hidden)
+            return true;
+
+
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return true;
+
+        var isLocal = localPlayer.PlayerSlotIndex == __instance.m_playerIndex;
+        
+        if (isLocal && !TeamVisibility.LocalPlayerHideIcons())
+        {
+            // Local player should be visible :)
+            return true;
+        }
+        
+        bool visible = TeamVisibility.LocalPlayerCanSee(playerInfo);
+
+        //Plugin.L.LogDebug($"SyncedNavMarkerWrapper__OnStateChange__Patch: {playerInfo.NickName}: {visible}");
+        
+        return visible;
     }
 }

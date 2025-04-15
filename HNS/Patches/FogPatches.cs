@@ -1,4 +1,5 @@
 using HarmonyLib;
+// ReSharper disable InconsistentNaming
 
 namespace HNS.Patches;
 
@@ -6,7 +7,9 @@ namespace HNS.Patches;
 public class LocalPlayerAgentSettings__UpdateBlendTowardsTargetFogSetting__Patch
 {
     private static float _infection;
-    private static float _infectionTarget;
+    private static float _Target_Infection;
+    private static float _Target_FogDensity;
+    private static float _Target_DensityHeightMaxBoost;
     public static void Prefix(LocalPlayerAgentSettings __instance)
     {
         //Plugin.L.LogWarning("LocalPlayerAgentSettings__UpdateBlendTowardsTargetFogSetting__Patch  PREFIX");
@@ -15,8 +18,15 @@ public class LocalPlayerAgentSettings__UpdateBlendTowardsTargetFogSetting__Patch
         fogSettings.Infection = 0;
 
         var db = __instance.m_targetFogSettings;
-        _infectionTarget = db.Infection;
+        _Target_Infection = db.Infection;
+        _Target_FogDensity = db.FogDensity;
+        _Target_DensityHeightMaxBoost = db.DensityHeightMaxBoost;
+        
         db.Infection = 0f;
+        
+        // Almost completely clears fog
+        db.FogDensity = _Target_FogDensity; //0.00005f;
+        db.DensityHeightMaxBoost = _Target_FogDensity * 2f; //0.0001f;
     }
 
     public static void Postfix(LocalPlayerAgentSettings __instance)
@@ -27,6 +37,8 @@ public class LocalPlayerAgentSettings__UpdateBlendTowardsTargetFogSetting__Patch
         __instance.m_fogSettings = fogSettings;
         
         var db = __instance.m_targetFogSettings;
-        db.Infection = _infectionTarget;
+        db.Infection = _Target_Infection;
+        db.FogDensity = _Target_FogDensity;
+        db.DensityHeightMaxBoost = _Target_DensityHeightMaxBoost;
     }
 }

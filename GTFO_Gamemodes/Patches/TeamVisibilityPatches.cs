@@ -120,7 +120,7 @@ internal class Map_UpdatePlayerData_VisibilityPatch
             if (guiItem == null)
                 continue;
 
-            if (guiItem.IsLocal)
+            if (guiItem.IsLocal && !TeamVisibility.LocalPlayerHideIcons())
             {
                 // Local player should be visible :)
                 continue;

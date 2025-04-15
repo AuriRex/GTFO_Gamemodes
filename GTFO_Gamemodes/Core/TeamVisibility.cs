@@ -20,7 +20,22 @@ public class TeamVisibility
     {
         return GamemodeManager.CurrentMode.TeamVisibility.CanLocalPlayerSee(team);
     }
+    
+    public static bool LocalPlayerHideIcons()
+    {
+        return GamemodeManager.CurrentMode.TeamVisibility.LocalPlayerHideIconsInstance();
+    }
 
+    public bool LocalPlayerHideIconsInstance()
+    {
+        var localInfo = NetworkingManager.GetLocalPlayerInfo();
+
+        if (!_meta.TryGetValue(localInfo.Team, out var metadata))
+            return false;
+
+        return metadata.hideLocalPlayerIcons;
+    }
+    
     public static bool PlayerCanSee(SNet_Player player, SNet_Player other)
     {
         NetworkingManager.GetPlayerInfo(player, out var playerInfo);
@@ -35,6 +50,7 @@ public class TeamVisibility
     }
 
     private readonly Dictionary<int, HashSet<int>> _visibility = new();
+    private readonly Dictionary<int, TeamMetadata> _meta = new();
 
     internal void Get(int team, out HashSet<int> set)
     {
@@ -79,6 +95,31 @@ public class TeamVisibility
     {
         return CanTeamSee(team.ToInt32(CultureInfo.InvariantCulture), otherTeam.ToInt32(CultureInfo.InvariantCulture));
     }
+
+    private TeamMetadata GetMeta(int team)
+    {
+        if (_meta.TryGetValue(team, out var metadata))
+        {
+            return metadata;
+        }
+
+        metadata = new();
+        _meta.Add(team, metadata);
+
+        return metadata;
+    }
+    
+    public void MetaSetLocalPlayerHidden(int team, bool value)
+    {
+        var metadata = GetMeta(team);
+
+        metadata.hideLocalPlayerIcons = true;
+    }
+}
+
+public class TeamMetadata
+{
+    public bool hideLocalPlayerIcons = false;
 }
 
 public class TeamVisContract
@@ -91,6 +132,12 @@ public class TeamVisContract
         _team = x;
     }
 
+    public TeamVisContract WithLocalPlayerIconsHidden()
+    {
+        vis.MetaSetLocalPlayerHidden(_team, true);
+        return this;
+    }
+    
     public TeamVisContractExtended CanSeeSelf()
     {
         CanSee(_team);

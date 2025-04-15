@@ -144,7 +144,9 @@ internal partial class HideAndSeekMode : GamemodeBase
         TeamVisibility.Team(GMTeam.Seekers).CanSeeSelf();
 
         TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders);
-        TeamVisibility.Team(GMTeam.Camera).CanSeeSelf().And(GMTeam.PreGameAndOrSpectator, GMTeam.Seekers, GMTeam.Hiders);
+        TeamVisibility.Team(GMTeam.Camera)
+            .WithLocalPlayerIconsHidden()
+            .CanSee(GMTeam.PreGameAndOrSpectator, GMTeam.Seekers, GMTeam.Hiders);
 
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {

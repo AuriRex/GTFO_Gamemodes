@@ -806,7 +806,11 @@ internal partial class HideAndSeekMode : GamemodeBase
                 continue;
 
             if (light.name.Contains("Flashlight"))
+            {
+                // Unity light has to be off, else we get lights on if it shouldn't be
+                light.enabled = false;
                 continue;
+            }
 
             light.color = color.Value;
             light.intensity = intensity;

@@ -1,3 +1,4 @@
+using System;
 using HarmonyLib;
 // ReSharper disable InconsistentNaming
 
@@ -6,6 +7,8 @@ namespace HNS.Patches;
 [HarmonyPatch(typeof(LocalPlayerAgentSettings), nameof(LocalPlayerAgentSettings.UpdateBlendTowardsTargetFogSetting))]
 public class LocalPlayerAgentSettings__UpdateBlendTowardsTargetFogSetting__Patch
 {
+    private const float FOG_DENSITY_CLAMP_MAX = 0.001f;
+    
     private static float _infection;
     private static float _Target_Infection;
     private static float _Target_FogDensity;
@@ -24,9 +27,18 @@ public class LocalPlayerAgentSettings__UpdateBlendTowardsTargetFogSetting__Patch
         
         db.Infection = 0f;
         
-        // Almost completely clears fog
-        db.FogDensity = _Target_FogDensity; //0.00005f;
-        db.DensityHeightMaxBoost = _Target_FogDensity * 2f; //0.0001f;
+        // R5E1 - 0.007 - fog completely envelopes everything
+        // R8B4 - 0.0004
+
+        // Special case mostly for R5E1's inverted fog
+        var invert = _Target_DensityHeightMaxBoost < _Target_FogDensity;
+        
+        var fogDensityLow = Math.Min(_Target_DensityHeightMaxBoost, _Target_FogDensity);
+        
+        var fogClamped = Math.Clamp(fogDensityLow, 0, FOG_DENSITY_CLAMP_MAX);
+        
+        db.FogDensity = fogClamped * (invert ? 2f : 1f);
+        db.DensityHeightMaxBoost = fogClamped * (invert ? 1f : 2f);
     }
 
     public static void Postfix(LocalPlayerAgentSettings __instance)

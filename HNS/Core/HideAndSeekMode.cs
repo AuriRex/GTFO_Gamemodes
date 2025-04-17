@@ -279,6 +279,9 @@ internal partial class HideAndSeekMode : GamemodeBase
             if (player.IsLocal)
                 continue;
 
+            if (player.Team == (int)GMTeam.Camera)
+                continue;
+
             player.WarpTo(localPlayer.Position, localPlayer.TargetLookDir, localPlayer.DimensionIndex, PlayerAgent.WarpOptions.PlaySounds | PlayerAgent.WarpOptions.ShowScreenEffectForLocal | PlayerAgent.WarpOptions.WithoutBots);
         }
     }

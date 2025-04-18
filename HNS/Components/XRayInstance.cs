@@ -4,6 +4,7 @@ using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Core;
 using HNS.Core;
 using Il2CppInterop.Runtime.Attributes;
+using Player;
 using UnityEngine;
 
 namespace HNS.Components;
@@ -84,8 +85,14 @@ public class XRayInstance : MonoBehaviour
     {
         gameObject.transform.position = origin;
         gameObject.transform.rotation = Quaternion.LookRotation(direction);
-        _sound.UpdatePosition(origin);
-        _sound.Post(EVENTS.HUD_INFO_TEXT_GENERIC_APPEAR, isGlobal: false);
+        
+        if (PlayerManager.TryGetLocalPlayerAgent(out var localPlayer)
+            && Vector3.Distance(localPlayer.transform.position, origin) <= scanMaxDistance * 1.1f)
+        {
+            _sound.UpdatePosition(origin);
+            _sound.Post(EVENTS.HUD_INFO_TEXT_GENERIC_APPEAR, isGlobal: false);
+        }
+        
         SetState(XRayState.Casting);
     }
     

@@ -36,7 +36,17 @@ internal partial class HideAndSeekMode
         var seekers = NetworkingManager.AllValidPlayers.Where(pw => pw.Team == (int)GMTeam.Seekers).Select(pw => pw.ID)
             .ToArray();
 
-        NetSessionManager.SendStartGamePacket(seekers);
+        int? setupTime = null;
+        
+        if (args.Length >= 1)
+        {
+            if (int.TryParse(args[0], out var value) && value >= 10 && value <= 300)
+            {
+                setupTime = value;
+            }
+        }
+        
+        NetSessionManager.SendStartGamePacket(setupTime, seekers);
 
         return string.Empty;
     }

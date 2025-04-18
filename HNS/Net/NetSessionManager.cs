@@ -32,7 +32,7 @@ internal static class NetSessionManager
         events.RegisterEvent<pXRayAction>(OnXRayActionReceived);
     }
 
-    public static void SendStartGamePacket(params ulong[] seekers)
+    public static void SendStartGamePacket(int? setupTime = null, params ulong[] seekers)
     {
         if (!SNet.IsMaster)
             return;
@@ -54,7 +54,7 @@ internal static class NetSessionManager
         {
             SeekerCount = (byte)seekers.Length,
             Seekers = seekersA,
-            SetupTimeSeconds = SETUP_TIME_SECONDS,
+            SetupTimeSeconds = (byte) (setupTime ?? SETUP_TIME_SECONDS),
         };
 
         NetworkingManager.SendEvent(data, invokeLocal: true);

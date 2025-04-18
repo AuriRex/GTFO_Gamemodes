@@ -40,7 +40,7 @@ internal partial class HideAndSeekMode
         
         if (args.Length >= 1)
         {
-            if (int.TryParse(args[0], out var value) && value >= 10 && value <= 300)
+            if (int.TryParse(args[0], out var value) && value >= 1 && value <= 255)
             {
                 setupTime = value;
             }

@@ -76,6 +76,8 @@ public class HideAndSeekGameManager
 
         Utils.SetLocalPlayerInfection(0f);
 
+        _elapsedAmmoTicks = 0;
+        
         Blinds blinds = null;
         if (localPlayerIsSeeker)
         {

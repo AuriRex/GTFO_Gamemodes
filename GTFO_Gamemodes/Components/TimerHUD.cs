@@ -84,6 +84,14 @@ public class TimerHUD : MonoBehaviour
         _countdownTextFormat = formatText;
     }
 
+    [HideFromIl2Cpp]
+    public void StopCountdown()
+    {
+        _countdown = 0;
+        _countdownMax = 0;
+        _countdownInt = 0;
+    }
+
     public void Awake()
     {
         _countdownStyleProvider = GetDefaultGameStartCountdownStyle;

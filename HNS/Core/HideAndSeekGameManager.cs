@@ -301,6 +301,7 @@ public class HideAndSeekGameManager
         {
             Plugin.L.LogWarning($"Game was aborted!");
             Gamemodes.Plugin.PostLocalMessage("<color=red>Game aborted!</color>");
+            _gameTimerDisplay.StopCountdown();
             return;
         }
 

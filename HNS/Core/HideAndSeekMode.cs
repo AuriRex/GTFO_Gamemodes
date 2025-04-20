@@ -962,8 +962,11 @@ internal partial class HideAndSeekMode : GamemodeBase
             if (allBlocks.Any(b => b.name == angyName))
                 continue;
 
-            SetupAngySentry(block, angyName);
-            refreshGear = true;
+            if (!block.name.Contains("Sniper"))
+            {
+                SetupAngySentry(block, angyName);
+                refreshGear = true;
+            }
 
             block.internalEnabled = false;
         }

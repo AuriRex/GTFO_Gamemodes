@@ -59,10 +59,11 @@ public class HideAndSeekGameManager
         if (_session != null && _session.IsActive)
         {
             _session.EndSession();
-            StopGame(_session);
+            StopGame(_session, aborted: true);
         }
 
-        SpectatorController.TryExit();
+        if (NetworkingManager.LocalPlayerTeam != (int) GMTeam.Camera)
+            SpectatorController.TryExit();
         
         PlayerTrackerController.GetCooldownDuration = GetCooldownDuration;
         
@@ -302,8 +303,9 @@ public class HideAndSeekGameManager
         if (aborted)
         {
             Plugin.L.LogWarning($"Game was aborted!");
-            Gamemodes.Plugin.PostLocalMessage("<color=red>Game aborted!</color>");
-            _gameTimerDisplay.StopCountdown();
+            message = "<color=red>Game aborted!</color>";
+            Gamemodes.Plugin.PostLocalMessage(message);
+            _gameTimerDisplay.StartCountdown(5, message, StyleRed);
             return;
         }
 

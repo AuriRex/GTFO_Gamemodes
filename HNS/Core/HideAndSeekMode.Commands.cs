@@ -35,7 +35,7 @@ internal partial class HideAndSeekMode
 
         WarpAllPlayersToMaster();
 
-        var seekers = NetworkingManager.AllValidPlayers.Where(pw => IsSeeker(pw.Team)).Select(pw => pw.ID)
+        var seekers = NetworkingManager.AllValidPlayers.Where(pw => TeamHelper.IsSeeker(pw.Team)).Select(pw => pw.ID)
             .ToArray();
 
         int? setupTime = null;
@@ -78,7 +78,7 @@ internal partial class HideAndSeekMode
         if (NetSessionManager.HasSession)
             return "Can't switch teams mid session.";
 
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)LocalGetRealTeam(GMTeam.PreGame));
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)TeamHelper.LocalGetRealTeam(GMTeam.PreGame));
         return string.Empty;
     }
 
@@ -87,7 +87,7 @@ internal partial class HideAndSeekMode
         if (NetSessionManager.HasSession)
             return "Can't switch teams mid session.";
 
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)LocalGetRealTeam(GMTeam.Hiders));
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)TeamHelper.LocalGetRealTeam(GMTeam.Hiders));
         return string.Empty;
     }
 
@@ -96,7 +96,7 @@ internal partial class HideAndSeekMode
         if (NetSessionManager.HasSession)
             return "Can't switch teams mid session.";
 
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)LocalGetRealTeam(GMTeam.Seekers));
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)TeamHelper.LocalGetRealTeam(GMTeam.Seekers));
         return string.Empty;
     }
     
@@ -168,12 +168,12 @@ internal partial class HideAndSeekMode
         }
         
         var currentTeam = (GMTeam)NetworkingManager.LocalPlayerTeam;
-        var realTeam = LocalGetRealTeam(currentTeam);
+        var realTeam = TeamHelper.LocalGetRealTeam(currentTeam);
         if (realTeam != currentTeam)
         {
             NetworkingManager.AssignTeam(SNet.LocalPlayer, (int) realTeam);
             Plugin.L.LogDebug($"Switching to team {team}. ({realTeam})");
-            return $"Switching to team {team}. ({SimplifyTeam(realTeam)})";
+            return $"Switching to team {team}. ({TeamHelper.SimplifyTeam(realTeam)})";
         }
         
         return $"Already on team {team}.";
@@ -210,7 +210,7 @@ internal partial class HideAndSeekMode
         
         var info = NetworkingManager.GetLocalPlayerInfo();
 
-        if (IsSeeker(info.Team))
+        if (TeamHelper.IsSeeker(info.Team))
         {
             _gearSeekerSelector.Show();
             return string.Empty;

@@ -15,7 +15,7 @@ internal static class PLOC_Downed_Patch
     {
         NetworkingManager.GetPlayerInfo(__instance.m_owner.Owner, out _info);
 
-        var simpleTeam = HideAndSeekMode.SimplifyTeam((GMTeam) _info.Team);
+        var simpleTeam = TeamHelper.SimplifyTeam((GMTeam) _info.Team);
         
         if ((simpleTeam == (int)GMTeam.PreGame || !NetSessionManager.HasSession) && _info.IsLocal)
         {
@@ -27,7 +27,7 @@ internal static class PLOC_Downed_Patch
         if (!NetSessionManager.HasSession)
             return true;
         
-        if (HideAndSeekMode.IsSeeker(_info.Team) || _info.Team == (int)GMTeam.Camera)
+        if (TeamHelper.IsSeeker(_info.Team) || _info.Team == (int)GMTeam.Camera)
         {
             __instance.m_owner.Locomotion.ChangeState(__instance.m_owner.Locomotion.m_lastStateEnum);
             return false;
@@ -41,12 +41,12 @@ internal static class PLOC_Downed_Patch
         if (!NetSessionManager.HasSession)
             return;
         
-        if (!HideAndSeekMode.IsHider(_info.Team))
+        if (!TeamHelper.IsHider(_info.Team))
             return;
 
         SpectatorController.TryExit();
         
-        var seekerTeam = HideAndSeekMode.GetSeekerTeamForHiders((GMTeam)_info.Team);
+        var seekerTeam = TeamHelper.GetSeekerTeamForHiders((GMTeam)_info.Team);
         NetworkingManager.AssignTeam(__instance.m_owner.Owner, (int)seekerTeam);
     }
 }

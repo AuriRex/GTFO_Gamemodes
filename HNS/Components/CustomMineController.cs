@@ -138,7 +138,7 @@ public partial class CustomMineController : MonoBehaviour
         
         NetworkingManager.GetPlayerInfo(owner, out var ownerInfo);
 
-        _owningTeam = HideAndSeekMode.SimplifyTeam((GMTeam)ownerInfo.Team);
+        _owningTeam = TeamHelper.SimplifyTeam((GMTeam)ownerInfo.Team);
         
         Color color;
         MaterialPropertyBlock block;
@@ -178,7 +178,7 @@ public partial class CustomMineController : MonoBehaviour
         
                     var localPlayerInfo = NetworkingManager.GetLocalPlayerInfo();
                     var onSameTeamAsMineOwner = ownerInfo.IsOnSameTeamAs(localPlayerInfo);
-                    var localPlayerIsHider = HideAndSeekMode.IsHider((GMTeam)localPlayerInfo.Team);
+                    var localPlayerIsHider = TeamHelper.IsHider((GMTeam)localPlayerInfo.Team);
 
                     if (!onSameTeamAsMineOwner && (!canSeeOwner || localPlayerIsHider))
                     {
@@ -325,7 +325,7 @@ public partial class CustomMineController : MonoBehaviour
     [HideFromIl2Cpp]
     public void DetectedLocalPlayer()
     {
-        var localTeam = HideAndSeekMode.SimplifyTeam((GMTeam) NetworkingManager.GetLocalPlayerInfo().Team);
+        var localTeam = TeamHelper.SimplifyTeam((GMTeam) NetworkingManager.GetLocalPlayerInfo().Team);
         
         if (localTeam == _owningTeam)
             return;

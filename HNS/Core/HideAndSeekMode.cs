@@ -18,14 +18,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Agents;
-using AIGraph;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
 using Gamemodes.Core.Voice;
 using Gamemodes.Core.Voice.Modulators;
 using Gamemodes.UI.Menu;
 using HNS.Extensions;
-using LevelGeneration;
 using UnityEngine;
 using PlayerVoiceManager = Gamemodes.Core.Voice.PlayerVoiceManager;
 
@@ -96,8 +94,17 @@ internal partial class HideAndSeekMode : GamemodeBase
     private static ClothesPalette _seekerPalette;
     private static ClothesPalette _spectatorPalette;
     
+    private static ClothesPalette _palette_teamAlpha;
+    private static ClothesPalette _palette_teamBeta;
+    private static ClothesPalette _palette_teamGamma;
+    private static ClothesPalette _palette_teamDelta;
+    
     private static float ORIGINAL_m_nearDeathAudioLimit = -1;
 
+    public static bool IsTeamGame => NetworkingManager.AllValidPlayers.Any(pi => pi.Team >= (int)GMTeam.PreGameAlpha);
+
+    private static readonly Color HELMET_LIGHT_DEFAULT_COLOR = new Color(0.6471f, 0.7922f, 0.6824f, 1);
+    
     private static float SEEKER_LIGHT_INTENSITY = 5;
     private static float SEEKER_LIGHT_RANGE = 0.15f;
     private static Color SEEKER_LIGHT_COLOR = Color.red;
@@ -105,7 +112,8 @@ internal partial class HideAndSeekMode : GamemodeBase
     private Sprite _icon;
     private Sprite _banner;
     private VolumeModulatorStack _vvmStack;
-    private static List<PackInfo> _originalResourcePackLocations = new();
+    
+    private static readonly List<PackInfo> _originalResourcePackLocations = new();
 
     private static CustomGearSelector _gearMeleeSelector;
     private static CustomGearSelector _gearHiderSelector;
@@ -144,7 +152,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("fogtest", FogTest)
             .LogAnyErrors(Plugin.L.LogError, Plugin.L.LogWarning);
 
-        CreateSeekerPalette();
+        CreateCustomPalettes();
 
         TeamVisibility.Team(GMTeam.Seekers).CanSeeSelf();
 
@@ -288,71 +296,17 @@ internal partial class HideAndSeekMode : GamemodeBase
         mine.GetController().DetectedLocalPlayer();
     }
 
-    private static void CreateSeekerPalette()
+    private static void CreateCustomPalettes()
     {
         CreatePalette("SeekerPalette", Color.red, 6, out _seekerPalette);
         CreatePalette("SpectatorPalette", Color.cyan, 9, out _spectatorPalette);
+        
+        CreatePalette($"Team{nameof(HNSTeam.Alpha)}Palette", Color.red, 7, out _palette_teamAlpha);
+        CreatePalette($"Team{nameof(HNSTeam.Beta)}Palette", Color.blue, 8, out _palette_teamBeta);
+        CreatePalette($"Team{nameof(HNSTeam.Gamma)}Palette", Color.green, 9, out _palette_teamGamma);
+        CreatePalette($"Team{nameof(HNSTeam.Delta)}Palette", Color.magenta, 10, out _palette_teamDelta);
     }
 
-    private static void CreatePalette(string name, Color color, int material, out ClothesPalette palette)
-    {
-        var go = new GameObject(name);
-
-        go.hideFlags = HideFlags.HideAndDontSave | HideFlags.DontUnloadUnusedAsset;
-        GameObject.DontDestroyOnLoad(go);
-
-        palette = go.AddComponent<ClothesPalette>();
-
-        var tone = new ClothesPalette.Tone()
-        {
-            m_color = color,
-            m_materialOverride = material,
-            m_texture = Texture2D.whiteTexture,
-        };
-
-        palette.m_textureTiling = 1;
-        palette.m_primaryTone = tone;
-        palette.m_secondaryTone = tone;
-        palette.m_tertiaryTone = tone;
-        palette.m_quaternaryTone = tone;
-        palette.m_quinaryTone = tone;
-    }
-
-    private static void WarpAllPlayersToMaster()
-    {
-        var localPlayer = PlayerManager.GetLocalPlayerAgent();
-
-        foreach (var player in NetworkingManager.AllValidPlayers)
-        {
-            if (player.IsLocal)
-                continue;
-
-            if (player.Team == (int)GMTeam.Camera)
-                continue;
-
-            player.WarpTo(localPlayer.Position, localPlayer.TargetLookDir, localPlayer.DimensionIndex, PlayerAgent.WarpOptions.PlaySounds | PlayerAgent.WarpOptions.ShowScreenEffectForLocal | PlayerAgent.WarpOptions.WithoutBots);
-        }
-    }
-
-    private static IEnumerator LightBringer()
-    {
-        var yielder = new WaitForSeconds(5f);
-        yield return yielder;
-        Plugin.L.LogDebug("There shall be light! (LRFs are being distributed.)");
-        GiveAllPlayersLights();
-    }
-    
-    private static void GiveAllPlayersLights()
-    {
-        foreach (var player in PlayerManager.PlayerAgentsInLevel)
-        {
-            if (player.Owner.IsBot)
-                continue;
-            
-            NetworkingManager.SendSpawnItemForPlayer(player.Owner, PrefabManager.SpecialLRF_BlockID);
-        }
-    }
-    
     public override void Enable()
     {
         _harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
@@ -370,75 +324,6 @@ internal partial class HideAndSeekMode : GamemodeBase
         PlayerVoiceManager.SetModulatorStack(_vvmStack);
         
         _timeKeeper?.ClearSessions();
-    }
-
-    private static void SetupGearSelectors()
-    {
-        if (_gearMeleeSelector != null)
-        {
-            return;
-        }
-        
-        var gear = GearManager.GetAllGearForSlot(InventorySlot.GearMelee).ToArray();
-
-        _gearMeleeSelector = new(gear, InventorySlot.GearMelee);
-        _gearMeleeSelector.RefillGunsAndToolOnPick = () => false;
-        
-        var classGear = GearManager.GetAllGearForSlot(InventorySlot.GearClass).ToArray();
-
-        _gearHiderSelector = new (classGear.Where(g => !g.PublicGearName?.Contains("Sentry") ?? false), InventorySlot.GearClass);
-        _gearHiderSelector.RefillGunsAndToolOnPick = DoRefillGunsAndToolOnPick;
-        _gearHiderSelector.OnPickedGear += OnPickedGear;
-        
-        var seekerStuffs = new string[]
-        {
-            "Krieger",
-            //"Stalwart Flow",
-            "Optron"
-        };
-
-        var seekerGear = classGear.Where(g =>
-            (g.PublicGearName.Contains("Sentry") /*&& !g.PublicGearName.Contains("Sniper")*/)
-            || seekerStuffs.Any(s => g.PublicGearName.Contains(s)));
-        
-        _gearSeekerSelector = new (seekerGear, InventorySlot.GearClass);
-        _gearSeekerSelector.RefillGunsAndToolOnPick = DoRefillGunsAndToolOnPick;
-        _gearSeekerSelector.OnPickedGear += OnPickedGear;
-    }
-
-    private static void OnPickedGear(GearIDRange gear, InventorySlot slot)
-    {
-        if (NetSessionManager.HasSession)
-        {
-            _pickToolCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(TOOL_SELECT_COOLDOWN);
-        }
-
-        if (slot == InventorySlot.GearClass)
-        {
-            SetToolAmmoForLocalPlayer();
-        }
-    }
-
-    internal static void SetToolAmmoForLocalPlayer()
-    {
-        var value = 1f;
-        var team = (GMTeam)NetworkingManager.GetLocalPlayerInfo().Team;
-
-        if (IsHider(team))
-        {
-            value = 0.125f;
-        }
-        else if (IsSeeker(team))
-        {
-            value = 0.125f * 3;
-        }
-            
-        GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Tool, GearUtils.AmmoAction.SetToPercent, value);
-    }
-
-    private static bool DoRefillGunsAndToolOnPick()
-    {
-        return !NetSessionManager.HasSession;
     }
 
     public override void Disable()
@@ -459,43 +344,6 @@ internal partial class HideAndSeekMode : GamemodeBase
         RemoveAngySentries();
     }
 
-    private static string HiderExtraInfoUpdater(PlayerWrapper player)
-    {
-        if (player.IsLocal)
-            return GetZoneAndAreaInfo(player, "color=green");
-        
-        if (!player.CanBeSeenByLocalPlayer())
-            return null;
-        
-        return GetZoneAndAreaInfo(player);
-    }
-    
-    private static string SeekersExtraInfoUpdater(PlayerWrapper player)
-    {
-        if (!player.CanBeSeenByLocalPlayer())
-            return null;
-
-        if (NetSessionManager.HasSession && !NetSessionManager.CurrentSession.SetupTimeFinished)
-        {
-            return "<color=white>[<color=red> ? ? ? </color>]</color>";
-        }
-        
-        if (!player.IsLocal)
-            return GetZoneAndAreaInfo(player);
-        
-        return GetZoneAndAreaInfo(player, "color=green");
-    }
-
-    private static string GetZoneAndAreaInfo(PlayerWrapper player, string color = "color=white")
-    {
-        var area = player.PlayerAgent.CourseNode?.m_area;
-
-        if (area == null)
-            return null;
-        
-        return $"<{color}>[<color=orange>ZONE {area.m_zone.NavInfo.Number}</color>, <color=orange>Area {area.m_navInfo.Suffix}</color>]";
-    }
-    
     private void GameEvents_OnGameStateChanged(eGameStateName state)
     {
         switch (state)
@@ -543,7 +391,7 @@ internal partial class HideAndSeekMode : GamemodeBase
                         localPlayer.Sound.Post(AK.EVENTS.R8_REACTOR_ALARM_LOOP_STOP, Vector3.zero);
                     }
 
-                    HideResourcePacksAndSpawnFlashbangs();
+                    HideResourcePacks();
                 
                     if (SNet.IsMaster)
                     {
@@ -584,159 +432,6 @@ internal partial class HideAndSeekMode : GamemodeBase
         }).WrapToIl2Cpp());
     }
 
-    internal static void DespawnOldStuffs()
-    {
-        var mineInstances = ToolInstanceCaches.MineCache.All; //UnityEngine.Object.FindObjectsOfType<MineDeployerInstance>().ToArray();
-        var cfoam = ToolInstanceCaches.GlueCache.All;// UnityEngine.Object.FindObjectsOfType<GlueGunProjectile>().ToArray();
-
-        CoroutineManager.StartCoroutine(DespawnOldThings(cfoam, mineInstances).WrapToIl2Cpp());
-    }
-    
-    private static IEnumerator DespawnOldThings(IEnumerable<GlueGunProjectile> cfoamBlobs, IEnumerable<MineDeployerInstance> mines)
-    {
-        yield return null;
-        
-        int count = 0;
-        foreach (var blob in cfoamBlobs)
-        {
-            ProjectileManager.WantToDestroyGlue(blob.SyncID);
-            
-            count++;
-            if (DoYield(ref count))
-                yield return null;
-        }
-
-        foreach (var mine in mines)
-        {
-            if (mine == null || mine.Replicator == null || mine.Replicator.WasCollected)
-                continue;
-            
-            ItemReplicationManager.DeSpawn(mine.Replicator);
-            
-            count++;
-            if (DoYield(ref count))
-                yield return null;
-        }
-
-        yield break;
-        
-        bool DoYield(ref int count)
-        {
-            const int YIELD_COUNT = 25;
-            
-            if (count < YIELD_COUNT)
-            {
-                return false;
-            }
-
-            count = 0;
-            return true;
-        }
-    }
-
-    private static void HideResourcePacksAndSpawnFlashbangs()
-    {
-        _originalResourcePackLocations.Clear();
-        
-        foreach (var rpp in UnityEngine.Object.FindObjectsOfType<ResourcePackPickup>())
-        {
-            var pos = rpp.transform.position;
-
-            _originalResourcePackLocations.Add(new()
-            {
-                pickup = rpp,
-                position = pos,
-            });
-            
-            rpp.gameObject.SetActive(false);
-        }
-
-        if (!SNet.IsMaster)
-        {
-            return;
-        }
-
-        //StartFlashSpawnerRoutine();
-    }
-
-    private static Coroutine _flashSpawnerRoutine;
-
-    internal static void StartFlashSpawnerRoutine()
-    {
-        StopFlashSpawnerRoutine();
-        _flashSpawnerRoutine = CoroutineManager.StartCoroutine(SpawnFlashbangs().WrapToIl2Cpp());
-    }
-    
-    private static void StopFlashSpawnerRoutine()
-    {
-        if (_flashSpawnerRoutine == null)
-            return;
-        
-        CoroutineManager.StopCoroutine(_flashSpawnerRoutine);
-        _flashSpawnerRoutine = null;
-    }
-    
-    private class PackInfo
-    {
-        public ResourcePackPickup pickup;
-
-        public Vector3 position;
-        public AIG_CourseNode node;
-        public LG_ResourceContainer_Storage container;
-
-        private bool _lateSetup;
-        
-        public void LateSetup()
-        {
-            if (_lateSetup)
-                return;
-
-            _lateSetup = true;
-            
-            container ??= pickup.gameObject.GetComponentInParent<LG_ResourceContainer_Storage>();
-            node ??= container.m_core.SpawnNode;
-            
-            foreach (var slot in container.m_storageSlots)
-            {
-                if (Vector3.Distance(slot.ResourcePack.position, position) > 0.05f)
-                    continue;
-                
-                position = slot.Consumable.position;
-                break;
-            }
-        }
-    }
-    
-    private static IEnumerator SpawnFlashbangs()
-    {
-        if (!SNet.IsMaster)
-            yield break;
-        
-        var stopWatch = Stopwatch.StartNew();
-        Plugin.L.LogDebug("Spawning Flashbangs ...");
-        var pickups = UnityEngine.Object.FindObjectsOfType<ConsumablePickup_Core>();
-        
-        var flashbangs = pickups.Where(p => p.name.Contains("Flashbang", StringComparison.InvariantCultureIgnoreCase)).ToArray();
-
-        var spawnCount = 0;
-        foreach (var info in _originalResourcePackLocations)
-        {
-            info.LateSetup();
-            
-            bool slotOccupied = pickups.Any(fb => Vector3.Distance(fb.transform.position, info.position) < 0.05f);
-
-            if (slotOccupied)
-                continue;
-            
-            NetworkingManager.SendSpawnItemInLevel(info.node, info.position, PrefabManager.Flashbang_BlockID);
-            spawnCount++;
-            yield return null;
-        }
-
-        stopWatch.Stop();
-        Plugin.L.LogDebug($"Spawning Flashbangs complete! Took {stopWatch.ElapsedMilliseconds} ms total, spawned in {spawnCount} new ones.");
-    }
-
     private void OnPlayerChangedTeams(PlayerWrapper playerInfo, int teamInt)
     {
         GMTeam team = (GMTeam)teamInt;
@@ -772,11 +467,11 @@ internal partial class HideAndSeekMode : GamemodeBase
             playerInfo.PlayerAgent.PlayerSyncModel.gameObject.SetActive(true);
         }
 
-        if (IsSeeker(team))
+        if (TeamHelper.IsSeeker(team))
         {
             team = GMTeam.Seekers;
         }
-        else if (IsHider(team))
+        else if (TeamHelper.IsHider(team))
         {
             team = GMTeam.Hiders;
         }
@@ -813,7 +508,8 @@ internal partial class HideAndSeekMode : GamemodeBase
                 break;
             default:
             case GMTeam.PreGame:
-                StoreOriginalAndAssignCustomPalette(playerInfo, storage, _spectatorPalette);
+                var palette = GetLobbyPalette((GMTeam) playerInfo.Team);
+                StoreOriginalAndAssignCustomPalette(playerInfo, storage, palette);
 
                 if (playerInfo.IsLocal)
                 {
@@ -886,57 +582,6 @@ internal partial class HideAndSeekMode : GamemodeBase
         // Red flashlight in third person? hmmm
     }
 
-    public bool IsTeamGame => NetworkingManager.AllValidPlayers.Any(pi => pi.Team >= (int)GMTeam.PreGameAlpha);
-
-    private static readonly Color HELMET_LIGHT_DEFAULT_COLOR = new Color(0.6471f, 0.7922f, 0.6824f, 1);
-
-    private static void SetHelmetLights(PlayerSyncModelData syncModel, float intensity = 0.8f, float range = 0.06f, Color? color = null)
-    {
-        color ??= HELMET_LIGHT_DEFAULT_COLOR;
-
-        foreach (var kvp in syncModel.m_helmetLights)
-        {
-            var light = kvp.Key;
-            if (light == null)
-                continue;
-
-            if (light.name.Contains("Flashlight"))
-            {
-                // Unity light has to be off, else we get lights on if it shouldn't be
-                light.enabled = false;
-                continue;
-            }
-
-            light.color = color.Value;
-            light.intensity = intensity;
-            light.range = range;
-        }
-    }
-
-    private static void StoreOriginalAndAssignCustomPalette(PlayerWrapper info, PaletteStorage storage, ClothesPalette paletteToSet)
-    {
-        if (storage.hiderPalette == null)
-        {
-            storage.hiderPalette = info.PlayerAgent.RigSwitch.m_currentPalette;
-        }
-
-        if (paletteToSet == null)
-        {
-            paletteToSet = _seekerPalette;
-        }
-
-        info.PlayerAgent.RigSwitch.ApplyPalette(paletteToSet);
-    }
-
-    private static void RevertToOriginalPalette(PlayerWrapper info, PaletteStorage storage)
-    {
-        if (storage.hiderPalette == null)
-            return;
-
-        info.PlayerAgent.RigSwitch.ApplyPalette(storage.hiderPalette);
-        storage.hiderPalette = null;
-    }
-
     private static bool EndGameCheck()
     {
         if (!SNet.IsMaster)
@@ -947,328 +592,10 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         if (NetworkingManager.AllValidPlayers
             .Where(pl => pl.Team != (int) GMTeam.Camera)
-            .Any(pl => IsHider((GMTeam) pl.Team)))
+            .Any(pl => TeamHelper.IsHider((GMTeam) pl.Team)))
             return false;
 
         NetSessionManager.SendStopGamePacket();
         return true;
-    }
-
-    public static void SetNearDeathAudioLimit(LocalPlayerAgent player, bool enable)
-    {
-        // Not even sure if this works lol
-        var localDamage = player.Damage.Cast<Dam_PlayerDamageLocal>();
-
-        player.Breathing.enabled = enable;
-
-        if (enable)
-        {
-            if (ORIGINAL_m_nearDeathAudioLimit != -1)
-            {
-                localDamage.m_nearDeathAudioLimit = ORIGINAL_m_nearDeathAudioLimit;
-            }
-            return;
-        }
-
-        if (ORIGINAL_m_nearDeathAudioLimit == -1)
-        {
-            ORIGINAL_m_nearDeathAudioLimit = localDamage.m_nearDeathAudioLimit;
-        }
-
-        localDamage.m_nearDeathAudioLimit = -1f;
-    }
-
-    public static void SetLocalPlayerStatusUIElementsActive(bool isSeeker)
-    {
-        var status = GuiManager.PlayerLayer.m_playerStatus;
-
-        status.m_warning.gameObject.SetActive(!isSeeker);
-
-        if (isSeeker)
-        {
-            status.UpdateShield(1f);
-            status.m_shieldText.SetText("Seeker");
-        }
-
-        status.m_shieldUIParent.gameObject.SetActive(isSeeker);
-
-        for (int i = 0; i < status.transform.childCount; i++)
-        {
-            var child = status.transform.GetChild(i).gameObject;
-
-            if (child.name != "HealthBar")
-                continue;
-
-            child.SetActive(!isSeeker);
-        }
-    }
-
-    private static void RemoveAngySentries()
-    {
-        var allBlocks = PlayerOfflineGearDataBlock.Wrapper.Blocks.ToArray();
-
-        foreach (var block in allBlocks)
-        {
-            if (block.name.StartsWith("SentryGun"))
-            {
-                block.internalEnabled = true;
-                continue;
-            }
-
-            if (!block.name.StartsWith(PREFIX_ANGY_SENTRY))
-                continue;
-
-            PlayerOfflineGearDataBlock.RemoveBlockByID(block.persistentID);
-            PlayerOfflineGearDataBlock.s_blockIDByName.Remove(block.name);
-            PlayerOfflineGearDataBlock.s_blockByID.Remove(block.persistentID);
-            PlayerOfflineGearDataBlock.s_dirtyBlocks.Remove(block.persistentID);
-        }
-
-        RefreshGear();
-
-        PlayerBackpackManager.EquipLocalGear(GearManager.Current.m_gearPerSlot[(int)InventorySlot.GearClass].ToArray()[0]);
-    }
-
-    private static void AddAngySentries()
-    {
-        var allBlocks = PlayerOfflineGearDataBlock.Wrapper.Blocks.ToArray();
-
-        bool refreshGear = false;
-
-        foreach (var block in allBlocks)
-        {
-            if (!block.name.StartsWith("SentryGun"))
-                continue;
-
-            var angyName = $"{PREFIX_ANGY_SENTRY}{block.name}";
-
-            if (allBlocks.Any(b => b.name == angyName))
-                continue;
-
-            if (!block.name.Contains("Sniper"))
-            {
-                SetupAngySentry(block, angyName);
-                refreshGear = true;
-            }
-
-            block.internalEnabled = false;
-        }
-
-        if (refreshGear)
-        {
-            RefreshGear();
-        }
-    }
-
-    private static void RefreshGear()
-    {
-        GearManager manager = GearManager.Current;
-
-        int length = Enum.GetValues(typeof(InventorySlot)).Length;
-        manager.m_gearPerSlot = new Il2CppSystem.Collections.Generic.List<GearIDRange>[length];
-        for (int j = 0; j < length; j++)
-        {
-            manager.m_gearPerSlot[j] = new();
-        }
-
-        manager.LoadOfflineGearDatas();
-        GearManager.GenerateAllGearIcons();
-    }
-
-    private static void SetupAngySentry(PlayerOfflineGearDataBlock blockOriginal, string angyName)
-    {
-        var block = new PlayerOfflineGearDataBlock();
-
-        block.persistentID = 0;
-        block.name = angyName;
-        block.Type = blockOriginal.Type;
-        block.internalEnabled = true;
-
-        Plugin.L.LogDebug($"Setting up {angyName} ...");
-
-        var gearIDRange = new GearIDRange(blockOriginal.GearJSON);
-
-        gearIDRange.SetCompID(eGearComponent.ToolTargetingType, (int)eSentryGunDetectionType.EnemiesAndPlayers);
-        gearIDRange.SetCompID(eGearComponent.ToolTargetingPart, 4); // idk lol
-
-        var fireMode = (eWeaponFireMode)gearIDRange.GetCompID(eGearComponent.FireMode);
-
-        string displayName = "???";
-
-        switch (fireMode)
-        {
-            default:
-                break;
-            case eWeaponFireMode.SentryGunBurst:
-                displayName = "Burst";
-                break;
-            case eWeaponFireMode.SentryGunSemi:
-                displayName = "Sniper";
-                break;
-            case eWeaponFireMode.SentryGunAuto:
-                displayName = "Auto";
-                break;
-            case eWeaponFireMode.SentryGunShotgunSemi:
-                displayName = "Shotgun";
-                break;
-        }
-
-        displayName = $"<#c00>Angry {displayName} Sentry</color>";
-
-        gearIDRange.PublicGearName = displayName;
-        gearIDRange.PlayfabItemName = displayName;
-
-        block.GearJSON = gearIDRange.ToJSON();
-
-        PlayerOfflineGearDataBlock.AddBlock(block);
-    }
-
-    public static GMTeam GetSeekerTeamForHiders(GMTeam hiderTeam)
-    {
-        return hiderTeam switch
-        {
-            GMTeam.Hiders => GMTeam.Seekers,
-            GMTeam.HiderAlpha => GMTeam.SeekerAlpha,
-            GMTeam.HiderBeta => GMTeam.SeekerBeta,
-            GMTeam.HiderGamma => GMTeam.SeekerGamma,
-            GMTeam.HiderDelta => GMTeam.SeekerDelta,
-            _ => hiderTeam,
-        };
-    }
-    
-    public static GMTeam GetHiderTeamForSeekers(GMTeam seekerTeam)
-    {
-        return seekerTeam switch
-        {
-            GMTeam.Seekers => GMTeam.Hiders,
-            GMTeam.SeekerAlpha => GMTeam.HiderAlpha,
-            GMTeam.SeekerBeta => GMTeam.HiderBeta,
-            GMTeam.SeekerGamma => GMTeam.HiderGamma,
-            GMTeam.SeekerDelta => GMTeam.HiderDelta,
-            _ => seekerTeam,
-        };
-    }
-
-    public static GMTeam GetPreGameTeamForPlayer(GMTeam playerTeam)
-    {
-        playerTeam = GetSeekerTeamForHiders(playerTeam);
-        
-        return playerTeam switch
-        {
-            GMTeam.Seekers => GMTeam.PreGame,
-            GMTeam.SeekerAlpha => GMTeam.PreGameAlpha,
-            GMTeam.SeekerBeta => GMTeam.PreGameBeta,
-            GMTeam.SeekerGamma => GMTeam.PreGameGamma,
-            GMTeam.SeekerDelta => GMTeam.PreGameDelta,
-            _ => playerTeam,
-        };
-    }
-
-    public static GMTeam GetHiderTeamForPlayer(GMTeam playerTeam)
-    {
-        playerTeam = GetPreGameTeamForPlayer(playerTeam);
-        
-        return playerTeam switch
-        {
-            GMTeam.PreGame => GMTeam.Hiders,
-            GMTeam.PreGameAlpha => GMTeam.HiderAlpha,
-            GMTeam.PreGameBeta => GMTeam.HiderBeta,
-            GMTeam.PreGameGamma => GMTeam.HiderGamma,
-            GMTeam.PreGameDelta => GMTeam.HiderDelta,
-            _ => playerTeam,
-        };
-    }
-
-    public static GMTeam GetSeekerTeamForPlayer(GMTeam playerTeam)
-    {
-        playerTeam = GetHiderTeamForPlayer(playerTeam);
-        return GetSeekerTeamForHiders(playerTeam);
-    }
-    
-    public static GMTeam LocalGetPreGameTeam(GMTeam team)
-    {
-        return _localTeam switch
-        {
-            HNSTeam.Alpha => GMTeam.PreGameAlpha,
-            HNSTeam.Beta => GMTeam.PreGameBeta,
-            HNSTeam.Gamma => GMTeam.PreGameGamma,
-            HNSTeam.Delta => GMTeam.PreGameDelta,
-            _ => team
-        };
-    }
-    
-    public static GMTeam LocalGetRealTeam(GMTeam team)
-    {
-        switch (team)
-        {
-            case GMTeam.Camera:
-                return team;
-            case GMTeam.PreGame:
-            case GMTeam.PreGameAlpha:
-            case GMTeam.PreGameBeta:
-            case GMTeam.PreGameGamma:
-            case GMTeam.PreGameDelta:
-                return LocalGetPreGameTeam(team);
-            default:
-                if (_localTeam != HNSTeam.None)
-                    break;
-                team = IsHider(team) ? GMTeam.Hiders : GMTeam.Seekers;
-                break;
-        }
-
-        return _localTeam switch
-        {
-            HNSTeam.Alpha => IsHider(team) ? GMTeam.HiderAlpha : GMTeam.SeekerAlpha,
-            HNSTeam.Beta => IsHider(team) ? GMTeam.HiderBeta : GMTeam.SeekerBeta,
-            HNSTeam.Gamma => IsHider(team) ? GMTeam.HiderGamma : GMTeam.SeekerGamma,
-            HNSTeam.Delta => IsHider(team) ? GMTeam.HiderDelta : GMTeam.SeekerDelta,
-            _ => team
-        };
-    }
-
-    public static bool IsHider(int team) => IsHider((GMTeam)team);
-    public static bool IsHider(GMTeam team)
-    {
-        switch (team)
-        {
-            case GMTeam.Hiders:
-            case GMTeam.HiderAlpha:
-            case GMTeam.HiderBeta:
-            case GMTeam.HiderGamma:
-            case GMTeam.HiderDelta:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public static bool IsSeeker(int team) => IsSeeker((GMTeam)team);
-    public static bool IsSeeker(GMTeam team)
-    {
-        switch (team)
-        {
-            case GMTeam.Seekers:
-            case GMTeam.SeekerAlpha:
-            case GMTeam.SeekerBeta:
-            case GMTeam.SeekerGamma:
-            case GMTeam.SeekerDelta:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public static GMTeam SimplifyTeam(GMTeam team)
-    {
-        if (IsSeeker(team))
-            return GMTeam.Seekers;
-        if (IsHider(team))
-            return GMTeam.Hiders;
-
-        return team switch
-        {
-            GMTeam.Camera => GMTeam.Camera,
-            _ => GMTeam.PreGame,
-        };
     }
 }

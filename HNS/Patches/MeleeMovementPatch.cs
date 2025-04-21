@@ -17,7 +17,7 @@ public class MeleePatch_Wield
 
         NetworkingManager.GetPlayerInfo(__instance.Owner.Owner, out var info);
 
-        var isSeeker = HideAndSeekMode.IsSeeker(info.Team);
+        var isSeeker = TeamHelper.IsSeeker(info.Team);
 
         var speedMulti = 1f;
 

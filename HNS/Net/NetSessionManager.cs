@@ -81,23 +81,23 @@ internal static class NetSessionManager
                 if (player.Team == (int)GMTeam.Camera)
                     continue;
                 
-                if (HideAndSeekMode.IsSeeker(player.Team))
+                if (TeamHelper.IsSeeker(player.Team))
                     continue;
 
                 if (data.Seekers.Contains(player.ID))
                 {
-                    var seekerTeam = HideAndSeekMode.GetSeekerTeamForPlayer((GMTeam)player.Team);
-                    if (!HideAndSeekMode.IsSeeker(seekerTeam))
+                    var seekerTeam = TeamHelper.GetSeekerTeamForPlayer((GMTeam)player.Team);
+                    if (!TeamHelper.IsSeeker(seekerTeam))
                         seekerTeam = GMTeam.Seekers;
                     NetworkingManager.AssignTeam(player.NetPlayer, (int)seekerTeam);
                     continue;
                 }
 
-                if (HideAndSeekMode.IsHider(player.Team))
+                if (TeamHelper.IsHider(player.Team))
                     continue;
 
-                var hiderTeam = HideAndSeekMode.GetHiderTeamForPlayer((GMTeam)player.Team);
-                if (!HideAndSeekMode.IsHider(hiderTeam))
+                var hiderTeam = TeamHelper.GetHiderTeamForPlayer((GMTeam)player.Team);
+                if (!TeamHelper.IsHider(hiderTeam))
                     hiderTeam = GMTeam.Hiders;
                 NetworkingManager.AssignTeam(player.NetPlayer, (int)hiderTeam);
             }

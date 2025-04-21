@@ -101,7 +101,7 @@ public class HideAndSeekGameManager
         if (SNet.IsMaster)
         {
             HideAndSeekMode.StartFlashSpawnerRoutine();
-            HideAndSeekMode.DespawnOldStuffs();
+            HideAndSeekMode.DespawnMineInstancesAndCFoamBlobs();
         }
     }
 
@@ -337,7 +337,7 @@ public class HideAndSeekGameManager
             if (player.Team == (int)GMTeam.Camera)
                 continue;
 
-            NetworkingManager.AssignTeam(player, (int)HideAndSeekMode.GetPreGameTeamForPlayer((GMTeam)player.Team));
+            NetworkingManager.AssignTeam(player, (int)TeamHelper.GetPreGameTeamForPlayer((GMTeam)player.Team));
         }
     }
 

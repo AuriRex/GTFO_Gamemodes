@@ -26,7 +26,7 @@ internal class Dam_PlayerDamageLocal_NearDeath_Patches
         NetworkingManager.GetPlayerInfo(__instance.Owner.Owner, out var info);
 
         
-        if (!HideAndSeekMode.IsSeeker(info.Team))
+        if (!TeamHelper.IsSeeker(info.Team))
             return true;
 
         __instance.Owner.Sound.SetRTPCValue(GAME_PARAMETERS.PLAYERHURT, 0f);
@@ -45,7 +45,7 @@ internal static class PUI_LocalPlayerStatus_StartHealthWarning_Patch
     {
         NetworkingManager.GetPlayerInfo(SNet.LocalPlayer, out var info);
 
-        if (!HideAndSeekMode.IsSeeker(info.Team))
+        if (!TeamHelper.IsSeeker(info.Team))
             return true;
 
         if (__instance.m_warningRoutine != null)
@@ -67,7 +67,7 @@ internal class PlayerBreathing_SetBreathingHealthLow_Patch
 
         NetworkingManager.GetPlayerInfo(agent.Owner, out var info);
 
-        if (!HideAndSeekMode.IsSeeker(info.Team))
+        if (!TeamHelper.IsSeeker(info.Team))
             return true;
 
         return false;

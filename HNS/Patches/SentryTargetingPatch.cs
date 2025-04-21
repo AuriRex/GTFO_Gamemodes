@@ -20,7 +20,7 @@ internal class SentryTargetingPatch
 
         NetworkingManager.GetPlayerInfo(__result.Owner, out var info);
         
-        if (HideAndSeekMode.IsSeeker(info.Team))
+        if (TeamHelper.IsSeeker(info.Team))
             __result = null;
 
         var detectionInstance = detectionSource.GetComponentInParent<SentryGunInstance_Detection>();

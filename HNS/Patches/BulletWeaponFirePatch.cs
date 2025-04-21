@@ -22,7 +22,7 @@ public class BulletWeaponFirePatch
         if (!NetSessionManager.HasSession)
             return;
         
-        if (!HideAndSeekMode.IsSeeker(info.Team))
+        if (!TeamHelper.IsSeeker(info.Team))
             return;
 
         if (__instance.AmmoType != AmmoType.Special)

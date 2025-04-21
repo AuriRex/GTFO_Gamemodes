@@ -10,12 +10,12 @@ public class SpectatorVolumeMax : IVoiceVolumeModulator
     public PlayerVoiceManager.ApplyVoiceStates ApplyToStates => PlayerVoiceManager.ApplyVoiceStates.InLevel;
     public void Modify(PlayerAgent player, ref float volume)
     {
-        if (HideAndSeekMode.SimplifyTeam((GMTeam)NetworkingManager.LocalPlayerTeam) != (int)GMTeam.PreGame)
+        if (TeamHelper.SimplifyTeam((GMTeam)NetworkingManager.LocalPlayerTeam) != (int)GMTeam.PreGame)
             return;
         
         NetworkingManager.GetPlayerInfo(player.Owner, out var info);
 
-        if (HideAndSeekMode.SimplifyTeam((GMTeam)info.Team) != GMTeam.PreGame)
+        if (TeamHelper.SimplifyTeam((GMTeam)info.Team) != GMTeam.PreGame)
             return;
 
         volume = 1f;

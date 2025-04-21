@@ -111,6 +111,11 @@ public class SpectatorController : MonoBehaviour
         NetworkingManager.OnPlayerChangedTeams -= OnPlayerChangedTeams;
         
         IsActive = false;
+
+        if (_target?.PlayerAgent?.PlayerSyncModel != null)
+        {
+            SetModelPartsActive(_target.PlayerAgent.PlayerSyncModel, true);
+        }
         
         if (_localPlayer == null || _fpsCamera == null)
             return;

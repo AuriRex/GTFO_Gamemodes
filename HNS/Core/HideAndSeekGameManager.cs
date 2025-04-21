@@ -62,6 +62,8 @@ public class HideAndSeekGameManager
             StopGame(_session);
         }
 
+        SpectatorController.TryExit();
+        
         PlayerTrackerController.GetCooldownDuration = GetCooldownDuration;
         
         _session = session;
@@ -332,8 +334,8 @@ public class HideAndSeekGameManager
         {
             if (player.Team == (int)GMTeam.Camera)
                 continue;
-            
-            NetworkingManager.AssignTeam(player, (int)GMTeam.PreGameAndOrSpectator);
+
+            NetworkingManager.AssignTeam(player, (int)HideAndSeekMode.GetPreGameTeamForPlayer((GMTeam)player.Team));
         }
     }
 

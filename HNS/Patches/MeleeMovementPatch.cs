@@ -17,11 +17,11 @@ public class MeleePatch_Wield
 
         NetworkingManager.GetPlayerInfo(__instance.Owner.Owner, out var info);
 
-        var isNotHider = info.Team != (int)GMTeam.Hiders;
+        var isSeeker = HideAndSeekMode.IsSeeker(info.Team);
 
         var speedMulti = 1f;
 
-        if (isNotHider)
+        if (isSeeker)
         {
             speedMulti = SpeedMultiplierGeneric;
 

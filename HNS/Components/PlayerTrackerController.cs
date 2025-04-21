@@ -118,7 +118,7 @@ public class PlayerTrackerController : MonoBehaviour
 
         switch (team)
         {
-            case GMTeam.PreGameAndOrSpectator:
+            case GMTeam.PreGame:
             case GMTeam.Seekers:
                 SetState(State.Ready);
                 break;

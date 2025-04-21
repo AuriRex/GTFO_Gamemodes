@@ -138,7 +138,7 @@ public partial class CustomMineController : MonoBehaviour
         
         NetworkingManager.GetPlayerInfo(owner, out var ownerInfo);
 
-        _owningTeam = (GMTeam)ownerInfo.Team;
+        _owningTeam = HideAndSeekMode.SimplifyTeam((GMTeam)ownerInfo.Team);
         
         Color color;
         MaterialPropertyBlock block;
@@ -153,7 +153,7 @@ public partial class CustomMineController : MonoBehaviour
                 block = MPB_SEEKER;
                 break;
             default:
-            case GMTeam.PreGameAndOrSpectator:
+            case GMTeam.PreGame:
                 color = Color.green;
                 block = MPB_OTHER;
                 break;
@@ -178,7 +178,7 @@ public partial class CustomMineController : MonoBehaviour
         
                     var localPlayerInfo = NetworkingManager.GetLocalPlayerInfo();
                     var onSameTeamAsMineOwner = ownerInfo.IsOnSameTeamAs(localPlayerInfo);
-                    var localPlayerIsHider = (GMTeam)localPlayerInfo.Team == GMTeam.Hiders;
+                    var localPlayerIsHider = HideAndSeekMode.IsHider((GMTeam)localPlayerInfo.Team);
 
                     if (!onSameTeamAsMineOwner && (!canSeeOwner || localPlayerIsHider))
                     {
@@ -325,7 +325,9 @@ public partial class CustomMineController : MonoBehaviour
     [HideFromIl2Cpp]
     public void DetectedLocalPlayer()
     {
-        if (NetworkingManager.GetLocalPlayerInfo().Team == (int)_owningTeam)
+        var localTeam = HideAndSeekMode.SimplifyTeam((GMTeam) NetworkingManager.GetLocalPlayerInfo().Team);
+        
+        if (localTeam == _owningTeam)
             return;
         
         NetSessionManager.SendMineAction(_mine, MineState.Alarm);

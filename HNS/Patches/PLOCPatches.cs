@@ -1,5 +1,6 @@
 ﻿using Gamemodes.Net;
 using HarmonyLib;
+using HNS.Components;
 using HNS.Core;
 using HNS.Net;
 
@@ -14,7 +15,9 @@ internal static class PLOC_Downed_Patch
     {
         NetworkingManager.GetPlayerInfo(__instance.m_owner.Owner, out _info);
 
-        if ((_info.Team == (int)GMTeam.PreGameAndOrSpectator || !NetSessionManager.HasSession) && _info.IsLocal)
+        var simpleTeam = HideAndSeekMode.SimplifyTeam((GMTeam) _info.Team);
+        
+        if ((simpleTeam == (int)GMTeam.PreGame || !NetSessionManager.HasSession) && _info.IsLocal)
         {
             NetworkingManager.PostChatLog($"{_info.PlayerColorTag}{_info.NickName}</color> <color=orange>got bopped!</color>");
             HideAndSeekMode.GameManager.ReviveLocalPlayer();
@@ -23,8 +26,8 @@ internal static class PLOC_Downed_Patch
 
         if (!NetSessionManager.HasSession)
             return true;
-
-        if (_info.Team == (int)GMTeam.Seekers || _info.Team == (int)GMTeam.Camera)
+        
+        if (HideAndSeekMode.IsSeeker(_info.Team) || _info.Team == (int)GMTeam.Camera)
         {
             __instance.m_owner.Locomotion.ChangeState(__instance.m_owner.Locomotion.m_lastStateEnum);
             return false;
@@ -37,10 +40,13 @@ internal static class PLOC_Downed_Patch
     {
         if (!NetSessionManager.HasSession)
             return;
+        
+        if (!HideAndSeekMode.IsHider(_info.Team))
+            return;
 
-        if (_info.Team == (int)GMTeam.Hiders)
-        {
-            NetworkingManager.AssignTeam(__instance.m_owner.Owner, (int)GMTeam.Seekers);
-        }
+        SpectatorController.TryExit();
+        
+        var seekerTeam = HideAndSeekMode.GetSeekerTeamForHiders((GMTeam)_info.Team);
+        NetworkingManager.AssignTeam(__instance.m_owner.Owner, (int)seekerTeam);
     }
 }

@@ -19,8 +19,8 @@ internal class SentryTargetingPatch
             return;
 
         NetworkingManager.GetPlayerInfo(__result.Owner, out var info);
-
-        if (info.Team != (int)GMTeam.Hiders)
+        
+        if (HideAndSeekMode.IsSeeker(info.Team))
             __result = null;
 
         var detectionInstance = detectionSource.GetComponentInParent<SentryGunInstance_Detection>();

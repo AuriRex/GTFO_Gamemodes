@@ -36,6 +36,8 @@ public partial class PUI_TeamDisplay
 
             var extraTextGo = Instantiate(mainTextGo, mainTextGo.transform.parent);
 
+            extraTextGo.transform.localPosition -= Vector3.right * 150;
+            
             ExtraText = extraTextGo.GetComponent<TextMeshPro>();
             ExtraText.SetText(string.Empty);
 
@@ -52,7 +54,6 @@ public partial class PUI_TeamDisplay
 
         public void Update()
         {
-            
             string extraText = string.Empty;
             
             var teamDisplay = _teamDisplay.TeamDisplay.GetValueOrDefault(_player.Team, TDD_DEFAULT) ?? TDD_DEFAULT;
@@ -65,7 +66,15 @@ public partial class PUI_TeamDisplay
                 extraText = teamDisplay.UpdateExtraInfo.Invoke(_player);
             }
 
-            Text.SetText($"[{team}]  {_player.PlayerColorTag}{_player.NickName}</color>");
+            if (string.IsNullOrWhiteSpace(team))
+            {
+                Text.SetText($"{_player.PlayerColorTag}{_player.NickName}</color>");
+            }
+            else
+            {
+                Text.SetText($"[{team}]  {_player.PlayerColorTag}{_player.NickName}</color>");
+            }
+            
 
             if (!string.IsNullOrWhiteSpace(extraText))
             {

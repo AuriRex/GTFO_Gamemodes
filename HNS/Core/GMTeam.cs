@@ -2,8 +2,25 @@
 
 public enum GMTeam : int
 {
-    PreGameAndOrSpectator,
+    PreGame,
     Hiders,
     Seekers,
     Camera,
+    
+    PreGameAlpha,
+    HiderAlpha,
+    SeekerAlpha,
+    
+    PreGameBeta,
+    HiderBeta,
+    SeekerBeta,
+    
+    PreGameGamma,
+    HiderGamma,
+    SeekerGamma,
+    
+    PreGameDelta,
+    HiderDelta,
+    SeekerDelta,
+    
 }

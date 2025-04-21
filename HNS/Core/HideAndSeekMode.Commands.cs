@@ -2,10 +2,12 @@ using System;
 using System.Linq;
 using Gamemodes.Core;
 using Gamemodes.Net;
+using HNS.Components;
 using HNS.Net;
 using LevelGeneration;
 using Player;
 using SNetwork;
+using UnityEngine;
 
 namespace HNS.Core;
 
@@ -33,7 +35,7 @@ internal partial class HideAndSeekMode
 
         WarpAllPlayersToMaster();
 
-        var seekers = NetworkingManager.AllValidPlayers.Where(pw => pw.Team == (int)GMTeam.Seekers).Select(pw => pw.ID)
+        var seekers = NetworkingManager.AllValidPlayers.Where(pw => IsSeeker(pw.Team)).Select(pw => pw.ID)
             .ToArray();
 
         int? setupTime = null;
@@ -76,7 +78,7 @@ internal partial class HideAndSeekMode
         if (NetSessionManager.HasSession)
             return "Can't switch teams mid session.";
 
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.PreGameAndOrSpectator);
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)LocalGetRealTeam(GMTeam.PreGame));
         return string.Empty;
     }
 
@@ -85,7 +87,7 @@ internal partial class HideAndSeekMode
         if (NetSessionManager.HasSession)
             return "Can't switch teams mid session.";
 
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Hiders);
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)LocalGetRealTeam(GMTeam.Hiders));
         return string.Empty;
     }
 
@@ -94,7 +96,7 @@ internal partial class HideAndSeekMode
         if (NetSessionManager.HasSession)
             return "Can't switch teams mid session.";
 
-        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Seekers);
+        NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)LocalGetRealTeam(GMTeam.Seekers));
         return string.Empty;
     }
     
@@ -105,6 +107,89 @@ internal partial class HideAndSeekMode
 
         NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)GMTeam.Camera);
         return string.Empty;
+    }
+    
+    private static string AssignHideAndSeekTeam(string[] args)
+    {
+        if (NetSessionManager.HasSession)
+            return "Can't change teams while a round is active.";
+        
+        if (args.Length == 0)
+        {
+            return $"You are currently on team {_localTeam}";
+        }
+
+        HNSTeam team;
+        
+        if (int.TryParse(args[0], out var value))
+        {
+            team = (HNSTeam) value;
+        }
+        else if(Enum.TryParse<HNSTeam>(args[0], ignoreCase: true, out var hnsTeam))
+        {
+            team = hnsTeam;
+        }
+        else
+        {
+            switch (args[0].ToLower())
+            {
+                case "leave":
+                case "remove":
+                case "clear":
+                case "n":
+                    team = HNSTeam.None;
+                    break;
+                case "a":
+                    team = HNSTeam.Alpha;
+                    break;
+                case "b":
+                    team = HNSTeam.Beta;
+                    break;
+                case "c":
+                    team = HNSTeam.Gamma;
+                    break;
+                case "d":
+                    team = HNSTeam.Delta;
+                    break;
+                default:
+                    return "<#F00>Invalid team</color>";
+            }
+        }
+
+        if (team < 0 || (int)team > 4)
+            return "<#F00>Invalid team</color>";
+        
+        _localTeam = team;
+
+        if (team == HNSTeam.None)
+        {
+            NetworkingManager.AssignTeam(SNet.LocalPlayer, (int) team);
+            return "You left the team.";
+        }
+        
+        var currentTeam = (GMTeam)NetworkingManager.LocalPlayerTeam;
+        var realTeam = LocalGetRealTeam(currentTeam);
+        if (realTeam != currentTeam)
+        {
+            NetworkingManager.AssignTeam(SNet.LocalPlayer, (int) realTeam);
+            Plugin.L.LogDebug($"Switching to team {team}. ({realTeam})");
+            return $"Switching to team {team}. ({SimplifyTeam(realTeam)})";
+        }
+        
+        return $"Already on team {team}.";
+    }
+    
+    private static string ToggleSpectatorMode(string[] arg)
+    {
+        if (SpectatorController.IsActive)
+        {
+            SpectatorController.TryExit();
+            return "Exiting spectator mode.";
+        }
+        
+        if (SpectatorController.TryEnter())
+            return "Entering spectator mode.";
+        return "Couldn't enter spectator mode.";
     }
 
     private static string SelectMelee(string[] arg)
@@ -125,7 +210,7 @@ internal partial class HideAndSeekMode
         
         var info = NetworkingManager.GetLocalPlayerInfo();
 
-        if (info.Team == (int)GMTeam.Seekers)
+        if (IsSeeker(info.Team))
         {
             _gearSeekerSelector.Show();
             return string.Empty;
@@ -218,5 +303,64 @@ internal partial class HideAndSeekMode
     {
         _timeKeeper.PrintTotalTime();
         return string.Empty;
+    }
+
+    private static string FogTest(string[] arg)
+    {
+        if (!SNet.IsMaster)
+            return "Nope";
+
+        PlayerManager.TryGetLocalPlayerAgent(out var localPlayer);
+
+        if (CreateAndPlayFogSphere(localPlayer.Position))
+        {
+            return "fogSphere.Play() failed";
+        }
+
+        return "testing";
+    }
+
+    private static bool CreateAndPlayFogSphere(Vector3 position)
+    {
+        var go = new GameObject("FogSphere test");
+
+        go.transform.position = position;
+
+        var fogSphere = go.AddComponent<FogSphereHandler>();
+
+        fogSphere.m_range = 20f;
+        fogSphere.m_rangeMax = 20f;
+        fogSphere.m_rangeMin = 0f;
+
+        fogSphere.m_totalLength = 15f;
+
+        fogSphere.m_intensityMin = 0f;
+        
+        fogSphere.m_density = 2f;
+        fogSphere.m_densityMax = 2f;
+        fogSphere.m_densityMin = 0f;
+
+        fogSphere.m_densityAmountMax = 1f;
+        fogSphere.m_densityAmountMin = 1f;
+
+        fogSphere.m_rangeCurve.AddKey(0f, 0f);
+        fogSphere.m_rangeCurve.AddKey(0.08f, 20f);
+        fogSphere.m_rangeCurve.AddKey(0.5f, 20f);
+        fogSphere.m_rangeCurve.AddKey(1f, 12.5f);
+
+        fogSphere.m_densityCurve.AddKey(0f, 0f);
+        fogSphere.m_densityCurve.AddKey(0.01f, 2f);
+        fogSphere.m_densityCurve.AddKey(0.05f, 2f);
+        fogSphere.m_densityCurve.AddKey(0.5f, 1f);
+        fogSphere.m_densityCurve.AddKey(0.9f, 0.1f);
+        fogSphere.m_densityCurve.AddKey(1f, 0f);
+        
+        if (!fogSphere.Play())
+        {
+            UnityEngine.Object.DestroyImmediate(go);
+            return true;
+        }
+
+        return false;
     }
 }

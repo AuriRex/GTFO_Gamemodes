@@ -115,6 +115,8 @@ internal partial class HideAndSeekMode : GamemodeBase
     private static bool IsLocalPlayerAllowedToPickTool => DateTimeOffset.UtcNow > _pickToolCooldownEnd;
 
     private static readonly TimeKeeper _timeKeeper = new();
+
+    internal static HNSTeam _localTeam;
     
     public override void Init()
     {
@@ -126,10 +128,12 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("hnsstart", StartGame)
             .Add("hnsstop", StopGame)
             .Add("hnsabort", AbortGame)
+            .Add("hnsteam", AssignHideAndSeekTeam)
             .Add("seeker", SwitchToSeeker)
             .Add("hider", SwitchToHider)
             .Add("lobby", SwitchToLobby)
             .Add("camera", SwitchToSpectator)
+            .Add("spectate", ToggleSpectatorMode)
             .Add("melee", SelectMelee)
             .Add("tool", SelectTool)
             .Add("disinfect", Disinfect)
@@ -137,16 +141,58 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("time", PrintTimes)
             .Add("total", PrintTimes)
             .Add("unstuck", Unstuck)
+            .Add("fogtest", FogTest)
             .LogAnyErrors(Plugin.L.LogError, Plugin.L.LogWarning);
 
         CreateSeekerPalette();
 
         TeamVisibility.Team(GMTeam.Seekers).CanSeeSelf();
 
-        TeamVisibility.Team(GMTeam.PreGameAndOrSpectator).CanSeeSelf().And(GMTeam.Seekers, GMTeam.Hiders);
+        var allSeekerTeams = new GMTeam[]
+        {
+            GMTeam.SeekerAlpha, GMTeam.SeekerBeta, GMTeam.SeekerGamma, GMTeam.SeekerDelta,
+        };
+        
+        var allHiderTeams = new GMTeam[]
+        {
+            GMTeam.HiderAlpha, GMTeam.HiderBeta, GMTeam.HiderGamma, GMTeam.HiderDelta,
+        };
+        
+        var allPreGameTeams = new GMTeam[]
+        {
+            GMTeam.PreGameAlpha, GMTeam.PreGameBeta, GMTeam.PreGameGamma, GMTeam.PreGameDelta,
+        };
+
+        var everything = new GMTeam[]
+        {
+            GMTeam.Seekers, GMTeam.Hiders, GMTeam.PreGame,
+        };
+        
+        everything = everything.Concat(allSeekerTeams).Concat(allHiderTeams).Concat(allPreGameTeams).ToArray();
+        
+        // For Team games
+        TeamVisibility.Team(GMTeam.SeekerAlpha).CanSee(allSeekerTeams).And(GMTeam.HiderAlpha);
+        TeamVisibility.Team(GMTeam.HiderAlpha).CanSeeSelf().And(GMTeam.SeekerAlpha);
+        
+        TeamVisibility.Team(GMTeam.SeekerBeta).CanSee(allSeekerTeams).And(GMTeam.HiderBeta);
+        TeamVisibility.Team(GMTeam.HiderBeta).CanSeeSelf().And(GMTeam.SeekerBeta);
+        
+        TeamVisibility.Team(GMTeam.SeekerGamma).CanSee(allSeekerTeams).And(GMTeam.HiderGamma);
+        TeamVisibility.Team(GMTeam.HiderGamma).CanSeeSelf().And(GMTeam.SeekerGamma);
+        
+        TeamVisibility.Team(GMTeam.SeekerDelta).CanSee(allSeekerTeams).And(GMTeam.HiderDelta);
+        TeamVisibility.Team(GMTeam.HiderDelta).CanSeeSelf().And(GMTeam.SeekerDelta);
+        
+        // Other Teams
+        TeamVisibility.Team(GMTeam.PreGame).CanSee(everything);
+        TeamVisibility.Team(GMTeam.PreGameAlpha).CanSee(everything);
+        TeamVisibility.Team(GMTeam.PreGameBeta).CanSee(everything);
+        TeamVisibility.Team(GMTeam.PreGameGamma).CanSee(everything);
+        TeamVisibility.Team(GMTeam.PreGameDelta).CanSee(everything);
+        
         TeamVisibility.Team(GMTeam.Camera)
             .WithLocalPlayerIconsHidden()
-            .CanSee(GMTeam.PreGameAndOrSpectator, GMTeam.Seekers, GMTeam.Hiders);
+            .CanSee(everything);
 
         if (!ClassInjector.IsTypeRegisteredInIl2Cpp<PaletteStorage>())
         {
@@ -154,6 +200,8 @@ internal partial class HideAndSeekMode : GamemodeBase
             ClassInjector.RegisterTypeInIl2Cpp<CustomMineController>();
             ClassInjector.RegisterTypeInIl2Cpp<PlayerTrackerController>();
             ClassInjector.RegisterTypeInIl2Cpp<XRayInstance>();
+            
+            ClassInjector.RegisterTypeInIl2Cpp<SpectatorController>();
         }
         
         XRayManager.Init();
@@ -234,7 +282,7 @@ internal partial class HideAndSeekMode : GamemodeBase
         if (localPlayer == null)
             return;
 
-        if (NetworkingManager.LocalPlayerTeam == (int)GMTeam.PreGameAndOrSpectator)
+        if (NetworkingManager.LocalPlayerTeam == (int)GMTeam.PreGame)
             return;
         
         mine.GetController().DetectedLocalPlayer();
@@ -374,17 +422,15 @@ internal partial class HideAndSeekMode : GamemodeBase
     internal static void SetToolAmmoForLocalPlayer()
     {
         var value = 1f;
-        switch ((GMTeam)NetworkingManager.GetLocalPlayerInfo().Team)
+        var team = (GMTeam)NetworkingManager.GetLocalPlayerInfo().Team;
+
+        if (IsHider(team))
         {
-            default:
-            case GMTeam.PreGameAndOrSpectator:
-                break;
-            case GMTeam.Hiders:
-                value = 0.125f;
-                break;
-            case GMTeam.Seekers:
-                value = 0.125f * 3;
-                break;
+            value = 0.125f;
+        }
+        else if (IsSeeker(team))
+        {
+            value = 0.125f * 3;
         }
             
         GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Tool, GearUtils.AmmoAction.SetToPercent, value);
@@ -459,14 +505,32 @@ internal partial class HideAndSeekMode : GamemodeBase
                 // Delay a single frame to prevent issues when late joining.
                 CoroutineManager.StartCoroutine(Coroutines.NextFrame(() =>
                 {
-                    var team = NetSessionManager.HasSession ? GMTeam.Seekers : GMTeam.PreGameAndOrSpectator;
+                    var team = NetSessionManager.HasSession ? GMTeam.Seekers : GMTeam.PreGame;
                     Plugin.L.LogDebug($"Assigning to team {team}");
                     NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)team);
 
                     var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new('S', PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new('H', PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new('C', PUI_TeamDisplay.COLOR_MISC, Hide: true));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new("S", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new("H", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new(null, PUI_TeamDisplay.COLOR_MISC, Hide: true));
+                    
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerAlpha, new("S/A", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderAlpha, new("H/A", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerBeta, new("S/B", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderBeta, new("H/B", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerGamma, new("S/C", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderGamma, new("H/C", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerDelta, new("S/D", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderDelta, new("H/D", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameAlpha, new("Team A", PUI_TeamDisplay.COLOR_RED));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameBeta, new("Team B", PUI_TeamDisplay.COLOR_BLUE));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameGamma, new("Team C", PUI_TeamDisplay.COLOR_GREEN));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameDelta, new("Team D", PUI_TeamDisplay.COLOR_MAGENTA));
+                    
                     teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
 
                     WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
@@ -677,6 +741,14 @@ internal partial class HideAndSeekMode : GamemodeBase
     {
         GMTeam team = (GMTeam)teamInt;
 
+        var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
+        var extraText = string.Empty;
+        if (IsTeamGame)
+        {
+            extraText = " <#555>://</color> <color=orange><i>Teams</i></color>";
+        }
+        teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>{extraText}");
+        
         if (!NetworkingManager.InLevel)
             return;
 
@@ -698,6 +770,15 @@ internal partial class HideAndSeekMode : GamemodeBase
         else if (!playerInfo.PlayerAgent.PlayerSyncModel.gameObject.activeSelf)
         {
             playerInfo.PlayerAgent.PlayerSyncModel.gameObject.SetActive(true);
+        }
+
+        if (IsSeeker(team))
+        {
+            team = GMTeam.Seekers;
+        }
+        else if (IsHider(team))
+        {
+            team = GMTeam.Hiders;
         }
         
         switch (team)
@@ -731,7 +812,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
                 break;
             default:
-            case GMTeam.PreGameAndOrSpectator:
+            case GMTeam.PreGame:
                 StoreOriginalAndAssignCustomPalette(playerInfo, storage, _spectatorPalette);
 
                 if (playerInfo.IsLocal)
@@ -805,6 +886,8 @@ internal partial class HideAndSeekMode : GamemodeBase
         // Red flashlight in third person? hmmm
     }
 
+    public bool IsTeamGame => NetworkingManager.AllValidPlayers.Any(pi => pi.Team >= (int)GMTeam.PreGameAlpha);
+
     private static readonly Color HELMET_LIGHT_DEFAULT_COLOR = new Color(0.6471f, 0.7922f, 0.6824f, 1);
 
     private static void SetHelmetLights(PlayerSyncModelData syncModel, float intensity = 0.8f, float range = 0.06f, Color? color = null)
@@ -864,7 +947,7 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         if (NetworkingManager.AllValidPlayers
             .Where(pl => pl.Team != (int) GMTeam.Camera)
-            .Any(pl => pl.Team != (int)GMTeam.Seekers))
+            .Any(pl => IsHider((GMTeam) pl.Team)))
             return false;
 
         NetSessionManager.SendStopGamePacket();
@@ -1038,5 +1121,154 @@ internal partial class HideAndSeekMode : GamemodeBase
         block.GearJSON = gearIDRange.ToJSON();
 
         PlayerOfflineGearDataBlock.AddBlock(block);
+    }
+
+    public static GMTeam GetSeekerTeamForHiders(GMTeam hiderTeam)
+    {
+        return hiderTeam switch
+        {
+            GMTeam.Hiders => GMTeam.Seekers,
+            GMTeam.HiderAlpha => GMTeam.SeekerAlpha,
+            GMTeam.HiderBeta => GMTeam.SeekerBeta,
+            GMTeam.HiderGamma => GMTeam.SeekerGamma,
+            GMTeam.HiderDelta => GMTeam.SeekerDelta,
+            _ => hiderTeam,
+        };
+    }
+    
+    public static GMTeam GetHiderTeamForSeekers(GMTeam seekerTeam)
+    {
+        return seekerTeam switch
+        {
+            GMTeam.Seekers => GMTeam.Hiders,
+            GMTeam.SeekerAlpha => GMTeam.HiderAlpha,
+            GMTeam.SeekerBeta => GMTeam.HiderBeta,
+            GMTeam.SeekerGamma => GMTeam.HiderGamma,
+            GMTeam.SeekerDelta => GMTeam.HiderDelta,
+            _ => seekerTeam,
+        };
+    }
+
+    public static GMTeam GetPreGameTeamForPlayer(GMTeam playerTeam)
+    {
+        playerTeam = GetSeekerTeamForHiders(playerTeam);
+        
+        return playerTeam switch
+        {
+            GMTeam.Seekers => GMTeam.PreGame,
+            GMTeam.SeekerAlpha => GMTeam.PreGameAlpha,
+            GMTeam.SeekerBeta => GMTeam.PreGameBeta,
+            GMTeam.SeekerGamma => GMTeam.PreGameGamma,
+            GMTeam.SeekerDelta => GMTeam.PreGameDelta,
+            _ => playerTeam,
+        };
+    }
+
+    public static GMTeam GetHiderTeamForPlayer(GMTeam playerTeam)
+    {
+        playerTeam = GetPreGameTeamForPlayer(playerTeam);
+        
+        return playerTeam switch
+        {
+            GMTeam.PreGame => GMTeam.Hiders,
+            GMTeam.PreGameAlpha => GMTeam.HiderAlpha,
+            GMTeam.PreGameBeta => GMTeam.HiderBeta,
+            GMTeam.PreGameGamma => GMTeam.HiderGamma,
+            GMTeam.PreGameDelta => GMTeam.HiderDelta,
+            _ => playerTeam,
+        };
+    }
+
+    public static GMTeam GetSeekerTeamForPlayer(GMTeam playerTeam)
+    {
+        playerTeam = GetHiderTeamForPlayer(playerTeam);
+        return GetSeekerTeamForHiders(playerTeam);
+    }
+    
+    public static GMTeam LocalGetPreGameTeam(GMTeam team)
+    {
+        return _localTeam switch
+        {
+            HNSTeam.Alpha => GMTeam.PreGameAlpha,
+            HNSTeam.Beta => GMTeam.PreGameBeta,
+            HNSTeam.Gamma => GMTeam.PreGameGamma,
+            HNSTeam.Delta => GMTeam.PreGameDelta,
+            _ => team
+        };
+    }
+    
+    public static GMTeam LocalGetRealTeam(GMTeam team)
+    {
+        switch (team)
+        {
+            case GMTeam.Camera:
+                return team;
+            case GMTeam.PreGame:
+            case GMTeam.PreGameAlpha:
+            case GMTeam.PreGameBeta:
+            case GMTeam.PreGameGamma:
+            case GMTeam.PreGameDelta:
+                return LocalGetPreGameTeam(team);
+            default:
+                if (_localTeam != HNSTeam.None)
+                    break;
+                team = IsHider(team) ? GMTeam.Hiders : GMTeam.Seekers;
+                break;
+        }
+
+        return _localTeam switch
+        {
+            HNSTeam.Alpha => IsHider(team) ? GMTeam.HiderAlpha : GMTeam.SeekerAlpha,
+            HNSTeam.Beta => IsHider(team) ? GMTeam.HiderBeta : GMTeam.SeekerBeta,
+            HNSTeam.Gamma => IsHider(team) ? GMTeam.HiderGamma : GMTeam.SeekerGamma,
+            HNSTeam.Delta => IsHider(team) ? GMTeam.HiderDelta : GMTeam.SeekerDelta,
+            _ => team
+        };
+    }
+
+    public static bool IsHider(int team) => IsHider((GMTeam)team);
+    public static bool IsHider(GMTeam team)
+    {
+        switch (team)
+        {
+            case GMTeam.Hiders:
+            case GMTeam.HiderAlpha:
+            case GMTeam.HiderBeta:
+            case GMTeam.HiderGamma:
+            case GMTeam.HiderDelta:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static bool IsSeeker(int team) => IsSeeker((GMTeam)team);
+    public static bool IsSeeker(GMTeam team)
+    {
+        switch (team)
+        {
+            case GMTeam.Seekers:
+            case GMTeam.SeekerAlpha:
+            case GMTeam.SeekerBeta:
+            case GMTeam.SeekerGamma:
+            case GMTeam.SeekerDelta:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static GMTeam SimplifyTeam(GMTeam team)
+    {
+        if (IsSeeker(team))
+            return GMTeam.Seekers;
+        if (IsHider(team))
+            return GMTeam.Hiders;
+
+        return team switch
+        {
+            GMTeam.Camera => GMTeam.Camera,
+            _ => GMTeam.PreGame,
+        };
     }
 }

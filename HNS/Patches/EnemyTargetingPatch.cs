@@ -20,8 +20,8 @@ public static class AgentAI__IsTargetValid__Patch
             return true;
 
         NetworkingManager.GetPlayerInfo(playerAgent.Owner, out var info);
-
-        if (info.Team == (int)GMTeam.Hiders && playerAgent.Alive)
+        
+        if (HideAndSeekMode.IsHider(info.Team) && playerAgent.Alive)
         {
             //Plugin.L.LogDebug($"Valid Target: {__instance.m_target.m_agent.name}");
             __result = true;
@@ -53,7 +53,7 @@ public static class EnemyTargetingPatch
             if (player == null || !player.HasAgent)
                 continue;
 
-            if (player.Team != (int)GMTeam.Hiders)
+            if (!HideAndSeekMode.IsHider(player.Team))
                 continue;
             
             var target = _this.m_ai.m_behaviourData.GetTarget(player.PlayerAgent);

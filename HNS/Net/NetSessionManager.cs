@@ -78,19 +78,28 @@ internal static class NetSessionManager
         {
             foreach (var player in NetworkingManager.AllValidPlayers)
             {
-                if (player.Team == (int)GMTeam.Seekers)
-                    continue;
-
                 if (player.Team == (int)GMTeam.Camera)
                     continue;
                 
+                if (HideAndSeekMode.IsSeeker(player.Team))
+                    continue;
+
                 if (data.Seekers.Contains(player.ID))
                 {
-                    NetworkingManager.AssignTeam(player.NetPlayer, (int)GMTeam.Seekers);
+                    var seekerTeam = HideAndSeekMode.GetSeekerTeamForPlayer((GMTeam)player.Team);
+                    if (!HideAndSeekMode.IsSeeker(seekerTeam))
+                        seekerTeam = GMTeam.Seekers;
+                    NetworkingManager.AssignTeam(player.NetPlayer, (int)seekerTeam);
                     continue;
                 }
 
-                NetworkingManager.AssignTeam(player.NetPlayer, (int)GMTeam.Hiders);
+                if (HideAndSeekMode.IsHider(player.Team))
+                    continue;
+
+                var hiderTeam = HideAndSeekMode.GetHiderTeamForPlayer((GMTeam)player.Team);
+                if (!HideAndSeekMode.IsHider(hiderTeam))
+                    hiderTeam = GMTeam.Hiders;
+                NetworkingManager.AssignTeam(player.NetPlayer, (int)hiderTeam);
             }
         }
 
@@ -108,11 +117,6 @@ internal static class NetSessionManager
 
             Gamemodes.Plugin.PostLocalMessage($" - {info.PlayerColorTag}{info.NickName}");
         }
-
-        //PlayerManager.GetLocalPlayerAgent()
-        // Start local countdown timer
-        // blind seekers for timer duration
-        // switch timer to countup after setup
     }
 
     internal static void SendStopGamePacket(bool abortGame = false)

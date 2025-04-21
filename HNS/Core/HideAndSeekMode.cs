@@ -1,9 +1,7 @@
-﻿using GameData;
-using Gamemodes;
+﻿using Gamemodes;
 using Gamemodes.Extensions;
 using Gamemodes.Core;
 using Gamemodes.Net;
-using Gear;
 using HarmonyLib;
 using HNS.Components;
 using HNS.Net;
@@ -12,9 +10,7 @@ using Il2CppInterop.Runtime.Injection;
 using Player;
 using SNetwork;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Agents;
@@ -49,6 +45,14 @@ internal partial class HideAndSeekMode : GamemodeBase
     private const float TOOL_SELECT_COOLDOWN = 60;
     private const float PUSH_FORCE_MULTI_DEFAULT = 2.5f;
     private const float PUSH_FORCE_MULTI_HIDER = -0.2f;
+    
+    private const float TEAM_MUTED = 0.725f;
+    
+    public static readonly Color COLOR_MUTED_TEAM_ALPHA = new(Color.red.r * TEAM_MUTED, Color.red.g * TEAM_MUTED, Color.red.b * TEAM_MUTED, PUI_TeamDisplay.COLOR_OPACITY);
+    public static readonly Color COLOR_MUTED_TEAM_BETA = new(Color.blue.r * TEAM_MUTED, Color.blue.g * TEAM_MUTED, Color.blue.b * TEAM_MUTED, PUI_TeamDisplay.COLOR_OPACITY);
+    public static readonly Color COLOR_MUTED_TEAM_GAMMA = new(Color.green.r * TEAM_MUTED, Color.green.g * TEAM_MUTED, Color.green.b * TEAM_MUTED, PUI_TeamDisplay.COLOR_OPACITY);
+    public static readonly Color COLOR_MUTED_TEAM_DELTA = new(Color.magenta.r * TEAM_MUTED, Color.magenta.g * TEAM_MUTED, Color.magenta.b * TEAM_MUTED, PUI_TeamDisplay.COLOR_OPACITY);
+
     
     public override ModeSettings Settings => new ModeSettings
     {
@@ -262,39 +266,10 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         _vvmStack = new VolumeModulatorStack(new LobbySetMaxModulator(), new SpectatorVolumeMax(), new PlayerDeadModulator());
         
-        PlayerTrackerController.OnStartedScanning +=PlayerTrackerControllerOnOnStartedScanning;
-    }
-
-    private void PlayerTrackerControllerOnOnStartedScanning(PlayerAgent player, float cooldown)
-    {
-        if (!player.IsLocallyOwned)
-            return;
-
-        if (!NetSessionManager.HasSession)
-            return;
-
-        var newCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(cooldown);
-
-        if (_pickToolCooldownEnd < newCooldownEnd)
-        {
-            _pickToolCooldownEnd = newCooldownEnd;
-        }
+        PlayerTrackerController.OnStartedScanning += PlayerTrackerControllerOnOnStartedScanning;
     }
 
     public override Color? GetElevatorColor() => new Color(1f, 0.5f, 0f, 1f) * 0.5f;
-
-    private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)
-    {
-        var localPlayer = agent?.TryCast<LocalPlayerAgent>();
-
-        if (localPlayer == null)
-            return;
-
-        if (NetworkingManager.LocalPlayerTeam == (int)GMTeam.PreGame)
-            return;
-        
-        mine.GetController().DetectedLocalPlayer();
-    }
 
     private static void CreateCustomPalettes()
     {
@@ -359,20 +334,20 @@ internal partial class HideAndSeekMode : GamemodeBase
 
                     var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
                     teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new("S", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new("H", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new("<color=orange>H</color>", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
                     teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new(null, PUI_TeamDisplay.COLOR_MISC, Hide: true));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerAlpha, new("S/A", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderAlpha, new("H/A", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerAlpha, new("S] [A", COLOR_MUTED_TEAM_ALPHA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderAlpha, new("<color=orange>H</color>] [A", PUI_TeamDisplay.COLOR_RED, HiderExtraInfoUpdater));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerBeta, new("S/B", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderBeta, new("H/B", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerBeta, new("S] [B", COLOR_MUTED_TEAM_BETA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderBeta, new("<color=orange>H</color>] [B", PUI_TeamDisplay.COLOR_BLUE, HiderExtraInfoUpdater));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerGamma, new("S/C", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderGamma, new("H/C", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerGamma, new("S] [C", COLOR_MUTED_TEAM_GAMMA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderGamma, new("<color=orange>H</color>] [C", PUI_TeamDisplay.COLOR_GREEN, HiderExtraInfoUpdater));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerDelta, new("S/D", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderDelta, new("H/D", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerDelta, new("S] [D", COLOR_MUTED_TEAM_DELTA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderDelta, new("<color=orange>H</color>] [D", PUI_TeamDisplay.COLOR_MAGENTA, HiderExtraInfoUpdater));
                     
                     teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameAlpha, new("Team A", PUI_TeamDisplay.COLOR_RED));
                     teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameBeta, new("Team B", PUI_TeamDisplay.COLOR_BLUE));
@@ -597,5 +572,34 @@ internal partial class HideAndSeekMode : GamemodeBase
 
         NetSessionManager.SendStopGamePacket();
         return true;
+    }
+    
+    private void PlayerTrackerControllerOnOnStartedScanning(PlayerAgent player, float cooldown)
+    {
+        if (!player.IsLocallyOwned)
+            return;
+
+        if (!NetSessionManager.HasSession)
+            return;
+
+        var newCooldownEnd = DateTimeOffset.UtcNow.AddSeconds(cooldown);
+
+        if (_pickToolCooldownEnd < newCooldownEnd)
+        {
+            _pickToolCooldownEnd = newCooldownEnd;
+        }
+    }
+
+    private void OnMineDetectAgent(MineDeployerInstance mine, Agent agent)
+    {
+        var localPlayer = agent?.TryCast<LocalPlayerAgent>();
+
+        if (localPlayer == null)
+            return;
+
+        if (NetworkingManager.LocalPlayerTeam == (int)GMTeam.PreGame)
+            return;
+        
+        mine.GetController().DetectedLocalPlayer();
     }
 }

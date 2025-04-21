@@ -58,7 +58,7 @@ public partial class PUI_TeamDisplay
             
             var teamDisplay = _teamDisplay.TeamDisplay.GetValueOrDefault(_player.Team, TDD_DEFAULT) ?? TDD_DEFAULT;
 
-            var team = teamDisplay.Identifier;
+            var prefix = teamDisplay.Prefix;
             var col = teamDisplay.Color;
 
             if (teamDisplay.UpdateExtraInfo != null)
@@ -66,13 +66,13 @@ public partial class PUI_TeamDisplay
                 extraText = teamDisplay.UpdateExtraInfo.Invoke(_player);
             }
 
-            if (string.IsNullOrWhiteSpace(team))
+            if (string.IsNullOrWhiteSpace(prefix))
             {
                 Text.SetText($"{_player.PlayerColorTag}{_player.NickName}</color>");
             }
             else
             {
-                Text.SetText($"[{team}]  {_player.PlayerColorTag}{_player.NickName}</color>");
+                Text.SetText($"{prefix}{_player.PlayerColorTag}{_player.NickName}</color>");
             }
             
 

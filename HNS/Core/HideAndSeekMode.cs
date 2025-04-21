@@ -333,26 +333,26 @@ internal partial class HideAndSeekMode : GamemodeBase
                     NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)team);
 
                     var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new("S", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new("<color=orange>H</color>", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new("[S]  ", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new("[<color=orange>H</color>]  ", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
                     teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new(null, PUI_TeamDisplay.COLOR_MISC, Hide: true));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerAlpha, new("S] [A", COLOR_MUTED_TEAM_ALPHA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderAlpha, new("<color=orange>H</color>] [A", PUI_TeamDisplay.COLOR_RED, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerAlpha, new("[S] (A)  ", COLOR_MUTED_TEAM_ALPHA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderAlpha, new("[<color=orange>H</color>] (A)  ", PUI_TeamDisplay.COLOR_RED, HiderExtraInfoUpdater));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerBeta, new("S] [B", COLOR_MUTED_TEAM_BETA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderBeta, new("<color=orange>H</color>] [B", PUI_TeamDisplay.COLOR_BLUE, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerBeta, new("[S] (B)  ", COLOR_MUTED_TEAM_BETA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderBeta, new("[<color=orange>H</color>] (B)  ", PUI_TeamDisplay.COLOR_BLUE, HiderExtraInfoUpdater));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerGamma, new("S] [C", COLOR_MUTED_TEAM_GAMMA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderGamma, new("<color=orange>H</color>] [C", PUI_TeamDisplay.COLOR_GREEN, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerGamma, new("[S] (C)  ", COLOR_MUTED_TEAM_GAMMA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderGamma, new("[<color=orange>H</color>] (C)  ", PUI_TeamDisplay.COLOR_GREEN, HiderExtraInfoUpdater));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerDelta, new("S] [D", COLOR_MUTED_TEAM_DELTA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderDelta, new("<color=orange>H</color>] [D", PUI_TeamDisplay.COLOR_MAGENTA, HiderExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerDelta, new("[S] (D)  ", COLOR_MUTED_TEAM_DELTA, SeekersExtraInfoUpdater));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderDelta, new("[<color=orange>H</color>] (D)  ", PUI_TeamDisplay.COLOR_MAGENTA, HiderExtraInfoUpdater));
                     
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameAlpha, new("Team A", PUI_TeamDisplay.COLOR_RED));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameBeta, new("Team B", PUI_TeamDisplay.COLOR_BLUE));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameGamma, new("Team C", PUI_TeamDisplay.COLOR_GREEN));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameDelta, new("Team D", PUI_TeamDisplay.COLOR_MAGENTA));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameAlpha, new("[Team A]  ", PUI_TeamDisplay.COLOR_RED));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameBeta, new("[Team B]  ", PUI_TeamDisplay.COLOR_BLUE));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameGamma, new("[Team C]  ", PUI_TeamDisplay.COLOR_GREEN));
+                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameDelta, new("[Team D]  ", PUI_TeamDisplay.COLOR_MAGENTA));
                     
                     teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
 

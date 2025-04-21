@@ -193,5 +193,5 @@ public partial class PUI_TeamDisplay : MonoBehaviour
     public static readonly Color COLOR_GREEN = new(Color.green.r, Color.green.g, Color.green.b, COLOR_OPACITY);
     public static readonly Color COLOR_BLUE = new(Color.blue.r, Color.blue.g, Color.blue.b, COLOR_OPACITY);
     
-    public static readonly TeamDisplayData TDD_DEFAULT = new("/", COLOR_MISC);
+    public static readonly TeamDisplayData TDD_DEFAULT = new("[/]  ", COLOR_MISC);
 }

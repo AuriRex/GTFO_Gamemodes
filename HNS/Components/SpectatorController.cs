@@ -3,6 +3,7 @@ using System.Linq;
 using CullingSystem;
 using Gamemodes.Extensions;
 using Gamemodes.Net;
+using HNS.Core;
 using Player;
 using UnityEngine;
 
@@ -132,6 +133,11 @@ public class SpectatorController : MonoBehaviour
         
         _guiCrosshairLayer.SetActive(true);
         _guiPlayerInventory.SetActive(true);
+        
+        var isSeeker = TeamHelper.IsSeeker(NetworkingManager.LocalPlayerTeam);
+        HideAndSeekMode.SetLocalPlayerStatusUIElementsActive(isSeeker);
+        HideAndSeekMode.SetNearDeathAudioLimit(_localPlayer, !isSeeker);
+        HideAndSeekMode.SetDisplayedLocalPlayerHealth(_localPlayer.Damage.GetHealthRel());
     }
 
     private void OnPlayerChangedTeams(PlayerWrapper player, int teamInt)
@@ -201,8 +207,10 @@ public class SpectatorController : MonoBehaviour
     {
         if (_target == null)
             return;
-        
-        GuiManager.PlayerLayer.m_playerStatus.UpdateHealth(_target.PlayerAgent.Damage.Health / _target.PlayerAgent.Damage.HealthMax);
+
+        var healthRel = _target.PlayerAgent.Damage.Health / _target.PlayerAgent.Damage.HealthMax;
+
+        HideAndSeekMode.SetDisplayedLocalPlayerHealth(healthRel);
     }
 
     private void UpdateSwitchTargetInput(bool force = false)
@@ -309,6 +317,10 @@ public class SpectatorController : MonoBehaviour
             SetModelPartsActive(_target.PlayerAgent.PlayerSyncModel, false);
         }
 
+        var isSeeker = TeamHelper.IsSeeker(_target.Team);
+        HideAndSeekMode.SetLocalPlayerStatusUIElementsActive(isSeeker);
+        HideAndSeekMode.SetNearDeathAudioLimit(_localPlayer, !isSeeker);
+        
         if (prevTarget == null || !prevTarget.HasAgent)
             return;
 

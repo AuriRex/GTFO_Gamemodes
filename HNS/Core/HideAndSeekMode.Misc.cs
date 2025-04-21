@@ -307,12 +307,20 @@ internal partial class HideAndSeekMode
         storage.hiderPalette = null;
     }
 
+    public static void SetDisplayedLocalPlayerHealth(float healthRel)
+    {
+        var playerStatus = GuiManager.PlayerLayer.m_playerStatus;
+
+        playerStatus.m_lastHealthVal = healthRel;
+        playerStatus.UpdateHealth(healthRel);
+    }
+    
     public static void SetNearDeathAudioLimit(LocalPlayerAgent player, bool enable)
     {
         // Not even sure if this works lol
         var localDamage = player.Damage.Cast<Dam_PlayerDamageLocal>();
 
-        player.Breathing.enabled = enable;
+        //player.Breathing.enabled = enable;
 
         if (enable)
         {

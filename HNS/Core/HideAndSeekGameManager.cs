@@ -81,6 +81,8 @@ public class HideAndSeekGameManager
 
         _elapsedAmmoTicks = 0;
         
+        GearUtils.LocalTryPickupDeployedSentry();
+        
         Blinds blinds = null;
         if (localPlayerIsSeeker)
         {

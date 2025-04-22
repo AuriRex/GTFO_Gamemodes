@@ -106,6 +106,10 @@ public partial class NetworkingManager
         {
             GetPlayerInfo(newPlayer.Lookup, out var info);
             Plugin.L.LogDebug($"{newPlayer.NickName} has joined!");
+            if (SNet.IsMaster)
+            {
+                PostChatLog($"<#0F0>>> <color=orange>{newPlayer.NickName}</color> has connected.</color>");
+            }
             SendWelcome(newPlayer);
             SendSwitchModeTo(GamemodeManager.CurrentMode.ID, newPlayer);
         }
@@ -134,15 +138,23 @@ public partial class NetworkingManager
             connectedPlayers.Add(player.Lookup);
         }
 
-        var disconnectedPlayers = _syncedPlayers.Values.Where(p => !connectedPlayers.Contains(p.ID));
+        var disconnectedPlayers = _syncedPlayers.Values.Where(p => !connectedPlayers.Contains(p.ID)).ToArray();
 
-        if (disconnectedPlayers.Count() == 0)
+        if (disconnectedPlayers.Length == 0)
             return;
 
-        Plugin.L.LogWarning($"Cleanup: Removing {disconnectedPlayers.Count()} players");
+        Plugin.L.LogWarning($"Cleanup: Removing {disconnectedPlayers.Length} players");
         foreach (var player in disconnectedPlayers)
         {
             _syncedPlayers.Remove(player.ID);
+
+            if (player.IsBot)
+                continue;
+
+            if (!SNet.IsMaster)
+                return;
+            
+            PostChatLog($"<#F00><< <color=orange>{player.NickName}</color> has disconnected.</color>");
         }
     }
 

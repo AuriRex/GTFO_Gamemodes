@@ -25,7 +25,7 @@ public class DoorPatch
         
         NetworkingManager.GetPlayerInfo(player.Owner, out var info);
 
-        if (info.Team != (int)GMTeam.Seekers)
+        if (!TeamHelper.IsSeeker(info.Team))
             return true;
         
         Plugin.L.LogDebug($"Original: dam: {dam}, env: {environmentMulti}");

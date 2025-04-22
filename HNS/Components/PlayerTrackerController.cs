@@ -114,7 +114,7 @@ public class PlayerTrackerController : MonoBehaviour
         if (!player.IsLocal)
             return;
 
-        var team = (GMTeam)teamInt;
+        var team = TeamHelper.SimplifyTeam((GMTeam)teamInt);
 
         switch (team)
         {
@@ -122,6 +122,7 @@ public class PlayerTrackerController : MonoBehaviour
             case GMTeam.Seekers:
                 SetState(State.Ready);
                 break;
+            default:
             case GMTeam.Hiders:
                 SetState(State.Disabled);
                 break;

@@ -597,8 +597,16 @@ internal partial class HideAndSeekMode : GamemodeBase
         if (localPlayer == null)
             return;
 
-        if (NetworkingManager.LocalPlayerTeam == (int)GMTeam.PreGame)
-            return;
+        var team = TeamHelper.SimplifyTeam((GMTeam)NetworkingManager.LocalPlayerTeam);
+
+        switch (team)
+        {
+            case GMTeam.Hiders:
+            case GMTeam.Seekers:
+                break;
+            default:
+                return;
+        }
         
         mine.GetController().DetectedLocalPlayer();
     }

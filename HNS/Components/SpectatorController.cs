@@ -152,12 +152,12 @@ public class SpectatorController : MonoBehaviour
 
     private void OnPlayerChangedTeams(PlayerWrapper player, int teamInt)
     {
-        if (player.IsLocal)
+        if (player.IsLocal || SpectateablePlayers.Length == 0)
         {
             Destroy(this);
             return;
         }
-        
+
         _targetIndex = Array.IndexOf(SpectateablePlayers, _target);
         
         UpdateSwitchTargetInput(force: true);

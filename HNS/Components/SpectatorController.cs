@@ -94,6 +94,8 @@ public class SpectatorController : MonoBehaviour
         _fpsCamera.PlayerAgentRotationEnabled = false;
         _fpsCamera.PlayerMoveEnabled = false;
 
+        _localPlayer.Sync.WantsToWieldSlot(InventorySlot.GearMelee);
+        
         _localPlayer.Inventory.enabled = false;
         _fpsItemHolder = _localPlayer.FPSCamera.m_holder.GetComponentInChildren<FirstPersonItemHolder>();
         _fpsItemHolder.gameObject.SetActive(false);

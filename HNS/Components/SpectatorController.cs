@@ -35,6 +35,8 @@ public class SpectatorController : MonoBehaviour
     private GameObject _guiCrosshairLayer;
     private GameObject _guiPlayerInventory;
     private float _eyePosY;
+    
+    private static bool _useOrbitInboundsRaycast = true;
 
     private const float SCROLL_SENSITIVITY = 0.1f;
     
@@ -169,6 +171,17 @@ public class SpectatorController : MonoBehaviour
         UpdateScrollInput();
         UpdateSwitchTargetInput();
 
+        if (InputMapper.GetButtonDown.Invoke(InputAction.Flashlight, _inputFilter))
+        {
+            _localPlayer.Sync.WantsToSetFlashlightEnabled(!_localPlayer.Inventory.WantsFlashlightEnabled);
+        }
+        
+        if (InputMapper.GetButtonDown.Invoke(InputAction.Reload, _inputFilter))
+        {
+            _useOrbitInboundsRaycast = !_useOrbitInboundsRaycast;
+            Gamemodes.Plugin.PostLocalMessage($"Orbit Camera Inbounds Raycast Enabled: {_useOrbitInboundsRaycast}");
+        }
+        
         if (_orbitMode)
         {
             MouseLookUpdate(InputMapper.GetAxis.Invoke(InputAction.LookHorizontal, _inputFilter),
@@ -402,8 +415,20 @@ public class SpectatorController : MonoBehaviour
         if (_orbitMode)
         {
             _orbitLookDirection = Quaternion.Euler(_pitch, _yaw, 0f) * Vector3.forward;
+
+            var playerEyePos = cameraPosition;
+
+            var zoomDistanceVector = _orbitLookDirection * _zoom;
             
-            cameraPosition -= _orbitLookDirection * _zoom;
+            if (_useOrbitInboundsRaycast && Physics.Raycast(playerEyePos, -_orbitLookDirection, out var rayHit, 30f, LayerManager.MASK_WORLD))
+            {
+                if (rayHit.distance < zoomDistanceVector.magnitude)
+                {
+                    zoomDistanceVector *= (rayHit.distance / zoomDistanceVector.magnitude);
+                }
+            }
+            
+            cameraPosition -= zoomDistanceVector;
             _targetLookDir = _orbitLookDirection;
         }
         else

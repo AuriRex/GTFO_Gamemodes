@@ -111,6 +111,8 @@ public abstract class GamemodeBase
             ploc.ChangeState(PlayerLocomotion.PLOC_State.Stand, wasWarpedIntoState: false);
         }
 
+        localPlayer.Sync.SendLocomotion(ploc.m_currentStateEnum, localPlayer.transform.position, localPlayer.FPSCamera.Forward, 0f, 0f);
+        
         localPlayer.Damage.AddHealth(localPlayer.Damage.HealthMax, localPlayer);
     }
 }

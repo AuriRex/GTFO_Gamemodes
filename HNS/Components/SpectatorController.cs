@@ -34,6 +34,7 @@ public class SpectatorController : MonoBehaviour
     private FirstPersonItemHolder _fpsItemHolder;
     private GameObject _guiCrosshairLayer;
     private GameObject _guiPlayerInventory;
+    private float _eyePosY;
 
     private const float SCROLL_SENSITIVITY = 0.1f;
     
@@ -383,14 +384,26 @@ public class SpectatorController : MonoBehaviour
         
         var agent = _target.PlayerAgent;
 
-        var cameraPosition = agent.EyePosition;
+        var eyePos = agent.EyePosition;
+        var eyePosYCurrent = eyePos.y;
+
+        if (Mathf.Abs(_eyePosY - eyePosYCurrent) >= 5f)
+        {
+            _eyePosY = eyePosYCurrent;
+        }
+        else
+        {
+            _eyePosY = Mathf.Lerp(_eyePosY, eyePosYCurrent, Clock.Delta * 10f);
+        }
+
+        var cameraPosition = new Vector3(eyePos.x, _eyePosY, eyePos.z);
         var lookDir = agent.Sync.m_locomotionData.LookDir.Value;
 
         if (_orbitMode)
         {
             _orbitLookDirection = Quaternion.Euler(_pitch, _yaw, 0f) * Vector3.forward;
             
-            cameraPosition = agent.EyePosition - _orbitLookDirection * _zoom;
+            cameraPosition -= _orbitLookDirection * _zoom;
             _targetLookDir = _orbitLookDirection;
         }
         else

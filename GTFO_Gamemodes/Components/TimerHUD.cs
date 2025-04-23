@@ -202,6 +202,7 @@ public class TimerHUD : MonoBehaviour
         {
             _countdownInt = rounded;
             _messageText = _countdownTextFormat.Replace(COUNTDOWN_TIMER_MARKER, TimeSpan.FromSeconds(_countdownInt).ToString(@"mm\:ss"));
+            _messageText = _messageText.Replace(GAME_TIMER_MARKER, TimeSpan.FromSeconds(_gameTimerInt).ToString(@"mm\:ss"));
         }
 
         var result = _countdownStyleProvider?.Invoke();
@@ -227,8 +228,8 @@ public class TimerHUD : MonoBehaviour
     {
         return _countdownInt switch
         {
-            <= 10 and > 0 => TSO_RED_WARNING_BLINKING,
-            <= 20 and > 10 => TSO_ORANGE_WARNING,
+            <= 10 => TSO_RED_WARNING_BLINKING,
+            <= 20 => TSO_ORANGE_WARNING,
             _ => TSO_DEFAULT
         };
     }

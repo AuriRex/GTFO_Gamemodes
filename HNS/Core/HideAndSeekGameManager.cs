@@ -26,10 +26,10 @@ public class HideAndSeekGameManager
     private Blinds _blinds;
 
     private Coroutine _unblindPlayerCoroutine;
-    private Coroutine _ammoTickCoroutine;
+    private Coroutine _gameTickCoroutine;
 
-    private int _elapsedAmmoTicks;
-    private bool ShouldSeekersHaveInfiniteAmmo => _elapsedAmmoTicks >= AmmoTickInfiniteAmmoAtTick;
+    private int _elapsedGameTicks;
+    private bool ShouldSeekersHaveInfiniteAmmo => _elapsedGameTicks >= GameTickInfiniteAmmoAtTick;
 
     private bool _localPlayerIsSeeker;
     private bool _startedAsSeeker;
@@ -41,8 +41,11 @@ public class HideAndSeekGameManager
 
     private const string GAMESTART_COUNTDOWN_FORMATTEXT = $"{TimerHUD.COUNTDOWN_TIMER_MARKER} until seekers are released.";
     
-    private static readonly float AmmoTickInterval = 300f;
-    private static readonly int AmmoTickInfiniteAmmoAtTick = 5;
+    private static readonly float GameTickInterval = 60f;
+    private static readonly int GameTickInfiniteAmmoAtTick = 20;
+    private static readonly int GameTickEndGameAtTick = 30;
+    private static readonly int GameTickGiveAmmoEveryXTicks = 5;
+    public bool ForceRoundEndAfterXMinutes { get; set; } = true;
     
     public void SetTimerHud(TimerHUD timer)
     {
@@ -54,7 +57,7 @@ public class HideAndSeekGameManager
         _timeKeeper = timeKeeper;
     }
     
-    public void StartGame(bool localPlayerIsSeeker, byte blindDuration, Session session)
+    public void StartGame(bool localPlayerIsSeeker, byte setupDuration, Session session)
     {
         if (_session != null && _session.IsActive)
         {
@@ -69,9 +72,11 @@ public class HideAndSeekGameManager
         
         _session = session;
         _gameTimerDisplay.ResetGameTimer();
-        _gameTimerDisplay.StartGameTimer();
-        _gameTimerDisplay.StartCountdown(blindDuration, GAMESTART_COUNTDOWN_FORMATTEXT);
+        //_gameTimerDisplay.StartGameTimer();
+        _gameTimerDisplay.StartCountdown(setupDuration, GAMESTART_COUNTDOWN_FORMATTEXT);
 
+        _elapsedGameTicks = 0;
+        
         _localPlayerIsSeeker = localPlayerIsSeeker;
         _startedAsSeeker = localPlayerIsSeeker;
 
@@ -79,8 +84,6 @@ public class HideAndSeekGameManager
 
         Utils.SetLocalPlayerInfection(0f);
 
-        _elapsedAmmoTicks = 0;
-        
         GearUtils.LocalTryPickupDeployedSentry();
         
         Blinds blinds = null;
@@ -95,8 +98,8 @@ public class HideAndSeekGameManager
 
         SetPlayerAmmo();
 
-        _unblindPlayerCoroutine = CoroutineManager.StartCoroutine(GameStartSetupTimeCoroutine(blindDuration, blinds).WrapToIl2Cpp());
-        _ammoTickCoroutine = CoroutineManager.StartCoroutine(AmmoTickCoroutine().WrapToIl2Cpp());
+        _unblindPlayerCoroutine = CoroutineManager.StartCoroutine(GameStartSetupTimeCoroutine(setupDuration, blinds).WrapToIl2Cpp());
+        _gameTickCoroutine = CoroutineManager.StartCoroutine(GameTickCoroutine(setupDuration).WrapToIl2Cpp());
         
         Utils.LocallyResetAllWeakDoors();
 
@@ -114,51 +117,65 @@ public class HideAndSeekGameManager
             return PlayerTrackerController.CooldownDuration;
         }
         
-        var progress = Math.Min(0f, Math.Max(_elapsedAmmoTicks, 5f));
-
-        var cooldownLoss = PlayerTrackerController.CooldownDuration / 6f;
-
-        return Math.Max(15f, PlayerTrackerController.CooldownDuration - cooldownLoss * progress);
+        var progress = Math.Max(0f, _elapsedGameTicks / 30f);
+        
+        return Math.Max(15f, PlayerTrackerController.CooldownDuration - PlayerTrackerController.CooldownDuration * progress);
     }
 
-    private IEnumerator AmmoTickCoroutine()
+    private IEnumerator GameTickCoroutine(int setupDuration)
     {
-        yield return new WaitForSeconds(5f);
-
-        _elapsedAmmoTicks = 0;
+        // Wait setup time.
+        yield return new WaitForSeconds(setupDuration - 0.5f);
+        
+        _gameTimerDisplay.ResetGameTimer();
+        _gameTimerDisplay.StartGameTimer();
+        
+        _elapsedGameTicks = 0;
         
         while (true)
         {
-            var yielder = new WaitForSeconds(AmmoTickInterval);
+            var yielder = new WaitForSeconds(GameTickInterval);
             yield return yielder;
 
-            _elapsedAmmoTicks++;
+            _elapsedGameTicks++;
             
             if (_session == null || !_session.IsActive)
             {
                 break;
             }
-            
-            if (ShouldSeekersHaveInfiniteAmmo)
+
+            if (_localPlayerIsSeeker && _elapsedGameTicks < GameTickInfiniteAmmoAtTick
+                && _elapsedGameTicks % GameTickGiveAmmoEveryXTicks == 0)
             {
-                _gameTimerDisplay.StartCountdown(10, $"All Seekers have received <b><color=purple>Infinite Reserve Ammo</color></b> for the remainder of the round!", () => TimerHUD.TSO_RED_WARNING_BLINKING);
+                AddSniperBullet();
+                
+                _gameTimerDisplay.StartCountdown(5, $"{_gameTimerDisplay.GameTimerFormatText}\nReceived <b><color=orange>1</color></b> Sniper Bullet!", () => TimerHUD.TSO_GREEN_BLINKING);
+            }
+            
+            if (_elapsedGameTicks == GameTickInfiniteAmmoAtTick)
+            {
+                _gameTimerDisplay.StartCountdown(10, $"{_gameTimerDisplay.GameTimerFormatText}\nAll Seekers have received <b><color=purple>Infinite Reserve Ammo</color></b> for the remainder of the round!", () => TimerHUD.TSO_RED_WARNING_BLINKING);
 
                 if (_localPlayerIsSeeker)
                 {
                     GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Guns, GearUtils.AmmoAction.Fill);
                     GearUtils.LocalGunClipAction(GearUtils.AmmoAction.Fill);
                 }
+            }
+
+            if (ForceRoundEndAfterXMinutes && _elapsedGameTicks >= GameTickEndGameAtTick)
+            {
+                if (SNet.IsMaster)
+                {
+                    NetSessionManager.SendStopGamePacket();
+                }
                 yield break;
             }
             
-            if (_localPlayerIsSeeker)
-            {
-                AddSniperBullet();
-                _gameTimerDisplay.StartCountdown(5, $"Received <b><color=orange>1</color></b> Sniper Bullet!", () => TimerHUD.TSO_GREEN_BLINKING);
-            }
+            
         }
     }
-    
+
     private static void EquipSniper()
     {
         var gear = GearManager.GetAllPlayerGear().FirstOrDefault(g => g.PublicGearName.Contains("Köning"));
@@ -275,10 +292,10 @@ public class HideAndSeekGameManager
             _unblindPlayerCoroutine = null;
         }
 
-        if (_ammoTickCoroutine != null)
+        if (_gameTickCoroutine != null)
         {
-            CoroutineManager.StopCoroutine(_ammoTickCoroutine);
-            _ammoTickCoroutine = null;
+            CoroutineManager.StopCoroutine(_gameTickCoroutine);
+            _gameTickCoroutine = null;
         }
 
         _blinds?.Dispose();

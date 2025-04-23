@@ -201,6 +201,7 @@ public class TimerHUD : MonoBehaviour
         if (rounded != _countdownInt)
         {
             _countdownInt = rounded;
+            _gameTimerInt = Mathf.RoundToInt(_gameTimer);
             _messageText = _countdownTextFormat.Replace(COUNTDOWN_TIMER_MARKER, TimeSpan.FromSeconds(_countdownInt).ToString(@"mm\:ss"));
             _messageText = _messageText.Replace(GAME_TIMER_MARKER, TimeSpan.FromSeconds(_gameTimerInt).ToString(@"mm\:ss"));
         }

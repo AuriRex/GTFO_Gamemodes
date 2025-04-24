@@ -9,7 +9,7 @@ public class Session
     public DateTimeOffset SetupTime { get; private set; }
     public DateTimeOffset EndTime { get; private set; }
     public bool IsActive { get; internal set; }
-    public TimeSpan HidingTime { get; private set; } = TimeSpan.Zero;
+    public TimeSpan HidingTime { get; internal set; } = TimeSpan.Zero;
     public TimeSpan FinalTime { get; private set; }
     public bool SetupTimeFinished => SetupTime <= DateTimeOffset.UtcNow;
 

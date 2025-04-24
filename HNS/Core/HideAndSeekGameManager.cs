@@ -125,7 +125,7 @@ public class HideAndSeekGameManager
     private IEnumerator GameTickCoroutine(int setupDuration)
     {
         // Wait setup time.
-        yield return new WaitForSeconds(setupDuration - 0.5f);
+        yield return new WaitForSecondsRealtime(setupDuration);
         
         _gameTimerDisplay.ResetGameTimer();
         _gameTimerDisplay.StartGameTimer();
@@ -134,7 +134,7 @@ public class HideAndSeekGameManager
         
         while (true)
         {
-            var yielder = new WaitForSeconds(GameTickInterval);
+            var yielder = new WaitForSecondsRealtime(GameTickInterval);
             yield return yielder;
 
             _elapsedGameTicks++;
@@ -284,6 +284,13 @@ public class HideAndSeekGameManager
             Plugin.L.LogWarning("Stopped session is not the same as the started one?? This should not happen!");
         }
 
+        var gameTime = session.EndTime - session.SetupTime;
+        
+        if (!_localPlayerIsSeeker && session.HidingTime <= TimeSpan.Zero)
+        {
+            session.HidingTime = gameTime;
+        }
+        
         _gameTimerDisplay.StopGameTimer();
         
         if (_unblindPlayerCoroutine != null)
@@ -305,18 +312,18 @@ public class HideAndSeekGameManager
         
         GearUtils.LocalGunClipAction(GearUtils.AmmoAction.Fill);
         GearUtils.LocalReserveAmmoAction(GearUtils.AmmoType.Guns, GearUtils.AmmoAction.Fill);
-        
-        var message = $"Game Over! Total time: {session.FinalTime.ToString(@"mm\:ss")}";
+
+        var message = $"Game Over! Total time: {gameTime:mm\\:ss} (+{session.SetupDuration}s)";
         Gamemodes.Plugin.PostLocalMessage("<#0f0>-= Game Over! =-</color>");
-        Gamemodes.Plugin.PostLocalMessage($"<color=white>Total Game Time: {session.FinalTime.ToString(@"mm\:ss")}</color>");
-        Plugin.L.LogInfo($"Total Game Time: {session.FinalTime.ToString(@"mm\:ss")}");
+        Gamemodes.Plugin.PostLocalMessage($"<color=white>Total Game Time: {gameTime:mm\\:ss} (+{session.SetupDuration}s)</color>");
+        Plugin.L.LogInfo($"Total Game Time: {gameTime:mm\\:ss} (+{session.SetupDuration}s)");
         
         if (!_startedAsSeeker)
         {
-            var hid = $"<color=orange>You hid for: {session.HidingTime.ToString(@"mm\:ss")}</color>";
+            var hid = $"<color=orange>You hid for: {session.HidingTime:mm\\:ss}</color>";
             message = $"{message}\n{hid}";
             Gamemodes.Plugin.PostLocalMessage(hid);
-            Plugin.L.LogInfo($"You hid for: {session.HidingTime.ToString(@"mm\:ss")}");
+            Plugin.L.LogInfo($"You hid for: {session.HidingTime:mm\\:ss}");
         }
 
         if (aborted)

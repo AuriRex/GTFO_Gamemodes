@@ -1,10 +1,10 @@
 {
     "name": "Hide and Seek Playtest BIG Edition",
     "author": "AuriRex",
-    "version_number": "0.6.1",
+    "version_number": "0.6.2",
     "website_url": "https://github.com/AuriRex/GTFO_Gamemodes/",
-    "description": "Hide and Seek playtest package plus DimensionMaps, LobbyExpansion, AllVanity and NoBoosters.",
+    "description": "Hide and Seek playtest package plus LobbyExpansion, DimensionMaps, AllVanity and NoBoosters.",
     "dependencies": [
-        "BepInEx-BepInExPack_GTFO-1.5.0"
+        "BepInEx-BepInExPack_GTFO-3.2.1"
     ]
 }

@@ -1,4 +1,6 @@
+using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Components;
+using Gamemodes.Core;
 using Gamemodes.Extensions;
 using HarmonyLib;
 using Player;
@@ -15,7 +17,10 @@ public static class PlayerAgent__Setup__Patch
     
     public static void Postfix(PlayerAgent __instance)
     {
-        __instance.gameObject.GetOrAddComponent<ProximityVoice>();
+        CoroutineManager.StartCoroutine(Coroutines.NextFrame(() =>
+        {
+            __instance.gameObject.GetOrAddComponent<ProximityVoice>();
+        }).WrapToIl2Cpp());
     }
 }
 

@@ -129,11 +129,30 @@ public class ProximityVoice : MonoBehaviour
             _targetVolume *= _nodeDistanceMultiplier;
         }
 
-        _targetVolume = EaseInOutSine(_targetVolume);
+        _targetVolume = EaseOutSomethingLog(_targetVolume);
     }
     
     private static float EaseOutQuart(float x) {
         return 1f - Mathf.Pow(1f - x, 4);
+    }
+    
+    private static float F(float x)
+    {
+        return Mathf.Log(x, 10) + 1;
+    }
+
+    private static float C(float x)
+    {
+        return F(x) * 0.333f + 0.666f;
+    }
+
+    private static float EaseOutSomethingLog(float x)
+    {
+        if (x <= 0.001)
+            return 0f;
+        if (x >= 1f)
+            return 1f;
+        return EaseInOutSine(C(x));
     }
     
     private static float EaseInOutSine(float x) {

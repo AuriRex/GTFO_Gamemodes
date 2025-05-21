@@ -1,6 +1,7 @@
 using System.Collections;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Core;
+using Gamemodes.Extensions;
 using HNS.Core;
 using Il2CppInterop.Runtime.Attributes;
 using Player;
@@ -28,12 +29,16 @@ public partial class CustomMineController
         
         CoroutineManager.StartCoroutine(Coroutines.PlaceNavmarkerAtPos(target.Position + Vector3.up, "<color=orange><b>Motion Detected!</b></color>", color, 3f).WrapToIl2Cpp());
         
+        var customSound = EnableDynamicSound();
+        
         for (int i = 0; i < 3; i++)
         {
-            Sound.Stop();
-            Sound.Post(AK.EVENTS.HACKING_PUZZLE_LOCK_ALARM, transform.position);
+            customSound.Stop();
+            customSound.Post(AK.EVENTS.HACKING_PUZZLE_LOCK_ALARM);
             yield return new WaitForSeconds(0.75f);
         }
+
+        DisableDynamicSound(customSound);
 
         //yield return new WaitForSeconds(0.75f);
         
@@ -54,12 +59,16 @@ public partial class CustomMineController
         var beepCount = 12;
         var waitTime = disableDuration / beepCount;
         
+        var customSound = EnableDynamicSound();
+        
         for (int i = 0; i < beepCount; i++)
         {
-            Sound.Stop();
-            Sound.Post(AK.EVENTS.HACKING_PUZZLE_WRONG, transform.position);
+            customSound.Stop();
+            customSound.Post(AK.EVENTS.HACKING_PUZZLE_WRONG);
             yield return new WaitForSeconds(waitTime);
         }
+        
+        DisableDynamicSound(customSound);
         
         if (_mine.LocallyPlaced)
             CoroutineManager.StartCoroutine(Coroutines.PlaceNavmarkerAtPos(_mine.transform.position, "<color=red><b>Device Rebooted\nafter Hack!</b></color>", Color.red, 3f).WrapToIl2Cpp());

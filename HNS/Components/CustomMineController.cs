@@ -35,6 +35,8 @@ public partial class CustomMineController : MonoBehaviour
     
     public static readonly Color COL_STATE_DISABLED = new Color(0.2f, 0.2f, 0.2f, 0.3f);
     public static readonly Color COL_STATE_HACKED = new Color(1f, 0.45f, 0.2f, 0.2f);
+
+    private static readonly float SOUND_MAX_DISTANCE = 20;
     
     private static readonly float BARELY_VISIBLE_MOD = 0.0118f;
 
@@ -196,6 +198,14 @@ public partial class CustomMineController : MonoBehaviour
         _lineRenderer.startColor = color;
         _lineRenderer.endColor = color;
     }
+
+    public void OnDestroy()
+    {
+        StopSequenceCoroutine();
+        StopDisableRoutine();
+        _currentState = MineState.Disabled;
+        _mine.m_detectionEnabled = false;
+    }
     
     [HideFromIl2Cpp]
     public static void ProcessIncomingAction(PlayerWrapper sender, MineDeployerInstance mine, MineState mineState)
@@ -257,6 +267,28 @@ public partial class CustomMineController : MonoBehaviour
 
         StopCoroutine(_disableCoroutine);
         _disableCoroutine = null;
+    }
+
+    [HideFromIl2Cpp]
+    private DynamicDistanceSoundPlayer GetDynamicSoundPlayer()
+    {
+        return _mine.gameObject.GetOrAddComponent<DynamicDistanceSoundPlayer>();
+    }
+
+    [HideFromIl2Cpp]
+    private DynamicDistanceSoundPlayer EnableDynamicSound()
+    {
+        var customSound = GetDynamicSoundPlayer();
+        customSound.SetTarget(_mine.transform, maxDistance: SOUND_MAX_DISTANCE);
+        customSound.enabled = true;
+        return customSound;
+    }
+
+    [HideFromIl2Cpp]
+    private void DisableDynamicSound(DynamicDistanceSoundPlayer customDistanceSound)
+    {
+        customDistanceSound ??= GetDynamicSoundPlayer();
+        customDistanceSound.enabled = false;
     }
     
     [HideFromIl2Cpp]

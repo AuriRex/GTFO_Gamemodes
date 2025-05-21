@@ -214,6 +214,8 @@ internal partial class HideAndSeekMode : GamemodeBase
             ClassInjector.RegisterTypeInIl2Cpp<XRayInstance>();
             
             ClassInjector.RegisterTypeInIl2Cpp<SpectatorController>();
+            
+            ClassInjector.RegisterTypeInIl2Cpp<DynamicDistanceSoundPlayer>();
         }
         
         XRayManager.Init();

@@ -17,7 +17,7 @@ public class Plugin : BasePlugin
 {
     public const string GUID = "dev.aurirex.gtfo.gamemode.hns";
     public const string NAME = "Hide and Seek";
-    public const string VERSION = "0.6.2";
+    public const string VERSION = "0.6.3";
 
     internal static ManualLogSource L;
 

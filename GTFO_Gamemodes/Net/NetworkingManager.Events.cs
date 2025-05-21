@@ -3,6 +3,7 @@ using Gamemodes.Net.Packets;
 using Player;
 using SNetwork;
 using System;
+using System.Linq;
 using AIGraph;
 using UnityEngine;
 using static Player.PlayerAgent;
@@ -191,6 +192,7 @@ public partial class NetworkingManager
 
     internal static void SendJoinInfo()
     {
+        Plugin.L.LogDebug($"Sending join info, v{Plugin.Version} and {GamemodeManager.LoadedModeIds.Count()} installed gamemodes.");
         SendEventAndInvokeLocally(new pJoinInfo
         {
             Major = Plugin.Version.Major,
@@ -213,13 +215,14 @@ public partial class NetworkingManager
 
         info.LoadedVersion = new PrimitiveVersion(data.Major, data.Minor, data.Patch);
 
+        Plugin.L.LogMessage($"Received join info packed from \"{info.NickName}\" ({senderId})");
+        
         if (!info.VersionMatches)
         {
             Plugin.L.LogWarning($"Version mismatch for player \"{info.NickName}\" ({senderId}), {info.LoadedVersion} != {Plugin.VERSION}");
-            return;
         }
-
-        Plugin.L.LogMessage($"Compatible player \"{info.NickName}\" ({senderId}) join info received!");
+        
+        Plugin.L.LogDebug($" ^ PlayerWrapper: {info}");
     }
 
     private static void OnInstalledModeReceived(ulong senderId, pInstalledMode data)

@@ -4,6 +4,7 @@ using SNetwork;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Player;
 using Steamworks;
 
 namespace Gamemodes.Net;
@@ -56,6 +57,7 @@ public partial class NetworkingManager
     
     private static void OnGameStateChanged(eGameStateName state)
     {
+        Plugin.L.LogDebug($"{nameof(NetworkingManager)} OnGameStateChanged(): {state}");
         switch (state)
         {
             case eGameStateName.Lobby:
@@ -94,21 +96,22 @@ public partial class NetworkingManager
         SNet_Player newPlayer = null;
         foreach (var player in SNet.LobbyPlayers)
         {
-            var pw = _syncedPlayers.Values.FirstOrDefault(pw => pw.ID == player.Lookup);
-            if (pw == null)
-            {
-                newPlayer = player;
-                break;
-            }
+            var playerWrapper = _syncedPlayers.Values.FirstOrDefault(pw => pw.ID == player.Lookup);
+
+            if (playerWrapper != null)
+                continue;
+
+            newPlayer = player;
+            break;
         }
 
         if (newPlayer != null)
         {
             GetPlayerInfo(newPlayer.Lookup, out var info);
-            Plugin.L.LogDebug($"{newPlayer.NickName} has joined!");
+            Plugin.L.LogDebug($"{info.NickName} has joined!");
             if (SNet.IsMaster)
             {
-                PostChatLog($"<#0F0>>> <color=orange>{newPlayer.NickName}</color> has connected.</color>");
+                PostChatLog($"<#0F0>>> <color=orange>{info.NickName}</color> has connected.</color>");
             }
             SendWelcome(newPlayer);
             SendSwitchModeTo(GamemodeManager.CurrentMode.ID, newPlayer);
@@ -137,6 +140,14 @@ public partial class NetworkingManager
         {
             connectedPlayers.Add(player.Lookup);
         }
+        
+        foreach (var playerAgent in PlayerManager.PlayerAgentsInLevel)
+        {
+            if (playerAgent?.Owner == null || playerAgent.m_isBeingDestroyed)
+                continue;
+            
+            connectedPlayers.Add(playerAgent.Owner.Lookup);
+        }
 
         var disconnectedPlayers = _syncedPlayers.Values.Where(p => !connectedPlayers.Contains(p.ID)).ToArray();
 
@@ -146,6 +157,7 @@ public partial class NetworkingManager
         Plugin.L.LogWarning($"Cleanup: Removing {disconnectedPlayers.Length} players");
         foreach (var player in disconnectedPlayers)
         {
+            Plugin.L.LogDebug($"Removing \"{player.NickName}\" from _syncedPlayers.");
             _syncedPlayers.Remove(player.ID);
 
             if (player.IsBot)
@@ -172,10 +184,7 @@ public partial class NetworkingManager
             return false;
         }
 
-        if (_syncedPlayers.ContainsKey(playerId))
-        {
-            _syncedPlayers.Remove(playerId);
-        }
+        _syncedPlayers.Remove(playerId);
 
         playerInfo = new(playerId);
         Plugin.L.LogWarning($"Synced: {playerId}: {playerInfo}");

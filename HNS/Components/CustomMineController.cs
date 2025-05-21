@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using FX_EffectSystem;
@@ -30,8 +31,9 @@ public partial class CustomMineController : MonoBehaviour
     private Color _currentColor = Color.white;
     private GMTeam _owningTeam;
     private bool _isConsumable;
+    private CellSoundPlayerWrapped _soundPlayer;
+    
     private PlayerAgent Owner => _mine.Owner;
-    private CellSoundPlayer Sound => _mine.Sound;
     
     public static readonly Color COL_STATE_DISABLED = new Color(0.2f, 0.2f, 0.2f, 0.3f);
     public static readonly Color COL_STATE_HACKED = new Color(1f, 0.45f, 0.2f, 0.2f);
@@ -91,6 +93,8 @@ public partial class CustomMineController : MonoBehaviour
     {
         yield return null;
 
+        _soundPlayer = new CellSoundPlayerWrapped(_mine.Sound);
+        
         SetStateDisabled();
 
         yield return new WaitForSeconds(2f);
@@ -220,7 +224,7 @@ public partial class CustomMineController : MonoBehaviour
             case MineState.DoNotChange:
                 break;
             case MineState.Alarm:
-                controller.StartAlarmSequence(sender.PlayerAgent);
+                controller.StartAlarmSequence(sender);
                 break;
             case MineState.Detecting:
                 controller.SetStateDetecting();
@@ -229,7 +233,7 @@ public partial class CustomMineController : MonoBehaviour
                 controller.SetStateDisabled();
                 break;
             case MineState.Hacked:
-                controller.StartHackedSequence(sender.PlayerAgent);
+                controller.StartHackedSequence(sender);
                 break;
         }
     }
@@ -272,25 +276,11 @@ public partial class CustomMineController : MonoBehaviour
     [HideFromIl2Cpp]
     private DynamicDistanceSoundPlayer GetDynamicSoundPlayer()
     {
-        return _mine.gameObject.GetOrAddComponent<DynamicDistanceSoundPlayer>();
+        var sound = _mine.gameObject.GetOrAddComponent<DynamicDistanceSoundPlayer>();
+        sound.SetTarget(_mine.transform, maxDistance: SOUND_MAX_DISTANCE);
+        return sound;
     }
 
-    [HideFromIl2Cpp]
-    private DynamicDistanceSoundPlayer EnableDynamicSound()
-    {
-        var customSound = GetDynamicSoundPlayer();
-        customSound.SetTarget(_mine.transform, maxDistance: SOUND_MAX_DISTANCE);
-        customSound.enabled = true;
-        return customSound;
-    }
-
-    [HideFromIl2Cpp]
-    private void DisableDynamicSound(DynamicDistanceSoundPlayer customDistanceSound)
-    {
-        customDistanceSound ??= GetDynamicSoundPlayer();
-        customDistanceSound.enabled = false;
-    }
-    
     [HideFromIl2Cpp]
     private void StopSequenceCoroutine()
     {
@@ -329,14 +319,14 @@ public partial class CustomMineController : MonoBehaviour
     }
     
     [HideFromIl2Cpp]
-    private void StartAlarmSequence(PlayerAgent target)
+    private void StartAlarmSequence(PlayerWrapper target)
     {
         StopDisableRoutine();
         StartSequenceCoroutine(AlarmSequence(target));
     }
 
     [HideFromIl2Cpp]
-    private void StartHackedSequence(PlayerAgent hacker)
+    private void StartHackedSequence(PlayerWrapper hacker)
     {
         StopDisableRoutine();
         StartSequenceCoroutine(HackSequence(hacker));
@@ -369,5 +359,35 @@ public partial class CustomMineController : MonoBehaviour
     public void ApplyHack()
     {
         NetSessionManager.SendMineAction(_mine, MineState.Hacked);
+    }
+
+    [SuppressMessage("ReSharper", "UnreachableSwitchCaseDueToIntegerAnalysis")]
+    [HideFromIl2Cpp]
+    private ISoundPlayer GetSoundPlayer()
+    {
+        var setting = MineAlarmSoundSetting.OwningPlayer;
+        
+        switch (setting)
+        {
+            case MineAlarmSoundSetting.Everyone:
+                goto default;
+            case MineAlarmSoundSetting.OwningPlayer:
+                if (Owner?.Owner?.IsLocal ?? false)
+                    goto default;
+                return _soundPlayer;
+            case MineAlarmSoundSetting.OwningTeam:
+                if (_owningTeam == (GMTeam) NetworkingManager.LocalPlayerTeam)
+                    goto default;
+                return _soundPlayer;
+            default:
+                return GetDynamicSoundPlayer();
+        }
+    }
+
+    private enum MineAlarmSoundSetting
+    {
+        Everyone,
+        OwningTeam,
+        OwningPlayer,
     }
 }

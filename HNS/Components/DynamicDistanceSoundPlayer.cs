@@ -1,9 +1,10 @@
+using HNS.Core;
 using Player;
 using UnityEngine;
 
 namespace HNS.Components;
 
-public class DynamicDistanceSoundPlayer : MonoBehaviour
+public class DynamicDistanceSoundPlayer : MonoBehaviour, ISoundPlayer
 {
     private CellSoundPlayer _soundPlayer;
     private LocalPlayerAgent _localPlayer;
@@ -63,5 +64,20 @@ public class DynamicDistanceSoundPlayer : MonoBehaviour
     public void Post(uint soundEventID)
     {
         _soundPlayer.Post(soundEventID);
+    }
+
+    public void Post(uint soundEventID, Vector3 position)
+    {
+        _soundPlayer.Post(soundEventID);
+    }
+
+    public void Activate()
+    {
+        enabled = true;
+    }
+
+    public void Deactivate()
+    {
+        enabled = false;
     }
 }

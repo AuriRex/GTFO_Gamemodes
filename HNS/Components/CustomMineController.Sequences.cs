@@ -1,10 +1,9 @@
 using System.Collections;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using Gamemodes.Core;
-using Gamemodes.Extensions;
+using Gamemodes.Net;
 using HNS.Core;
 using Il2CppInterop.Runtime.Attributes;
-using Player;
 using UnityEngine;
 
 namespace HNS.Components;
@@ -12,7 +11,7 @@ namespace HNS.Components;
 public partial class CustomMineController
 {
     [HideFromIl2Cpp]
-    private IEnumerator AlarmSequence(PlayerAgent target)
+    private IEnumerator AlarmSequence(PlayerWrapper target)
     {
         float disableDuration = 3f;
         if (_owningTeam == GMTeam.Hiders)
@@ -27,18 +26,19 @@ public partial class CustomMineController
         if (_owningTeam == GMTeam.Seekers)
             color = Color.cyan;
         
-        CoroutineManager.StartCoroutine(Coroutines.PlaceNavmarkerAtPos(target.Position + Vector3.up, "<color=orange><b>Motion Detected!</b></color>", color, 3f).WrapToIl2Cpp());
-        
-        var customSound = EnableDynamicSound();
+        CoroutineManager.StartCoroutine(Coroutines.PlaceNavmarkerAtPos(target.PlayerAgent.Position + Vector3.up, "<color=orange><b>Motion Detected!</b></color>", color, 3f).WrapToIl2Cpp());
+
+        var sound = GetSoundPlayer();
+        sound.Activate();
         
         for (int i = 0; i < 3; i++)
         {
-            customSound.Stop();
-            customSound.Post(AK.EVENTS.HACKING_PUZZLE_LOCK_ALARM);
+            sound.Stop();
+            sound.Post(AK.EVENTS.HACKING_PUZZLE_LOCK_ALARM, _mine.transform.position);
             yield return new WaitForSeconds(0.75f);
         }
 
-        DisableDynamicSound(customSound);
+        sound.Deactivate();
 
         //yield return new WaitForSeconds(0.75f);
         
@@ -47,7 +47,7 @@ public partial class CustomMineController
     }
 
     [HideFromIl2Cpp]
-    private IEnumerator HackSequence(PlayerAgent hacker)
+    private IEnumerator HackSequence(PlayerWrapper hacker)
     {
         float disableDuration = 15f;
         
@@ -59,16 +59,17 @@ public partial class CustomMineController
         var beepCount = 12;
         var waitTime = disableDuration / beepCount;
         
-        var customSound = EnableDynamicSound();
+        var sound = GetSoundPlayer();
+        sound.Activate();
         
         for (int i = 0; i < beepCount; i++)
         {
-            customSound.Stop();
-            customSound.Post(AK.EVENTS.HACKING_PUZZLE_WRONG);
+            sound.Stop();
+            sound.Post(AK.EVENTS.HACKING_PUZZLE_WRONG, _mine.transform.position);
             yield return new WaitForSeconds(waitTime);
         }
         
-        DisableDynamicSound(customSound);
+        sound.Deactivate();
         
         if (_mine.LocallyPlaced)
             CoroutineManager.StartCoroutine(Coroutines.PlaceNavmarkerAtPos(_mine.transform.position, "<color=red><b>Device Rebooted\nafter Hack!</b></color>", Color.red, 3f).WrapToIl2Cpp());

@@ -334,29 +334,7 @@ internal partial class HideAndSeekMode : GamemodeBase
                     Plugin.L.LogDebug($"Assigning to team {team}");
                     NetworkingManager.AssignTeam(SNet.LocalPlayer, (int)team);
 
-                    var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new("[S]  ", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new("[<color=orange>H</color>]  ", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new(null, PUI_TeamDisplay.COLOR_MISC, Hide: true));
-                    
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerAlpha, new("[S] (A)  ", COLOR_MUTED_TEAM_ALPHA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderAlpha, new("[<color=orange>H</color>] (A)  ", PUI_TeamDisplay.COLOR_RED, HiderExtraInfoUpdater));
-                    
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerBeta, new("[S] (B)  ", COLOR_MUTED_TEAM_BETA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderBeta, new("[<color=orange>H</color>] (B)  ", PUI_TeamDisplay.COLOR_BLUE, HiderExtraInfoUpdater));
-                    
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerGamma, new("[S] (C)  ", COLOR_MUTED_TEAM_GAMMA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderGamma, new("[<color=orange>H</color>] (C)  ", PUI_TeamDisplay.COLOR_GREEN, HiderExtraInfoUpdater));
-                    
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerDelta, new("[S] (D)  ", COLOR_MUTED_TEAM_DELTA, SeekersExtraInfoUpdater));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.HiderDelta, new("[<color=orange>H</color>] (D)  ", PUI_TeamDisplay.COLOR_MAGENTA, HiderExtraInfoUpdater));
-                    
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameAlpha, new("[Team A]  ", PUI_TeamDisplay.COLOR_RED));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameBeta, new("[Team B]  ", PUI_TeamDisplay.COLOR_BLUE));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameGamma, new("[Team C]  ", PUI_TeamDisplay.COLOR_GREEN));
-                    teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameDelta, new("[Team D]  ", PUI_TeamDisplay.COLOR_MAGENTA));
-                    
-                    teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
+                    SetupTeamDisplayData();
 
                     WardenIntelOverride.ForceShowWardenIntel($"<size=200%><color=red>Special Warden Protocol\n<color=orange>{DisplayName}</color>\ninitialized.</color></size>");
         
@@ -396,7 +374,43 @@ internal partial class HideAndSeekMode : GamemodeBase
             }
         }
     }
-    
+
+    protected virtual void SetupTeamDisplayData()
+    {
+        try
+        {
+            var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
+            
+            teamDisplay.SetTeamDisplayData((int)GMTeam.Seekers, new("[S]  ", PUI_TeamDisplay.COLOR_RED, SeekersExtraInfoUpdater));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.Hiders, new("[<color=orange>H</color>]  ", PUI_TeamDisplay.COLOR_CYAN, HiderExtraInfoUpdater));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.Camera, new(null, PUI_TeamDisplay.COLOR_MISC, Hide: true));
+
+            teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerAlpha, new("[S] (A)  ", COLOR_MUTED_TEAM_ALPHA, SeekersExtraInfoUpdater));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.HiderAlpha, new("[<color=orange>H</color>] (A)  ", PUI_TeamDisplay.COLOR_RED, HiderExtraInfoUpdater));
+
+            teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerBeta, new("[S] (B)  ", COLOR_MUTED_TEAM_BETA, SeekersExtraInfoUpdater));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.HiderBeta, new("[<color=orange>H</color>] (B)  ", PUI_TeamDisplay.COLOR_BLUE, HiderExtraInfoUpdater));
+
+            teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerGamma, new("[S] (C)  ", COLOR_MUTED_TEAM_GAMMA, SeekersExtraInfoUpdater));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.HiderGamma, new("[<color=orange>H</color>] (C)  ", PUI_TeamDisplay.COLOR_GREEN, HiderExtraInfoUpdater));
+
+            teamDisplay.SetTeamDisplayData((int)GMTeam.SeekerDelta, new("[S] (D)  ", COLOR_MUTED_TEAM_DELTA, SeekersExtraInfoUpdater));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.HiderDelta, new("[<color=orange>H</color>] (D)  ", PUI_TeamDisplay.COLOR_MAGENTA, HiderExtraInfoUpdater));
+
+            teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameAlpha, new("[Team A]  ", PUI_TeamDisplay.COLOR_RED));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameBeta, new("[Team B]  ", PUI_TeamDisplay.COLOR_BLUE));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameGamma, new("[Team C]  ", PUI_TeamDisplay.COLOR_GREEN));
+            teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameDelta, new("[Team D]  ", PUI_TeamDisplay.COLOR_MAGENTA));
+
+            teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
+        }
+        catch (Exception ex)
+        {
+            Plugin.L.LogError($"{ex.GetType().FullName}: {ex.Message}");
+            Plugin.L.LogWarning(ex.StackTrace);
+        }
+    }
+
     public override void OnRemotePlayerEnteredLevel(PlayerWrapper player)
     {
         if (!SNet.IsMaster)
@@ -413,14 +427,26 @@ internal partial class HideAndSeekMode : GamemodeBase
     {
         GMTeam team = (GMTeam)teamInt;
 
-        var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
-        var extraText = string.Empty;
-        if (IsTeamGame)
+        if (GameStateManager.CurrentStateName == eGameStateName.InLevel)
         {
-            extraText = " <#555>://</color> <color=orange><i>Teams</i></color>";
+            try
+            {
+                var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
+                var extraText = string.Empty;
+                if (IsTeamGame)
+                {
+                    extraText = " <#555>://</color> <color=orange><i>Teams</i></color>";
+                }
+
+                teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>{extraText}");
+            }
+            catch (Exception ex)
+            {
+                Plugin.L.LogError($"This should not happen? - {ex.Message}\n{ex.GetType().FullName}");
+                Plugin.L.LogWarning(ex.StackTrace);
+            }
         }
-        teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>{extraText}");
-        
+
         if (!NetworkingManager.InLevel)
             return;
 

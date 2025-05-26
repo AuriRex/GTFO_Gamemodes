@@ -24,8 +24,10 @@ public partial class PUI_TeamDisplay : MonoBehaviour
     private bool _isSetup;
 
     [HideFromIl2Cpp]
-    private Dictionary<int, TeamDisplayData> TeamDisplay { get; } = new();
+    private Dictionary<int, TeamDisplayData> TeamDisplay { get; set; } = new();
 
+    private static Dictionary<int, TeamDisplayData> _teamDisplayData = new();
+    
     public static PUI_TeamDisplay InstantiateOrGetInstanceOnWardenObjectives()
     {
         var go = GuiManager.PlayerLayer.WardenObjectives.gameObject;
@@ -101,6 +103,9 @@ public partial class PUI_TeamDisplay : MonoBehaviour
     {
         if (_titleGameObject == null)
         {
+            if (_gameObjectives?.m_headerHolder == null)
+                return;
+            
             _titleGameObject = Instantiate(_gameObjectives.m_headerHolder, transform);
 
             _titleTMP = _titleGameObject.GetComponentInChildren<TextMeshPro>();
@@ -116,9 +121,26 @@ public partial class PUI_TeamDisplay : MonoBehaviour
 
         _titleTMP.SetText(title);
     }
+
+    public static void ClearStaticTeamDisplayData()
+    {
+        _teamDisplayData.Clear();
+        _teamDisplayData = new();
+    }
+    
+    public void ClearTeamDisplayData()
+    {
+        ClearStaticTeamDisplayData();
+        TeamDisplay.Clear();
+    }
     
     public void UpdateTeamDisplay()
     {
+        if (TeamDisplay.Count == 0)
+        {
+            TeamDisplay = _teamDisplayData;
+        }
+        
         foreach (var player in NetworkingManager.AllValidPlayers.OrderByDescending(w => $"{w.Team}_{w.NickName}"))
         {
             if (!TryGetPlayerEntry(player, out var entry))
@@ -177,6 +199,7 @@ public partial class PUI_TeamDisplay : MonoBehaviour
     [HideFromIl2Cpp]
     public PUI_TeamDisplay SetTeamDisplayData(int team, TeamDisplayData data)
     {
+        _teamDisplayData[team] = data;
         TeamDisplay[team] = data;
         return this;
     }

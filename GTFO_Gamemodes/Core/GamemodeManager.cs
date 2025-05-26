@@ -151,6 +151,8 @@ public class GamemodeManager
         }
         
         CleanupSpecialRequirements(_currentMode?.Settings);
+
+        PUI_TeamDisplay.ClearStaticTeamDisplayData();
         
         _currentMode = mode.Implementation;
         ModeSwitchCount++;

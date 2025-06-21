@@ -28,12 +28,13 @@ namespace HNS.Core;
 internal partial class HideAndSeekMode : GamemodeBase
 {
     public const string MODE_ID = "hideandseek";
+    private const string NAME = "Hide and Seek";
     
     public static HideAndSeekGameManager GameManager { get; private set; }
 
     public override string ID => MODE_ID;
 
-    public override string DisplayName => "Hide and Seek";
+    public override string DisplayName => NAME;
 
     public override string Description => "No Enemies\nAll Doors Open\n\n<#f00>Seekers</color> have to catch all <#0ff>Hiders</color>";
 
@@ -154,6 +155,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("total", PrintTimes)
             .Add("unstuck", Unstuck)
             .Add("fogtest", FogTest)
+            .Add("fixdesync", UIDesyncFix)
             .LogAnyErrors(Plugin.L.LogError, Plugin.L.LogWarning);
 
         CreateCustomPalettes();
@@ -377,6 +379,11 @@ internal partial class HideAndSeekMode : GamemodeBase
 
     protected virtual void SetupTeamDisplayData()
     {
+        SetupTeamDisplayDataHideAndSeek(DisplayName);
+    }
+
+    private static void SetupTeamDisplayDataHideAndSeek(string displayName)
+    {
         try
         {
             var teamDisplay = PUI_TeamDisplay.InstantiateOrGetInstanceOnWardenObjectives();
@@ -402,7 +409,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameGamma, new("[Team C]  ", PUI_TeamDisplay.COLOR_GREEN));
             teamDisplay.SetTeamDisplayData((int)GMTeam.PreGameDelta, new("[Team D]  ", PUI_TeamDisplay.COLOR_MAGENTA));
 
-            teamDisplay.UpdateTitle($"<color=orange><b>{DisplayName}</b></color>");
+            teamDisplay.UpdateTitle($"<color=orange><b>{displayName}</b></color>");
         }
         catch (Exception ex)
         {

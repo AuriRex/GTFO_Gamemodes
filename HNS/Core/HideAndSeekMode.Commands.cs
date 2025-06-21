@@ -363,4 +363,11 @@ internal partial class HideAndSeekMode
 
         return false;
     }
+
+    private static string UIDesyncFix(string[] arg)
+    {
+        SetupTeamDisplayDataHideAndSeek(NAME);
+        
+        return "UI Desync Fix attempted.";
+    }
 }

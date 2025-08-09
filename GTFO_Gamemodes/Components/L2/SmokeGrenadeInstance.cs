@@ -9,7 +9,7 @@ public class SmokeGrenadeInstance : GenericGrenadeInstance, IGrenade
 {
     public bool AlertEnemies => false;
     public float NoiseRadius => 50f;
-    public uint ExplosionSoundID => EVENTS.CUTTERFEEDBACK;
+    public uint ExplosionSoundID => EVENTS.BIRTHER_FOG_BALL_APPEAR; // EVENTS.CUTTERFEEDBACK; // <-- too faint
     public bool HideVisualsOnDetonation => false;
     public float FuseTime => 1.5f;
     public float DecayTime => 25f;

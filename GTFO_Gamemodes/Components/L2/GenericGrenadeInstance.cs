@@ -107,11 +107,14 @@ public class GenericGrenadeInstance : Item
     private void DetonationSequence()
     {
         _hasDetonated = true;
-        
-        // Disable model
-        foreach (var child in transform.Children())
+
+        if (Grenade?.HideVisualsOnDetonation ?? true)
         {
-            child.gameObject.SetActive(false);
+            // Disable model
+            foreach (var child in transform.Children())
+            {
+                child.gameObject.SetActive(false);
+            }
         }
 
         _decayTime = Time.time + Grenade?.DecayTime ?? DEFAULT_DECAY_TIME;

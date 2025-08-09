@@ -35,6 +35,7 @@ public static class PrefabManager
     
     public static uint SpecialLRF_BlockID { get; private set; }
     public static uint Flashbang_BlockID => _flashBlock?.persistentID ?? 0;
+    public static uint Smokenade_BlockID => _smokeBlock?.persistentID ?? 0;
 
     internal static void Init()
     {
@@ -47,23 +48,32 @@ public static class PrefabManager
         LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangmodel.prefab", out _smokenadePrefab);
         LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangpickup.prefab", out _smokenadePickupPrefab);
         LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangfirstperson.prefab", out _smokenadeFPPrefab);
+
+        _smokenadePrefab = UnityEngine.Object.Instantiate(_flashbangPrefab);
+        _smokenadePrefab.DontDestroyAndSetHideFlags();
         
-        Silly(_smokenadePrefab);
-        Silly(_smokenadePickupPrefab);
-        Silly(_smokenadeFPPrefab);
+        _smokenadePickupPrefab = UnityEngine.Object.Instantiate(_flashbangPickupPrefab);
+        _smokenadePickupPrefab.DontDestroyAndSetHideFlags();
+        
+        _smokenadeFPPrefab = UnityEngine.Object.Instantiate(_flashbangFPPrefab);
+        _smokenadeFPPrefab.DontDestroyAndSetHideFlags();
+
+        var material = new Material(_flashbangPrefab.GetComponentsInChildren<Renderer>()[0].sharedMaterial);
+        material.DontDestroyAndSetHideFlags();
+        var color = new Color(0.1f, 0.1f, 0.2f, 1);
+        material.color = color;
+        ReplaceSharedMaterialOnAllRenderers(_smokenadePrefab, material);
+        ReplaceSharedMaterialOnAllRenderers(_smokenadePickupPrefab, material);
+        ReplaceSharedMaterialOnAllRenderers(_smokenadeFPPrefab, material);
         
         _flashbangBundle.Unload(false);
     }
 
-    private static void Silly(GameObject go) 
+    private static void ReplaceSharedMaterialOnAllRenderers(GameObject go, Material material) 
     {
-        var block = new MaterialPropertyBlock();
-        
-        block.SetColor("_Color", Color.blue);
-        
         foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
         {
-            renderer.SetPropertyBlock(block);
+            renderer.sharedMaterial = material;
         }
     }
     

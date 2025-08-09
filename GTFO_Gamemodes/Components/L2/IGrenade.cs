@@ -13,6 +13,11 @@ public interface IGrenade
     /// The time until the grenade instance gets despawned <i>after</i> it has detonated.
     /// </summary>
     float DecayTime => GenericGrenadeInstance.DEFAULT_DECAY_TIME;
+
+    /// <summary>
+    /// Should the visuals be hidden upon detonation?
+    /// </summary>
+    bool HideVisualsOnDetonation => true;
     
     /// <summary>
     /// Should the exploding grenade alert nearby enemies?

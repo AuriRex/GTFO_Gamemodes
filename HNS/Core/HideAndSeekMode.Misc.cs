@@ -226,9 +226,11 @@ internal partial class HideAndSeekMode
         Plugin.L.LogDebug("Spawning Flashbangs ...");
         var pickups = UnityEngine.Object.FindObjectsOfType<ConsumablePickup_Core>();
 
-        var flashbangs = pickups.Where(p => p.name.Contains("Flashbang", StringComparison.InvariantCultureIgnoreCase))
-            .ToArray();
+        // var flashbangs = pickups.Where(p => p.name.Contains("Flashbang", StringComparison.InvariantCultureIgnoreCase) || p.name.Contains("Smoke_Grenade", StringComparison.InvariantCultureIgnoreCase))
+        //     .ToArray();
 
+        var itemsToSpawn = new[] {PrefabManager.Flashbang_BlockID, PrefabManager.Smokenade_BlockID};
+        
         var spawnCount = 0;
         foreach (var info in _originalResourcePackLocations)
         {
@@ -239,7 +241,9 @@ internal partial class HideAndSeekMode
             if (slotOccupied)
                 continue;
 
-            NetworkingManager.SendSpawnItemInLevel(info.node, info.position, PrefabManager.Flashbang_BlockID);
+            var itemId = itemsToSpawn[System.Random.Shared.Next(0, itemsToSpawn.Length)];
+            
+            NetworkingManager.SendSpawnItemInLevel(info.node, info.position, itemId);
             spawnCount++;
             yield return null;
         }

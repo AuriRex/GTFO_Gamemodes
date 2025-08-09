@@ -1,4 +1,5 @@
 using AK;
+using Feedback;
 using GameData;
 using UnityEngine;
 
@@ -8,9 +9,10 @@ public class SmokeGrenadeInstance : GenericGrenadeInstance, IGrenade
 {
     public bool AlertEnemies => false;
     public float NoiseRadius => 50f;
-    public uint ExplosionSoundID => 0;
-    public float FuseTime => 0.3f;
-    public float DecayTime => 20f;
+    public uint ExplosionSoundID => EVENTS.CUTTERFEEDBACK;
+    public bool HideVisualsOnDetonation => false;
+    public float FuseTime => 1.5f;
+    public float DecayTime => 25f;
 
     private GameObject _fogSphereGo;
     

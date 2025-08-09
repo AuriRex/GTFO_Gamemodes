@@ -13,20 +13,24 @@ namespace Gamemodes.Core;
 
 public static class PrefabManager
 {
-    private static GameObject _pickupBase;
+
     private static Shader _shader;
 
     private static AssetBundle _flashbangBundle;
+    
     private static GameObject _flashbangPrefab;
     private static GameObject _flashbangFPPrefab;
     private static GameObject _flashbangPickupPrefab;
-    private static GameObject _flashbangInstancePrefab;
-    private static GameObject _flashbangThirdpersonPrefab;
 
+    private static GameObject _smokenadePrefab;
+    private static GameObject _smokenadePickupPrefab;
+    private static GameObject _smokenadeFPPrefab;
+    
     private static GameObject _specialLRFPickupPrefab;
 
     
     private static ItemDataBlock _flashBlock;
+    private static ItemDataBlock _smokeBlock;
     private static ItemDataBlock _specialLRF;
     
     public static uint SpecialLRF_BlockID { get; private set; }
@@ -40,9 +44,29 @@ public static class PrefabManager
         LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangpickup.prefab", out _flashbangPickupPrefab);
         LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangfirstperson.prefab", out _flashbangFPPrefab);
 
+        LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangmodel.prefab", out _smokenadePrefab);
+        LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangpickup.prefab", out _smokenadePickupPrefab);
+        LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangfirstperson.prefab", out _smokenadeFPPrefab);
+        
+        Silly(_smokenadePrefab);
+        Silly(_smokenadePickupPrefab);
+        Silly(_smokenadeFPPrefab);
+        
         _flashbangBundle.Unload(false);
     }
 
+    private static void Silly(GameObject go) 
+    {
+        var block = new MaterialPropertyBlock();
+        
+        block.SetColor("_Color", Color.blue);
+        
+        foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
+        {
+            renderer.SetPropertyBlock(block);
+        }
+    }
+    
     private static void LoadPrefab(AssetBundle bundle, string asset, out GameObject go)
     {
         go = bundle.LoadAsset(asset).Cast<GameObject>();
@@ -62,29 +86,12 @@ public static class PrefabManager
     
     public static void PreItemLoading()
     {
-        _flashBlock = CloneBlock(ItemDataBlock.GetBlock(SpawnUtils.Consumables.GLOWSTICKS_GREEN));
+        _flashBlock = CreateGrenadeDataBlock("Flashbang");
 
-        _flashBlock.publicName = "Flashbang";
-        
-        var fbText = new LocalizedText();
-        fbText.UntranslatedText = "Flashbang";
-        fbText.Id = 0;
-        fbText.OldId = 0;
-        
-        _flashBlock.LocalizedName = fbText;
-        
-        _flashBlock.ConsumableAmmoMax = 1;
-        _flashBlock.ConsumableAmmoMin = 1;
-
-        var og = _flashBlock.FirstPersonPrefabs;
-        _flashBlock.FirstPersonPrefabs = new List<string>();
-        _flashBlock.FirstPersonPrefabs.Add(og[0]);
-        
-        _flashBlock.EquipTransitionTime = 0.25f;
-        _flashBlock.AimTransitionTime = 0.5f;
-        _flashBlock.name = "CONSUMABLE_Flashbang";
-        
         ItemDataBlock.AddBlock(_flashBlock);
+        
+        _smokeBlock = CreateGrenadeDataBlock("Smoke Grenade");
+        ItemDataBlock.AddBlock(_smokeBlock);
         
         _specialLRF = CloneBlock(ItemDataBlock.GetBlock(SpawnUtils.Consumables.LONG_RANGE_FLASHLIGHT));
 
@@ -108,44 +115,39 @@ public static class PrefabManager
         SpecialLRF_BlockID = _specialLRF.persistentID;
     }
 
-    
+    private static ItemDataBlock CreateGrenadeDataBlock(string name, int consumableMin = 1, int consumableMax = 1)
+    {
+        var itemDB = CloneBlock(ItemDataBlock.GetBlock(SpawnUtils.Consumables.GLOWSTICKS_GREEN));
+
+        itemDB.publicName = name;
+        
+        var fbText = new LocalizedText();
+        fbText.UntranslatedText = name;
+        fbText.Id = 0;
+        fbText.OldId = 0;
+        
+        itemDB.LocalizedName = fbText;
+        
+        itemDB.ConsumableAmmoMax = consumableMax;
+        itemDB.ConsumableAmmoMin = consumableMin;
+
+        var og = itemDB.FirstPersonPrefabs;
+        itemDB.FirstPersonPrefabs = new List<string>();
+        itemDB.FirstPersonPrefabs.Add(og[0]);
+        
+        itemDB.EquipTransitionTime = 0.25f;
+        itemDB.AimTransitionTime = 0.5f;
+        itemDB.name = $"CONSUMABLE_{name.Replace(' ', '_')}";
+
+        return itemDB;
+    }
     
     private static void CreatePrefabs()
     {
         // 114 => (Green) Glowstick
-        var id = _flashBlock.persistentID;
-        
-        _flashbangInstancePrefab = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][0]);
-        _flashbangInstancePrefab.DontDestroyAndSetHideFlags();
-        _flashbangInstancePrefab.GetComponent<GlowstickInstance>().SafeDestroy();
-        _flashbangInstancePrefab.AddComponent<FlashGrenadeInstance>().enabled = false;
-        _flashbangInstancePrefab.name = "Flashbang_Instance";
+        CreateGrenadePrefabs<FlashGrenadeInstance>(_flashBlock, _flashbangPrefab, _flashbangFPPrefab, _flashbangPickupPrefab);
 
-        _flashbangThirdpersonPrefab =
-            UnityEngine.Object.Instantiate(
-                ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id][0]);
-        _flashbangThirdpersonPrefab.DontDestroyAndSetHideFlags();
-        _flashbangThirdpersonPrefab.Children().FirstOrDefault(c => c.name == "Glowstick_1").SafeDestroyGameObject();
-        _flashbangThirdpersonPrefab.name = "Flashbang_ThirdPerson";
-        
-        _pickupBase = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0]);
-        _pickupBase.DontDestroyAndSetHideFlags();
-        _pickupBase.Children().FirstOrDefault(c => c.name == "Glow_Stick_Pickup_Lod1").SafeDestroyGameObject();
-        _pickupBase.name = "PickupBase_Flashbang";
-        
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id][0] = _flashbangThirdpersonPrefab;
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id].Add(_flashbangPrefab);
-        
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.FirstPerson][id].Add(_flashbangFPPrefab);
-        
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0] = _pickupBase;
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id].Add(_flashbangPickupPrefab);
-        
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][0] = _flashbangInstancePrefab;
-        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][1] = _flashbangPrefab;
-        
-        Plugin.L.LogWarning($"Added Flashbang prefab! ID:{id}");
-
+        CreateGrenadePrefabs<SmokeGrenadeInstance>(_smokeBlock, _smokenadePrefab, _smokenadeFPPrefab, _smokenadePickupPrefab);
 
         _specialLRFPickupPrefab = UnityEngine.Object.Instantiate(
             ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][SpecialLRF_BlockID][0]);
@@ -157,6 +159,43 @@ public static class PrefabManager
 
         ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][SpecialLRF_BlockID][0] =
             _specialLRFPickupPrefab;
+    }
+
+    private static void CreateGrenadePrefabs<TInstance>(ItemDataBlock itemDB, GameObject thirdPersonPrefab, GameObject firstPersonPrefab, GameObject pickupPrefab) where TInstance : GenericGrenadeInstance
+    {
+        var id = itemDB.persistentID;
+        var name = itemDB.name;
+        
+        var grenadeInstancePrefab = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][0]);
+        grenadeInstancePrefab.DontDestroyAndSetHideFlags();
+        grenadeInstancePrefab.GetComponent<GlowstickInstance>().SafeDestroy();
+        grenadeInstancePrefab.AddComponent<TInstance>().enabled = false;
+        grenadeInstancePrefab.name = name + "_Instance";
+
+        var grenadeThirdpersonPrefab =
+            UnityEngine.Object.Instantiate(
+                ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id][0]);
+        grenadeThirdpersonPrefab.DontDestroyAndSetHideFlags();
+        grenadeThirdpersonPrefab.Children().FirstOrDefault(c => c.name == "Glowstick_1").SafeDestroyGameObject();
+        grenadeThirdpersonPrefab.name = name + "_ThirdPerson";
+        
+        var pickupBase = UnityEngine.Object.Instantiate(ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0]);
+        pickupBase.DontDestroyAndSetHideFlags();
+        pickupBase.Children().FirstOrDefault(c => c.name == "Glow_Stick_Pickup_Lod1").SafeDestroyGameObject();
+        pickupBase.name = "PickupBase_" + name;
+        
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id][0] = grenadeThirdpersonPrefab;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.ThirdPerson][id].Add(thirdPersonPrefab);
+        
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.FirstPerson][id].Add(firstPersonPrefab);
+        
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id][0] = pickupBase;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Pickup][id].Add(pickupPrefab);
+        
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][0] = grenadeInstancePrefab;
+        ItemSpawnManager.m_loadedPrefabsPerItemMode[(int)ItemMode.Instance][id][1] = thirdPersonPrefab;
+        
+        Plugin.L.LogWarning($"Added {name} prefab! ID:{id}");
     }
 
     private static void ReplaceMatShader(Material mat)

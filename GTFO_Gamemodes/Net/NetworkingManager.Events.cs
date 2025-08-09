@@ -68,6 +68,20 @@ public partial class NetworkingManager
         SendEvent(data, invokeLocal: true);
     }
 
+    public static void AssignTeamCatchup(SNet_Player target, int teamId, SNet_Player catchupTarget)
+    {
+        if (!SNet.IsMaster)
+            return;
+        
+        var data = new pSetTeam
+        {
+            PlayerID = target.Lookup,
+            Team = teamId,
+        };
+
+        SendEvent(data, targetPlayer: catchupTarget, invokeLocal: false);
+    }
+
     private static void OnSetTeamReceived(ulong senderId, pSetTeam data)
     {
         GetPlayerInfo(data.PlayerID, out var target);
@@ -401,6 +415,8 @@ public partial class NetworkingManager
             return;
         
         GetPlayerInfo(sender, out var info);
+
+        SyncData(info);
         
         GamemodeManager.OnRemotePlayerEnteredLevel(info);
     }

@@ -315,4 +315,19 @@ public partial class NetworkingManager
 
         return name;
     }
+
+    private static void SyncData(PlayerWrapper playerToSyncTo)
+    {
+        if (!SNet.IsMaster)
+            return;
+        
+        // Sync current team states
+        foreach (var (_, player) in _syncedPlayers)
+        {
+            if (player.ID == playerToSyncTo.ID)
+                continue;
+            
+            AssignTeamCatchup(player, player.Team, playerToSyncTo);
+        }
+    }
 }

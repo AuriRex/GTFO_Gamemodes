@@ -29,7 +29,7 @@ public class Plugin : BasePlugin
     
     public const string GUID = "dev.aurirex.gtfo.gamemodes";
     public const string NAME = "Gamemodes";
-    public const string VERSION = "0.7.1";
+    public const string VERSION = "0.7.2";
 
     internal static ManualLogSource L;
 

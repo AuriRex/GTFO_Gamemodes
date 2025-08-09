@@ -65,10 +65,27 @@ public static class PrefabManager
         ReplaceSharedMaterialOnAllRenderers(_smokenadePrefab, material);
         ReplaceSharedMaterialOnAllRenderers(_smokenadePickupPrefab, material);
         ReplaceSharedMaterialOnAllRenderers(_smokenadeFPPrefab, material);
+
+        TurnOffShadowCasting(_smokenadePrefab);
+        TurnOffShadowCasting(_smokenadePickupPrefab);
+        TurnOffShadowCasting(_smokenadeFPPrefab);
+        
+        // Ig for now they'll just be floating in midair in the drop shaft :x
+        // _smokenadePrefab.SetActive(false);
+        // _smokenadePickupPrefab.SetActive(false);
+        // _smokenadeFPPrefab.SetActive(false);
         
         _flashbangBundle.Unload(false);
     }
 
+    private static void TurnOffShadowCasting(GameObject go)
+    {
+        foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
+        {
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+    }
+    
     private static void ReplaceSharedMaterialOnAllRenderers(GameObject go, Material material) 
     {
         foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
@@ -86,6 +103,7 @@ public static class PrefabManager
         foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
         {
             ReplaceMatShader(renderer.sharedMaterial);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
     }
 
@@ -97,7 +115,6 @@ public static class PrefabManager
     public static void PreItemLoading()
     {
         _flashBlock = CreateGrenadeDataBlock("Flashbang");
-
         ItemDataBlock.AddBlock(_flashBlock);
         
         _smokeBlock = CreateGrenadeDataBlock("Smoke Grenade");
@@ -180,6 +197,7 @@ public static class PrefabManager
         grenadeInstancePrefab.DontDestroyAndSetHideFlags();
         grenadeInstancePrefab.GetComponent<GlowstickInstance>().SafeDestroy();
         grenadeInstancePrefab.AddComponent<TInstance>().enabled = false;
+        grenadeInstancePrefab.GetComponent<Rigidbody>().useGravity = false;
         grenadeInstancePrefab.name = name + "_Instance";
 
         var grenadeThirdpersonPrefab =

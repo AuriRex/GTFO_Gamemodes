@@ -29,6 +29,7 @@ public class GenericGrenadeInstance : Item
         BaseSetup(data);
 
         _rigidbody = GetComponent<Rigidbody>();
+        _rigidbody.useGravity = true;
         _sound = new CellSoundPlayer();
 
         Grenade?.Setup(_rigidbody);

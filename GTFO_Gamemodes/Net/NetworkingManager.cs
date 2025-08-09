@@ -50,9 +50,9 @@ public partial class NetworkingManager
         Plugin.L.LogDebug("Registering base events ...");
         RegisterAllEvents();
 
-        SNet_Events.OnPlayerEvent += (Action<SNet_Player, SNet_PlayerEvent, SNet_PlayerEventReason>)OnPlayerEvent;
-        SNet_Events.OnPlayerJoin += (Action)OnPlayerJoined;
-        SNet_Events.OnPlayerLeave += (Action)OnPlayerCountChangedImpl;
+        // SNet_Events.OnPlayerEvent += (Action<SNet_Player, SNet_PlayerEvent, SNet_PlayerEventReason>)OnPlayerEvent;
+        // SNet_Events.OnPlayerJoin += (Action)OnPlayerJoined;
+        // SNet_Events.OnPlayerLeave += (Action)OnPlayerCountChangedImpl;
     }
     
     private static void OnGameStateChanged(eGameStateName state)
@@ -91,43 +91,52 @@ public partial class NetworkingManager
         DoSwitchModeReceived?.Invoke(modeString);
     }
     
-    private static void OnPlayerJoined()
+    private static void OnPlayerJoined(SNet_Player newPlayer)
     {
-        SNet_Player newPlayer = null;
-        foreach (var player in SNet.LobbyPlayers)
+        if (newPlayer == null)
+            return;
+
+        if (!GetPlayerInfo(newPlayer.Lookup, out var info))
+            return; // Player already in lobby
+        
+        Plugin.L.LogDebug($"{info.NickName} has joined!");
+        if (SNet.IsMaster)
         {
-            var playerWrapper = _syncedPlayers.Values.FirstOrDefault(pw => pw.ID == player.Lookup);
-
-            if (playerWrapper != null)
-                continue;
-
-            newPlayer = player;
-            break;
+            PostChatLog($"<#0F0>>> <color=orange>{info.NickName}</color> has connected.</color>");
         }
-
-        if (newPlayer != null)
-        {
-            GetPlayerInfo(newPlayer.Lookup, out var info);
-            Plugin.L.LogDebug($"{info.NickName} has joined!");
-            if (SNet.IsMaster)
-            {
-                PostChatLog($"<#0F0>>> <color=orange>{info.NickName}</color> has connected.</color>");
-            }
-            SendWelcome(newPlayer);
-            SendSwitchModeTo(GamemodeManager.CurrentMode.ID, newPlayer);
-        }
-
+        SendWelcome(newPlayer);
+        SendSwitchModeTo(GamemodeManager.CurrentMode.ID, newPlayer);
+        
         OnPlayerCountChangedImpl();
     }
 
     private static void OnPlayerCountChangedImpl()
     {
         Plugin.L.LogDebug($"OnPlayerCountChanged");
-        CleanupPlayers();
         OnPlayerCountChanged?.Invoke();
         GamemodeManager.OnPlayerCountChanged();
     }
+    
+    public static void OnPlayerAddedToSession(SNet_Player player)
+    {
+        OnPlayerJoined(player);
+    }
+    
+    public static void OnPlayerRemovedFromSession(SNet_Player player)
+    {
+        if (!_syncedPlayers.Remove(player.Lookup))
+            return;
 
+        Plugin.L.LogDebug($"Removed \"{player.NickName}\" from _syncedPlayers.");
+        
+        OnPlayerCountChangedImpl();
+        
+        if (!SNet.IsMaster)
+            return;
+        
+        PostChatLog($"<#F00><< <color=orange>{player.NickName}</color> has disconnected.</color>");
+    }
+    
     private static void OnPlayerEvent(SNet_Player player, SNet_PlayerEvent playerEvent, SNet_PlayerEventReason reason)
     {
         Plugin.L.LogDebug($"OnPlayerEvent: {player.NickName}, event: {playerEvent}, reason: {reason}");

@@ -13,13 +13,6 @@ internal class GSLobbyPatch
     {
         __result = false;
 
-        foreach (var player in SNet.LobbyPlayers)
-        {
-            NetworkingManager.GetPlayerInfo(player, out _);
-        }
-
-        NetworkingManager.CleanupPlayers();
-
         if (!NetworkingManager.AllPlayersVersionMatches)
         {
             Plugin.SendChatMessage("Version mismatch on some players:");

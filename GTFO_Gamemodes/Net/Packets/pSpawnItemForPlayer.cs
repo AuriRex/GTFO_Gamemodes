@@ -16,4 +16,7 @@ public struct pSpawnItemForPlayer
 
     [MarshalAs(UnmanagedType.Bool)]
     public bool DoWield;
+    
+    [MarshalAs(UnmanagedType.U2)]
+    public ushort ReplicatorKey;
 }

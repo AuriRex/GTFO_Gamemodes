@@ -15,4 +15,7 @@ public struct pSpawnItemInLevel
     
     [MarshalAs(UnmanagedType.R4)]
     public float AmmoMultiplier;
+
+    [MarshalAs(UnmanagedType.U2)]
+    public ushort ReplicatorKey;
 }

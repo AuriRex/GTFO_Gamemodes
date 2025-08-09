@@ -5,6 +5,7 @@ using SNetwork;
 using System;
 using System.Linq;
 using AIGraph;
+using Gamemodes.Patches.Required;
 using UnityEngine;
 using static Player.PlayerAgent;
 
@@ -175,7 +176,7 @@ public partial class NetworkingManager
 
     internal static void SendWelcome(SNet_Player target)
     {
-        SendEvent(new pWelcome(), target);
+        SendEvent(new pWelcome(), target, channelType: SNet_ChannelType.SessionOrderCritical);
     }
 
     private static void OnWelcomeReceived(ulong senderId, pWelcome _)
@@ -198,14 +199,14 @@ public partial class NetworkingManager
             Major = Plugin.Version.Major,
             Minor = Plugin.Version.Minor,
             Patch = Plugin.Version.Patch,
-        });
+        }, targetPlayer: SNet.Master, channelType: SNet_ChannelType.SessionOrderCritical);
 
         foreach (var modeId in GamemodeManager.LoadedModeIds)
         {
             SendEventAndInvokeLocally(new pInstalledMode
             {
                 GamemodeID = modeId,
-            });
+            }, targetPlayer: SNet.Master, channelType: SNet_ChannelType.SessionOrderCritical);
         }
     }
 
@@ -247,7 +248,7 @@ public partial class NetworkingManager
         SendEvent(new pSwitchMode
         {
             GamemodeID = gamemodeId,
-        }, target);
+        }, target, channelType: SNet_ChannelType.SessionOrderCritical);
     }
 
     public static void SendSwitchModeAll(string gamemodeId)
@@ -258,7 +259,7 @@ public partial class NetworkingManager
         SendEventAndInvokeLocally(new pSwitchMode
         {
             GamemodeID = gamemodeId,
-        });
+        }, channelType: SNet_ChannelType.SessionOrderCritical);
     }
 
     private static void OnModeSwitchReceived(ulong senderId, pSwitchMode data)
@@ -282,6 +283,7 @@ public partial class NetworkingManager
             AmmoMultiplier = ammoMultiplier,
             Position = position,
             Node = node,
+            ReplicatorKey = (ushort) ReplicationPatch.HighestSlotUsed_SelfManaged
         };
         
         SendEvent(data, invokeLocal: true);
@@ -295,7 +297,7 @@ public partial class NetworkingManager
             return;
 
         var success =
-            SpawnUtils.SpawnItemLocally(data.ItemID, data.Node, data.Position, out var item, data.AmmoMultiplier);
+            SpawnUtils.SpawnItemLocally(data.ItemID, data.Node, data.Position, out var item, data.AmmoMultiplier, data.ReplicatorKey);
         
         Plugin.L.LogDebug($"{nameof(OnSpawnItemInLevelReceived)}: Spawned Item?: {success} | Item: {item?.ItemDataBlock?.publicName}");
     }
@@ -312,6 +314,7 @@ public partial class NetworkingManager
             ItemID = itemId,
             AmmoMultiplier = ammoMultiplier,
             DoWield = doWield,
+            ReplicatorKey = (ushort) ReplicationPatch.HighestSlotUsed_SelfManaged
         };
         
         SendEvent(data, invokeLocal: true);
@@ -329,7 +332,7 @@ public partial class NetworkingManager
         if (data.PlayerID != 0)
             GetPlayerInfo(data.PlayerID, out targetPlayer);
         
-        var success = SpawnUtils.SpawnItemAndPickUp(data.ItemID, targetPlayer, data.AmmoMultiplier, data.DoWield);
+        var success = SpawnUtils.SpawnItemAndPickUp(data.ItemID, targetPlayer, data.AmmoMultiplier, data.DoWield, data.ReplicatorKey);
         
         Plugin.L.LogDebug($"{nameof(OnSpawnItemForPlayerReceived)}: Spawned Item for player {targetPlayer?.NickName} ({data.PlayerID}): {success}");
     }

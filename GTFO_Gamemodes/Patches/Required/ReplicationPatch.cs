@@ -11,6 +11,15 @@ internal static class ReplicationPatch
     public static readonly string PatchGroup = PatchGroups.REQUIRED;
 
     public static bool OverrideSelfManaged => OverrideCount > 0;
+    public static bool HasOverrideID => OverrideID != 0;
+
+    public static int HighestSlotUsed_SelfManaged
+    {
+        get => SNet_Replication.s_highestSlotUsed_SelfManaged;
+        set => SNet_Replication.s_highestSlotUsed_SelfManaged = value;
+    }
+    
+    public static ushort OverrideID { get; internal set; }
     public static uint OverrideCount { get; internal set; } = 0;
     
     public static bool Prefix(SNet_ReplicatorType type, ushort key, ref ushort __result)
@@ -20,10 +29,19 @@ internal static class ReplicationPatch
 
         if (type != SNet_ReplicatorType.SelfManaged)
             return true;
-        
-        __result = (ushort)SNet_Replication.s_highestSlotUsed_SelfManaged;
-        SNet_Replication.s_highestSlotUsed_SelfManaged++;
-        
+
+        if (HasOverrideID)
+        {
+            __result = OverrideID;
+            HighestSlotUsed_SelfManaged = OverrideID + 1;
+            OverrideID = 0;
+        }
+        else
+        {
+            __result = (ushort)SNet_Replication.s_highestSlotUsed_SelfManaged;
+            SNet_Replication.s_highestSlotUsed_SelfManaged++;
+        }
+
         return false;
     }
 }

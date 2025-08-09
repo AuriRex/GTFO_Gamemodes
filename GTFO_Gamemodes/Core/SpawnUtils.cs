@@ -13,8 +13,13 @@ public static class SpawnUtils
     // TODO: This essentially breaks late joining if used (=> an item is spawned)
     internal class SNetReplicationSelfManagedOverride : IDisposable
     {
-        public SNetReplicationSelfManagedOverride()
+        public SNetReplicationSelfManagedOverride(ushort customKey = 0)
         {
+            if (customKey != 0)
+            {
+                Patches.Required.ReplicationPatch.OverrideID = customKey;
+            }
+            
             Patches.Required.ReplicationPatch.OverrideCount++;
         }
         
@@ -24,11 +29,11 @@ public static class SpawnUtils
         }
     }
     
-    internal static bool SpawnItemAndPickUp(uint itemId, PlayerAgent player, float ammoMultiplier = 1f, bool switchToNewItem = false)
+    internal static bool SpawnItemAndPickUp(uint itemId, PlayerAgent player, float ammoMultiplier = 1f, bool switchToNewItem = false, ushort replicatorKey = 0)
     {
         var wieldedSlot = player?.Sync?.GetWieldedSlot() ?? InventorySlot.GearMelee;
 
-        if (!SpawnItemAtPlayerPos(itemId, player, out var item, ammoMultiplier))
+        if (!SpawnItemAtPlayerPos(itemId, player, out var item, ammoMultiplier, replicatorKey))
             return false;
 
         if (!player!.IsLocallyOwned)
@@ -43,13 +48,14 @@ public static class SpawnUtils
         return true;
     }
 
-    internal static bool SpawnItemAtPlayerPos(uint itemId, PlayerAgent player, out Item item, float ammoMultiplier = 1f)
+    internal static bool SpawnItemAtPlayerPos(uint itemId, PlayerAgent player, out Item item, float ammoMultiplier = 1f,
+        ushort replicatorKey = 0)
     {
         item = null;
         if (player == null)
             return false;
         
-        return SpawnItemLocally(itemId, player.CourseNode, player.Position, out item, ammoMultiplier);
+        return SpawnItemLocally(itemId, player.CourseNode, player.Position, out item, ammoMultiplier, replicatorKey);
     }
     
     internal static bool SpawnItemLocally(uint itemId, out Item item, float ammoMultiplier = 1f)
@@ -57,7 +63,7 @@ public static class SpawnUtils
         return SpawnItemLocally(itemId, null, null, out item, ammoMultiplier);
     }
 
-    internal static bool SpawnItemLocally(uint itemId, AIG_CourseNode node, Vector3? position, out Item item, float ammoMultiplier = 1f)
+    internal static bool SpawnItemLocally(uint itemId, AIG_CourseNode node, Vector3? position, out Item item, float ammoMultiplier = 1f, ushort replicatorKey = 0)
     {
         item = null;
         float ammo;
@@ -99,7 +105,7 @@ public static class SpawnUtils
         
         data.originCourseNode.Set(node);
         
-        using (new SNetReplicationSelfManagedOverride())
+        using (new SNetReplicationSelfManagedOverride(replicatorKey))
         {
             item = ItemSpawnManager.SpawnItem(itemId, ItemMode.Pickup, Vector3.zero, Quaternion.identity, true, data, node.m_area.transform);
         }

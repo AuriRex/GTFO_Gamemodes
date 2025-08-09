@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using Gamemodes.Net;
+using HarmonyLib;
 using SNetwork;
 using static Gamemodes.PatchManager;
 
@@ -26,5 +27,41 @@ internal static class SNet_SyncManager_OnFoundMaster_Patch
     {
         Plugin.L.LogDebug($"Invoking {nameof(GameEvents.OnFoundMaster)}");
         GameEvents.InvokeOnFoundMaster();
+    }
+}
+
+[HarmonyPatch(typeof(SNet_SessionHub), nameof(SNet_SessionHub.AddPlayerToSession))]
+internal static class NetworkingPatches
+{
+    public static void Prefix(SNet_Player player)
+    {
+        NetworkingManager.OnPlayerAddedToSession(player);
+    }
+}
+
+[HarmonyPatch(typeof(SNet_SessionHub), nameof(SNet_SessionHub.OnLeftLobby))]
+internal static class SNet_SessionHub__OnLeftLobby__Patch
+{
+    public static void Prefix(SNet_Player player)
+    {
+        NetworkingManager.OnPlayerRemovedFromSession(player);
+    }
+}
+
+[HarmonyPatch(typeof(SNet_GlobalManager), nameof(SNet_GlobalManager.OnPlayerEvent))]
+internal static class SNet_GlobalManager__OnPlayerEvent__Patch
+{
+    public static void Postfix(SNet_Player player, SNet_PlayerEvent playerEvent, SNet_PlayerEventReason reason)
+    {
+        if (SNet.IsMaster)
+            return;
+        
+        switch (playerEvent)
+        {
+            case SNet_PlayerEvent.PlayerKickedFromSession:
+            case SNet_PlayerEvent.PlayerLeftSessionHub:
+                NetworkingManager.OnPlayerRemovedFromSession(player);
+                break;
+        }
     }
 }

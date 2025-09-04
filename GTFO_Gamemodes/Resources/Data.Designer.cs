@@ -78,5 +78,15 @@ namespace Gamemodes.Resources {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] smokebundle {
+            get {
+                object obj = ResourceManager.GetObject("smokebundle", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

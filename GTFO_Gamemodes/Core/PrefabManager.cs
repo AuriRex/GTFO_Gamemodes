@@ -17,6 +17,7 @@ public static class PrefabManager
     private static Shader _shader;
 
     private static AssetBundle _flashbangBundle;
+    private static AssetBundle _smokenadeBundle;
     
     private static GameObject _flashbangPrefab;
     private static GameObject _flashbangFPPrefab;
@@ -45,37 +46,15 @@ public static class PrefabManager
         LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangpickup.prefab", out _flashbangPickupPrefab);
         LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangfirstperson.prefab", out _flashbangFPPrefab);
 
-        LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangmodel.prefab", out _smokenadePrefab);
-        LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangpickup.prefab", out _smokenadePickupPrefab);
-        LoadPrefab(_flashbangBundle, "assets/stunnade/flashbangfirstperson.prefab", out _smokenadeFPPrefab);
-
-        _smokenadePrefab = UnityEngine.Object.Instantiate(_flashbangPrefab);
-        _smokenadePrefab.DontDestroyAndSetHideFlags();
-        
-        _smokenadePickupPrefab = UnityEngine.Object.Instantiate(_flashbangPickupPrefab);
-        _smokenadePickupPrefab.DontDestroyAndSetHideFlags();
-        
-        _smokenadeFPPrefab = UnityEngine.Object.Instantiate(_flashbangFPPrefab);
-        _smokenadeFPPrefab.DontDestroyAndSetHideFlags();
-
-        var material = new Material(_flashbangPrefab.GetComponentsInChildren<Renderer>()[0].sharedMaterial);
-        material.DontDestroyAndSetHideFlags();
-        var color = new Color(0.1f, 0.1f, 0.2f, 1);
-        material.color = color;
-        ReplaceSharedMaterialOnAllRenderers(_smokenadePrefab, material);
-        ReplaceSharedMaterialOnAllRenderers(_smokenadePickupPrefab, material);
-        ReplaceSharedMaterialOnAllRenderers(_smokenadeFPPrefab, material);
-
-        TurnOffShadowCasting(_smokenadePrefab);
-        TurnOffShadowCasting(_smokenadePickupPrefab);
-        TurnOffShadowCasting(_smokenadeFPPrefab);
-        
-        // Ig for now they'll just be floating in midair in the drop shaft :x
-        // _smokenadePrefab.SetActive(false);
-        // _smokenadePickupPrefab.SetActive(false);
-        // _smokenadeFPPrefab.SetActive(false);
-        
         _flashbangBundle.Unload(false);
+        
+        _smokenadeBundle = AssetBundle.LoadFromMemory(Resources.Data.smokebundle);
+        
+        LoadPrefab(_smokenadeBundle, "assets/smokenade/smokenademodel.prefab", out _smokenadePrefab);
+        LoadPrefab(_smokenadeBundle, "assets/smokenade/smokenadepickup.prefab", out _smokenadePickupPrefab);
+        LoadPrefab(_smokenadeBundle, "assets/smokenade/smokenadefirstperson.prefab", out _smokenadeFPPrefab);
+        
+        _smokenadeBundle.Unload(false);
     }
 
     private static void TurnOffShadowCasting(GameObject go)

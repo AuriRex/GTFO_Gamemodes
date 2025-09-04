@@ -68,26 +68,35 @@ public class SmokeGrenadeInstance : GenericGrenadeInstance, IGrenade
 
         fogSphere.m_totalLength = 15f;
 
+        // Intensity = Color/Light boost?
+        //fogSphere.m_intensityMax = 2f;
         fogSphere.m_intensityMin = 0f;
         
         fogSphere.m_density = 2f;
-        fogSphere.m_densityMax = 2f;
+        fogSphere.m_densityMax = 20f;
         fogSphere.m_densityMin = 0f;
 
+        // Second curve, both used for fog density
         fogSphere.m_densityAmountMax = 1f;
-        fogSphere.m_densityAmountMin = 1f;
+        fogSphere.m_densityAmountMin = 0f;
 
         fogSphere.m_rangeCurve.AddKey(0f, 0f);
         fogSphere.m_rangeCurve.AddKey(0.08f, 20f);
         fogSphere.m_rangeCurve.AddKey(0.5f, 20f);
         fogSphere.m_rangeCurve.AddKey(1f, 12.5f);
 
+        fogSphere.m_densityAmountCurve.AddKey(0f, 1f);
+        fogSphere.m_densityAmountCurve.AddKey(0.9f, 1f);
+        fogSphere.m_densityAmountCurve.AddKey(1f, 0f);
+        
         fogSphere.m_densityCurve.AddKey(0f, 0f);
-        fogSphere.m_densityCurve.AddKey(0.01f, 2f);
-        fogSphere.m_densityCurve.AddKey(0.05f, 2f);
-        fogSphere.m_densityCurve.AddKey(0.5f, 1f);
-        fogSphere.m_densityCurve.AddKey(0.9f, 0.1f);
+        fogSphere.m_densityCurve.AddKey(0.01f, 20f);
+        fogSphere.m_densityCurve.AddKey(0.05f, 10f);
+        fogSphere.m_densityCurve.AddKey(0.5f, 5f);
+        fogSphere.m_densityCurve.AddKey(0.8f, 0.5f);
+        fogSphere.m_densityCurve.AddKey(0.95f, 0.1f);
         fogSphere.m_densityCurve.AddKey(1f, 0f);
+        fogSphere.m_densityCurve.AddKey(2f, 0f);
         
         if (!fogSphere.Play())
         {

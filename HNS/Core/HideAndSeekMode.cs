@@ -154,8 +154,8 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("time", PrintTimes)
             .Add("total", PrintTimes)
             .Add("unstuck", Unstuck)
-            .Add("fogtest", FogTest)
             .Add("fixdesync", UIDesyncFix)
+            .Add("forcedrop", ForceDrop)
             .LogAnyErrors(Plugin.L.LogError, Plugin.L.LogWarning);
 
         CreateCustomPalettes();

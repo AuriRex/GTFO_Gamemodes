@@ -305,69 +305,23 @@ internal partial class HideAndSeekMode
         return string.Empty;
     }
 
-    private static string FogTest(string[] arg)
-    {
-        if (!SNet.IsMaster)
-            return "Nope";
-
-        PlayerManager.TryGetLocalPlayerAgent(out var localPlayer);
-
-        if (CreateAndPlayFogSphere(localPlayer.Position))
-        {
-            return "fogSphere.Play() failed";
-        }
-
-        return "testing";
-    }
-
-    private static bool CreateAndPlayFogSphere(Vector3 position)
-    {
-        var go = new GameObject("FogSphere test");
-
-        go.transform.position = position;
-
-        var fogSphere = go.AddComponent<FogSphereHandler>();
-
-        fogSphere.m_range = 20f;
-        fogSphere.m_rangeMax = 20f;
-        fogSphere.m_rangeMin = 0f;
-
-        fogSphere.m_totalLength = 15f;
-
-        fogSphere.m_intensityMin = 0f;
-        
-        fogSphere.m_density = 2f;
-        fogSphere.m_densityMax = 2f;
-        fogSphere.m_densityMin = 0f;
-
-        fogSphere.m_densityAmountMax = 1f;
-        fogSphere.m_densityAmountMin = 1f;
-
-        fogSphere.m_rangeCurve.AddKey(0f, 0f);
-        fogSphere.m_rangeCurve.AddKey(0.08f, 20f);
-        fogSphere.m_rangeCurve.AddKey(0.5f, 20f);
-        fogSphere.m_rangeCurve.AddKey(1f, 12.5f);
-
-        fogSphere.m_densityCurve.AddKey(0f, 0f);
-        fogSphere.m_densityCurve.AddKey(0.01f, 2f);
-        fogSphere.m_densityCurve.AddKey(0.05f, 2f);
-        fogSphere.m_densityCurve.AddKey(0.5f, 1f);
-        fogSphere.m_densityCurve.AddKey(0.9f, 0.1f);
-        fogSphere.m_densityCurve.AddKey(1f, 0f);
-        
-        if (!fogSphere.Play())
-        {
-            UnityEngine.Object.DestroyImmediate(go);
-            return true;
-        }
-
-        return false;
-    }
-
     private static string UIDesyncFix(string[] arg)
     {
         SetupTeamDisplayDataHideAndSeek(NAME);
         
         return "UI Desync Fix attempted.";
+    }
+
+    private static string ForceDrop(string[] arg)
+    {
+        if (!SNet.IsMaster)
+            return "Nope";
+
+        if (GameStateManager.CurrentStateName != eGameStateName.Lobby)
+            return "Not in lobby.";
+        
+        GameStateManager.GetState(eGameStateName.Lobby).TryStartLevelTrigger();
+
+        return string.Empty;
     }
 }

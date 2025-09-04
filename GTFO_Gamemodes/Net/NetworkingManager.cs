@@ -60,6 +60,9 @@ public partial class NetworkingManager
         Plugin.L.LogDebug($"{nameof(NetworkingManager)} OnGameStateChanged(): {state}");
         switch (state)
         {
+            case eGameStateName.NoLobby:
+                ClearSyncedPlayers();
+                break;
             case eGameStateName.Lobby:
                 OnGameStateLobby();
                 break;
@@ -89,6 +92,12 @@ public partial class NetworkingManager
         }
         
         DoSwitchModeReceived?.Invoke(modeString);
+    }
+        
+    public static void ClearSyncedPlayers()
+    {
+        Plugin.L.LogInfo("Clearing synced players ...");
+        _syncedPlayers.Clear();
     }
     
     private static void OnPlayerJoined(SNet_Player newPlayer)

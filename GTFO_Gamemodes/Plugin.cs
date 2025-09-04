@@ -50,7 +50,6 @@ public class Plugin : BasePlugin
         ClassInjector.RegisterTypeInIl2Cpp<NodeDistance>();
         
         ClassInjector.RegisterTypeInIl2Cpp<FlashBlinder>();
-        ClassInjector.RegisterTypeInIl2Cpp<FlashGrenadeInstanceOld>();
         
         ClassInjector.RegisterTypeInIl2Cpp<GenericGrenadeInstance>();
         ClassInjector.RegisterTypeInIl2Cpp<SmokeGrenadeInstance>();

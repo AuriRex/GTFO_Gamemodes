@@ -1,0 +1,14 @@
+{
+    "name": "Gamemodes_Base",
+    "author": "AuriRex",
+    "version_number": "0.7.3",
+    "website_url": "https://github.com/AuriRex/GTFO_Gamemodes/",
+    "description": "WIP - DISABLES ACHIEVEMENTS - Gamemodes base library.",
+    "dependencies": [
+        "BepInEx-BepInExPack_GTFO-3.2.2",
+        "Cactus-LobbyExpansion-1.2.0",
+        "AuriRex-DimensionMaps-1.1.0",
+        "AuriRex-NoBoosters-1.1.0",
+        "AuriRex-AllVanity-1.1.0"
+    ]
+}

@@ -1,0 +1,11 @@
+{
+    "name": "Hide_and_Seek",
+    "author": "AuriRex",
+    "version_number": "0.7.3",
+    "website_url": "https://github.com/AuriRex/GTFO_Gamemodes/",
+    "description": "Hide and Seek custom gamemode.",
+    "dependencies": [
+        "BepInEx-BepInExPack_GTFO-3.2.2",
+        "AuriRex-Gamemodes_Base-0.7.3"
+    ]
+}

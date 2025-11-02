@@ -44,7 +44,7 @@ public class ProximityVoice : MonoBehaviour
         }
 #endif
 
-        _localPlayer = PlayerManager.GetLocalPlayerAgent().TryCast<LocalPlayerAgent>();
+        _localPlayer = PlayerManager.GetLocalPlayerAgent()?.TryCast<LocalPlayerAgent>();
 
         _nextUpdate = Time.realtimeSinceStartup + System.Random.Shared.NextSingle();
     }
@@ -102,7 +102,7 @@ public class ProximityVoice : MonoBehaviour
 
     private void DoUpdate()
     {
-        _localPlayer ??= PlayerManager.GetLocalPlayerAgent().TryCast<LocalPlayerAgent>();
+        _localPlayer ??= PlayerManager.GetLocalPlayerAgent()?.TryCast<LocalPlayerAgent>();
         
         if (_localPlayer == null)
             return;

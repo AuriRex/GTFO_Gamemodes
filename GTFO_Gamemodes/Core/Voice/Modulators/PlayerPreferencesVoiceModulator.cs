@@ -28,9 +28,7 @@ internal class PlayerPreferencesVoiceModulator : IVoiceVolumeModulator
         return mod;
     }
     
-    public PlayerVoiceManager.ApplyVoiceStates ApplyToStates => PlayerVoiceManager.ApplyVoiceStates.InLevel |
-                                                                PlayerVoiceManager.ApplyVoiceStates.Lobby |
-                                                                PlayerVoiceManager.ApplyVoiceStates.Downed;
+    public PlayerVoiceManager.ApplyVoiceStates ApplyToStates => PlayerVoiceManager.ApplyVoiceStates.All;
     public void Modify(PlayerAgent player, ref float volume)
     {
         if (!_voicePreference.TryGetValue(player.Owner.Lookup, out var mod))

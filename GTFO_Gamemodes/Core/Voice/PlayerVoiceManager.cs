@@ -84,10 +84,14 @@ public static class PlayerVoiceManager
         Downed = 8,
     }
 
-    public static Dictionary<string, float> debugValues = new();
+    // ReSharper disable once CollectionNeverQueried.Global
+    public static readonly Dictionary<string, float> debugValues = new();
     
     public static void SetVolume(PlayerAgent player, float volume)
     {
+        if (player == null)
+            return;
+        
         debugValues.Clear();
         
         debugValues["entry>>"] = volume;
@@ -99,7 +103,7 @@ public static class PlayerVoiceManager
 
             bool checkPassed = mod.ApplyToStates.HasFlag(ApplyVoiceStates.All);
 
-            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.Downed) && player.Locomotion.m_currentStateEnum == PlayerLocomotion.PLOC_State.Downed)
+            if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.Downed) && player.Locomotion?.m_currentStateEnum == PlayerLocomotion.PLOC_State.Downed)
                 checkPassed = true;
 
             if (mod.ApplyToStates.HasFlag(ApplyVoiceStates.InLevel) && _currentState == eGameStateName.InLevel)

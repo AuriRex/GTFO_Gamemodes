@@ -18,7 +18,14 @@ public partial class NetworkingManager
 
     private static readonly Dictionary<ulong, PlayerWrapper> _syncedPlayers = new();
 
-    public static IEnumerable<PlayerWrapper> SyncedPlayers => _syncedPlayers.Values;
+    public static IEnumerable<PlayerWrapper> SyncedPlayers
+    {
+        get
+        {
+            CleanupPlayers();
+            return _syncedPlayers.Values;
+        }
+    }
 
     public static IEnumerable<PlayerWrapper> AllValidPlayers => SyncedPlayers.Where(p => p.ValidPlayer);
 
@@ -182,7 +189,7 @@ public partial class NetworkingManager
                 continue;
 
             if (!SNet.IsMaster)
-                return;
+                continue;
             
             PostChatLog($"<#F00><< <color=orange>{player.NickName}</color> has disconnected.</color>");
         }

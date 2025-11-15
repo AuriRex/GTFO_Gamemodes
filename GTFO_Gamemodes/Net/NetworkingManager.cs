@@ -158,12 +158,13 @@ public partial class NetworkingManager
         Plugin.L.LogDebug($"OnPlayerEvent: {player.NickName}, event: {playerEvent}, reason: {reason}");
     }
 
+    private static readonly HashSet<ulong> _tempConnectedPlayers = new();
     internal static void CleanupPlayers()
     {
-        HashSet<ulong> connectedPlayers = new();
+        _tempConnectedPlayers.Clear();
         foreach (var player in SNet.LobbyPlayers)
         {
-            connectedPlayers.Add(player.Lookup);
+            _tempConnectedPlayers.Add(player.Lookup);
         }
         
         foreach (var playerAgent in PlayerManager.PlayerAgentsInLevel)
@@ -171,10 +172,10 @@ public partial class NetworkingManager
             if (playerAgent?.Owner == null || playerAgent.m_isBeingDestroyed)
                 continue;
             
-            connectedPlayers.Add(playerAgent.Owner.Lookup);
+            _tempConnectedPlayers.Add(playerAgent.Owner.Lookup);
         }
 
-        var disconnectedPlayers = _syncedPlayers.Values.Where(p => !connectedPlayers.Contains(p.ID)).ToArray();
+        var disconnectedPlayers = _syncedPlayers.Values.Where(p => !_tempConnectedPlayers.Contains(p.ID)).ToArray();
 
         if (disconnectedPlayers.Length == 0)
             return;

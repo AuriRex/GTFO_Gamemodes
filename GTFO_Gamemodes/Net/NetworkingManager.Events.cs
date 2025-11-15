@@ -235,6 +235,8 @@ public partial class NetworkingManager
         if (!info.VersionMatches)
         {
             Plugin.L.LogWarning($"Version mismatch for player \"{info.NickName}\" ({senderId}), {info.LoadedVersion} != {Plugin.VERSION}");
+            if (info.LoadedVersion < Plugin.Version)
+                PostChatLog($"<#FF0>!! <color=orange>{info.NickName}</color> is on an outdated version '<#F00>{info.LoadedVersion}</color>'.</color>");
         }
         
         Plugin.L.LogDebug($" ^ PlayerWrapper: {info}");

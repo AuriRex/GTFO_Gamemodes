@@ -1,4 +1,5 @@
 using System.Linq;
+using CellMenu;
 using GameData;
 using HarmonyLib;
 using static Gamemodes.PatchManager;
@@ -30,8 +31,17 @@ public static class MultiplayerTutorial
 
             level.IsSinglePlayer = false;
             level.SkipLobby = false;
+            
+            level.UseGearPicker = false;
         }
     }
+}
 
-    
+[HarmonyPatch(typeof(CM_PageRundown_New), nameof(CM_PageRundown_New.OnEnable))]
+public static class MultiplayerTutorial_ForceEnableButton
+{
+    public static void Postfix(CM_PageRundown_New __instance)
+    {
+        __instance.m_tutorialButton.SetVisible(true);
+    }
 }

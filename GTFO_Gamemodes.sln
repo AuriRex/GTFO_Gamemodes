@@ -10,6 +10,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CFD8C3F7-6D11-461F-8300-976D53211E01}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		GMBase_README.md = r2mm\Gamemode_Base\README.md
+		GMBase_manifest.json = r2mm\Gamemode_Base\manifest.json
+		HNS_README.md = r2mm\HideAndSeek\README.md
+		HNS_manifest.json = r2mm\HideAndSeek\manifest.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HNS", "HNS\HNS.csproj", "{FC526F0B-441F-448E-9B08-1BB963F403CD}"

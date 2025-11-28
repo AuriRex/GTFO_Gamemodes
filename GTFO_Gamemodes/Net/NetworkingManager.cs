@@ -192,7 +192,7 @@ public partial class NetworkingManager
             if (!SNet.IsMaster)
                 continue;
             
-            PostChatLog($"<#F00><< <color=orange>{player.NickName}</color> has disconnected.</color>");
+            //PostChatLog($"<#F00><< <color=orange>{player.NickName}</color> has disconnected.</color>");
         }
     }
 

@@ -156,6 +156,7 @@ internal partial class HideAndSeekMode : GamemodeBase
             .Add("unstuck", Unstuck)
             .Add("fixdesync", UIDesyncFix)
             .Add("forcedrop", ForceDrop)
+            .Add("toggledoor", ToggleSecDoor)
             .LogAnyErrors(Plugin.L.LogError, Plugin.L.LogWarning);
 
         CreateCustomPalettes();

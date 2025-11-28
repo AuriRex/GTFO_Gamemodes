@@ -324,4 +324,37 @@ internal partial class HideAndSeekMode
 
         return string.Empty;
     }
+
+    private static string ToggleSecDoor(string[] args)
+    {
+        if (!SNet.IsMaster)
+            return "Host only.";
+
+        if (GameStateManager.CurrentStateName != eGameStateName.InLevel)
+            return "Not in level.";
+        
+        
+        if (!PlayerManager.TryGetLocalPlayerAgent(out var localPlayer))
+            return "No local player.";
+
+        var rayObject = localPlayer.FPSCamera.CameraRayObject;
+        
+        if (rayObject == null)
+            return "Not looking at anything.";
+
+        var secDoor = rayObject.GetComponentInParent<LG_SecurityDoor>();
+
+        if (secDoor == null)
+            return "Not looking at a Security Door.";
+        
+        var state = eDoorInteractionType.Open;
+        if (secDoor.LastStatus == eDoorStatus.Open || secDoor.LastStatus == eDoorStatus.Opening)
+        {
+            state = eDoorInteractionType.Close;
+        }
+        
+        secDoor.m_sync.AttemptDoorInteraction(state, 0.0f, 0.0f, default, localPlayer);
+
+        return $"Toggling door '{secDoor.m_serialNumber}' state to {state}.";
+    }
 }

@@ -47,6 +47,9 @@ Some recommendations:
 /hnsstop
 /hnsabort // Same as stop but does not save times
 /dimension <dimensionIndex> // Teleport all players into a dimension; 0 = Reality / Main Dimension
+/toggledoor // Closes/Opens a security door that you are looking at
+// Use this to limit the levels size on big levels or low player counts!
+/forcedrop // Allows you to forcefully start without everyone in the lobby being ready
 
 // Note: Do not include '[]', '<>' or '''' in the command arguments lol
 // '[]' = Optional, '<>' = Required

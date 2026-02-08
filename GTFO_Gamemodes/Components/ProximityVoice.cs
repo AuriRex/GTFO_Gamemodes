@@ -12,8 +12,8 @@ public class ProximityVoice : MonoBehaviour
     public static float NoLOSMultiplier = 0.75f;
     public static float HasLOSMultiplier = 1f;
     
-    public float audioFalloffEndDistance = 25f;
-    public float audioFalloffStartDistance = 5f;
+    public float audioFalloffEndDistance = 32f;
+    public float audioFalloffStartDistance = 2f;
     public float interpSpeed = 1f;
     
     private LocalPlayerAgent _localPlayer;
@@ -129,7 +129,7 @@ public class ProximityVoice : MonoBehaviour
             _targetVolume *= _nodeDistanceMultiplier;
         }
 
-        _targetVolume = EaseOutSomethingLog(_targetVolume);
+        _targetVolume = EaseInOutSine(_targetVolume);
     }
     
     private static float EaseOutQuart(float x) {

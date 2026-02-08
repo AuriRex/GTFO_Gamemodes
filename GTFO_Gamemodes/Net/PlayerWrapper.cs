@@ -19,8 +19,12 @@ public record class PlayerWrapper
         IsBot = player?.IsBot ?? false;
     }
 
-    public bool ValidPlayer => HasAgent && !IsSpectator;
+    public bool ValidPlayer => HasAgent && !IsSpectator && IsConnected;
 
+    public bool IsConnected => NetPlayer.IsLocal
+                               || (NetPlayer.ConnectionStatus != ConnectionStatus.NotConnected
+                               && NetPlayer.ConnectionStatus != ConnectionStatus.Connecting);
+    
     public ulong ID { get; init; }
 
     public SNet_Player NetPlayer { get; private set; }

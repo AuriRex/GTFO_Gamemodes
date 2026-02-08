@@ -22,8 +22,7 @@ public partial class NetworkingManager
     {
         get
         {
-            CleanupPlayers();
-            return _syncedPlayers.Values;
+            return _syncedPlayers.Values.Where(p => p.IsConnected);
         }
     }
 
@@ -112,8 +111,9 @@ public partial class NetworkingManager
         if (newPlayer == null)
             return;
 
-        if (!GetPlayerInfo(newPlayer.Lookup, out var info))
-            return; // Player already in lobby
+        GetPlayerInfo(newPlayer.Lookup, out var info);
+        // if (!GetPlayerInfo(newPlayer.Lookup, out var info))
+        //     return; // Player already in lobby
         
         Plugin.L.LogDebug($"{info.NickName} has joined!");
         if (SNet.IsMaster)
@@ -140,10 +140,10 @@ public partial class NetworkingManager
     
     public static void OnPlayerRemovedFromSession(SNet_Player player)
     {
-        if (!_syncedPlayers.Remove(player.Lookup))
-            return;
+        // if (!_syncedPlayers.Remove(player.Lookup))
+        //     return;
 
-        Plugin.L.LogDebug($"Removed \"{player.NickName}\" from _syncedPlayers.");
+        //Plugin.L.LogDebug($"Removed \"{player.NickName}\" from _syncedPlayers.");
         
         OnPlayerCountChangedImpl();
         
